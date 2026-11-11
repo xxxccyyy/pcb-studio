@@ -1,0 +1,93 @@
+[
+ {
+  "tier": "medium",
+  "name": "n78-enc-diff",
+  "pads": 33,
+  "nets": 11,
+  "timeSec": 3.3,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 9,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": []
+ },
+ {
+  "tier": "medium",
+  "name": "n79-ina226",
+  "pads": 50,
+  "nets": 8,
+  "timeSec": 5.3,
+  "err": null,
+  "status": "complete",
+  "connected": 44,
+  "total": 44,
+  "vias": 13,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": [
+   "DFM 间距"
+  ]
+ },
+ {
+  "tier": "medium",
+  "name": "n80-i2s-dac",
+  "pads": 37,
+  "nets": 9,
+  "timeSec": 3,
+  "err": null,
+  "status": "complete",
+  "connected": 32,
+  "total": 32,
+  "vias": 7,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": [
+   "DFM 间距"
+  ]
+ },
+ {
+  "tier": "medium",
+  "name": "n81-pca9685",
+  "pads": 52,
+  "nets": 11,
+  "timeSec": 4.8,
+  "err": null,
+  "status": "complete",
+  "connected": 37,
+  "total": 37,
+  "vias": 4,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": [
+   "DFM 间距"
+  ]
+ },
+ {
+  "tier": "medium",
+  "name": "n82-fan-ctrl",
+  "pads": 46,
+  "nets": 13,
+  "timeSec": 21,
+  "err": null,
+  "status": "complete",
+  "connected": 40,
+  "total": 40,
+  "vias": 7,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": []
+ }
+]

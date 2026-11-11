@@ -1,0 +1,1140 @@
+{
+ "width": 96,
+ "height": 38,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "vbus",
+   "name": "VBUS"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "bat0p",
+   "name": "BAT0P"
+  },
+  {
+   "id": "bat0n",
+   "name": "BAT0N"
+  },
+  {
+   "id": "chg0",
+   "name": "CHG0"
+  },
+  {
+   "id": "stby0",
+   "name": "STBY0"
+  },
+  {
+   "id": "bat1p",
+   "name": "BAT1P"
+  },
+  {
+   "id": "bat1n",
+   "name": "BAT1N"
+  },
+  {
+   "id": "chg1",
+   "name": "CHG1"
+  },
+  {
+   "id": "stby1",
+   "name": "STBY1"
+  },
+  {
+   "id": "bat2p",
+   "name": "BAT2P"
+  },
+  {
+   "id": "bat2n",
+   "name": "BAT2N"
+  },
+  {
+   "id": "chg2",
+   "name": "CHG2"
+  },
+  {
+   "id": "stby2",
+   "name": "STBY2"
+  },
+  {
+   "id": "bat3p",
+   "name": "BAT3P"
+  },
+  {
+   "id": "bat3n",
+   "name": "BAT3N"
+  },
+  {
+   "id": "chg3",
+   "name": "CHG3"
+  },
+  {
+   "id": "stby3",
+   "name": "STBY3"
+  }
+ ],
+ "pads": [
+  {
+   "id": "U1-1",
+   "netId": "bat0p",
+   "x": 9.3,
+   "y": 10.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-2",
+   "netId": "bat0n",
+   "x": 9.3,
+   "y": 11.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-3",
+   "netId": "gnd",
+   "x": 9.3,
+   "y": 12.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-4",
+   "netId": "stby0",
+   "x": 9.3,
+   "y": 13.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-5",
+   "netId": "chg0",
+   "x": 14.7,
+   "y": 13.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-6",
+   "netId": "gnd",
+   "x": 14.7,
+   "y": 12.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-7",
+   "netId": "vbus",
+   "x": 14.7,
+   "y": 11.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-8",
+   "netId": "vbus",
+   "x": 14.7,
+   "y": 10.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED1-1",
+   "netId": "chg0",
+   "x": 8,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED1-2",
+   "netId": "gnd",
+   "x": 10.54,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED2-1",
+   "netId": "stby0",
+   "x": 14,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED2-2",
+   "netId": "gnd",
+   "x": 16.54,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "R1-1",
+   "netId": "chg0",
+   "x": 7.2,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-2",
+   "netId": "vbus",
+   "x": 8.8,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-1",
+   "netId": "stby0",
+   "x": 13.2,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-2",
+   "netId": "vbus",
+   "x": 14.8,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-1",
+   "netId": "bat0p",
+   "x": 17.5,
+   "y": 32,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J1-2",
+   "netId": "bat0n",
+   "x": 22.5,
+   "y": 32,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "C1-1",
+   "netId": "vbus",
+   "x": 4.025,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C1-2",
+   "netId": "gnd",
+   "x": 5.975,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U2-1",
+   "netId": "bat1p",
+   "x": 31.3,
+   "y": 10.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U2-2",
+   "netId": "bat1n",
+   "x": 31.3,
+   "y": 11.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U2-3",
+   "netId": "gnd",
+   "x": 31.3,
+   "y": 12.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U2-4",
+   "netId": "stby1",
+   "x": 31.3,
+   "y": 13.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U2-5",
+   "netId": "chg1",
+   "x": 36.7,
+   "y": 13.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U2-6",
+   "netId": "gnd",
+   "x": 36.7,
+   "y": 12.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U2-7",
+   "netId": "vbus",
+   "x": 36.7,
+   "y": 11.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U2-8",
+   "netId": "vbus",
+   "x": 36.7,
+   "y": 10.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED3-1",
+   "netId": "chg1",
+   "x": 30,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED3-2",
+   "netId": "gnd",
+   "x": 32.54,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED4-1",
+   "netId": "stby1",
+   "x": 36,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED4-2",
+   "netId": "gnd",
+   "x": 38.54,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "R3-1",
+   "netId": "chg1",
+   "x": 29.2,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-2",
+   "netId": "vbus",
+   "x": 30.8,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-1",
+   "netId": "stby1",
+   "x": 35.2,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-2",
+   "netId": "vbus",
+   "x": 36.8,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J2-1",
+   "netId": "bat1p",
+   "x": 39.5,
+   "y": 32,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-2",
+   "netId": "bat1n",
+   "x": 44.5,
+   "y": 32,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "C2-1",
+   "netId": "vbus",
+   "x": 26.025,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C2-2",
+   "netId": "gnd",
+   "x": 27.975,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U3-1",
+   "netId": "bat2p",
+   "x": 53.3,
+   "y": 10.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U3-2",
+   "netId": "bat2n",
+   "x": 53.3,
+   "y": 11.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U3-3",
+   "netId": "gnd",
+   "x": 53.3,
+   "y": 12.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U3-4",
+   "netId": "stby2",
+   "x": 53.3,
+   "y": 13.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U3-5",
+   "netId": "chg2",
+   "x": 58.7,
+   "y": 13.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U3-6",
+   "netId": "gnd",
+   "x": 58.7,
+   "y": 12.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U3-7",
+   "netId": "vbus",
+   "x": 58.7,
+   "y": 11.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U3-8",
+   "netId": "vbus",
+   "x": 58.7,
+   "y": 10.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED5-1",
+   "netId": "chg2",
+   "x": 52,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED5-2",
+   "netId": "gnd",
+   "x": 54.54,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED6-1",
+   "netId": "stby2",
+   "x": 58,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED6-2",
+   "netId": "gnd",
+   "x": 60.54,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "R5-1",
+   "netId": "chg2",
+   "x": 51.2,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R5-2",
+   "netId": "vbus",
+   "x": 52.8,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R6-1",
+   "netId": "stby2",
+   "x": 57.2,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R6-2",
+   "netId": "vbus",
+   "x": 58.8,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J3-1",
+   "netId": "bat2p",
+   "x": 61.5,
+   "y": 32,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J3-2",
+   "netId": "bat2n",
+   "x": 66.5,
+   "y": 32,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "C3-1",
+   "netId": "vbus",
+   "x": 48.025,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C3-2",
+   "netId": "gnd",
+   "x": 49.975,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U4-1",
+   "netId": "bat3p",
+   "x": 75.3,
+   "y": 10.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U4-2",
+   "netId": "bat3n",
+   "x": 75.3,
+   "y": 11.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U4-3",
+   "netId": "gnd",
+   "x": 75.3,
+   "y": 12.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U4-4",
+   "netId": "stby3",
+   "x": 75.3,
+   "y": 13.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U4-5",
+   "netId": "chg3",
+   "x": 80.7,
+   "y": 13.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U4-6",
+   "netId": "gnd",
+   "x": 80.7,
+   "y": 12.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U4-7",
+   "netId": "vbus",
+   "x": 80.7,
+   "y": 11.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U4-8",
+   "netId": "vbus",
+   "x": 80.7,
+   "y": 10.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED7-1",
+   "netId": "chg3",
+   "x": 74,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED7-2",
+   "netId": "gnd",
+   "x": 76.54,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED8-1",
+   "netId": "stby3",
+   "x": 80,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED8-2",
+   "netId": "gnd",
+   "x": 82.54,
+   "y": 24,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "R7-1",
+   "netId": "chg3",
+   "x": 73.2,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R7-2",
+   "netId": "vbus",
+   "x": 74.8,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R8-1",
+   "netId": "stby3",
+   "x": 79.2,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R8-2",
+   "netId": "vbus",
+   "x": 80.8,
+   "y": 32,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J4-1",
+   "netId": "bat3p",
+   "x": 83.5,
+   "y": 32,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J4-2",
+   "netId": "bat3n",
+   "x": 88.5,
+   "y": 32,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "C4-1",
+   "netId": "vbus",
+   "x": 70.025,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C4-2",
+   "netId": "gnd",
+   "x": 71.975,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "U1": {
+   "x": 12,
+   "y": 12,
+   "rot": 0,
+   "layer": "top",
+   "value": "TP4056",
+   "footprint": "SOIC-8"
+  },
+  "LED1": {
+   "x": 8,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "CHG",
+   "footprint": "LED-THT"
+  },
+  "LED2": {
+   "x": 14,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "STBY",
+   "footprint": "LED-THT"
+  },
+  "R1": {
+   "x": 8,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "R2": {
+   "x": 14,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "J1": {
+   "x": 20,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "B1",
+   "footprint": "TB-2P"
+  },
+  "C1": {
+   "x": 5,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": "10u",
+   "footprint": "C0805"
+  },
+  "U2": {
+   "x": 34,
+   "y": 12,
+   "rot": 0,
+   "layer": "top",
+   "value": "TP4056",
+   "footprint": "SOIC-8"
+  },
+  "LED3": {
+   "x": 30,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "CHG",
+   "footprint": "LED-THT"
+  },
+  "LED4": {
+   "x": 36,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "STBY",
+   "footprint": "LED-THT"
+  },
+  "R3": {
+   "x": 30,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "R4": {
+   "x": 36,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "J2": {
+   "x": 42,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "B2",
+   "footprint": "TB-2P"
+  },
+  "C2": {
+   "x": 27,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": "10u",
+   "footprint": "C0805"
+  },
+  "U3": {
+   "x": 56,
+   "y": 12,
+   "rot": 0,
+   "layer": "top",
+   "value": "TP4056",
+   "footprint": "SOIC-8"
+  },
+  "LED5": {
+   "x": 52,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "CHG",
+   "footprint": "LED-THT"
+  },
+  "LED6": {
+   "x": 58,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "STBY",
+   "footprint": "LED-THT"
+  },
+  "R5": {
+   "x": 52,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "R6": {
+   "x": 58,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "J3": {
+   "x": 64,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "B3",
+   "footprint": "TB-2P"
+  },
+  "C3": {
+   "x": 49,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": "10u",
+   "footprint": "C0805"
+  },
+  "U4": {
+   "x": 78,
+   "y": 12,
+   "rot": 0,
+   "layer": "top",
+   "value": "TP4056",
+   "footprint": "SOIC-8"
+  },
+  "LED7": {
+   "x": 74,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "CHG",
+   "footprint": "LED-THT"
+  },
+  "LED8": {
+   "x": 80,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "STBY",
+   "footprint": "LED-THT"
+  },
+  "R7": {
+   "x": 74,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "R8": {
+   "x": 80,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "J4": {
+   "x": 86,
+   "y": 32,
+   "rot": 0,
+   "layer": "top",
+   "value": "B4",
+   "footprint": "TB-2P"
+  },
+  "C4": {
+   "x": 71,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": "10u",
+   "footprint": "C0805"
+  }
+ }
+}

@@ -1,0 +1,373 @@
+{
+ "width": 35,
+ "height": 20,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "vcc",
+   "name": "VCC"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "ldr",
+   "name": "LDR"
+  },
+  {
+   "id": "ref",
+   "name": "REF"
+  },
+  {
+   "id": "cmp",
+   "name": "CMP"
+  },
+  {
+   "id": "led_a",
+   "name": "LED_A"
+  },
+  {
+   "id": "drv",
+   "name": "DRV"
+  }
+ ],
+ "pads": [
+  {
+   "id": "U1-1",
+   "netId": "cmp",
+   "x": 11.3,
+   "y": 6.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-2",
+   "netId": "ref",
+   "x": 11.3,
+   "y": 7.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-3",
+   "netId": "ldr",
+   "x": 11.3,
+   "y": 8.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-4",
+   "netId": "gnd",
+   "x": 11.3,
+   "y": 9.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-5",
+   "netId": null,
+   "x": 16.7,
+   "y": 9.905,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-6",
+   "netId": null,
+   "x": 16.7,
+   "y": 8.635,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-7",
+   "netId": null,
+   "x": 16.7,
+   "y": 7.365,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "U1-8",
+   "netId": "vcc",
+   "x": 16.7,
+   "y": 6.095,
+   "w": 1.5,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LDR1-1",
+   "netId": "ldr",
+   "x": 5.025,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LDR1-2",
+   "netId": "vcc",
+   "x": 6.975,
+   "y": 6,
+   "w": 1.15,
+   "h": 0.95,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-1",
+   "netId": "ldr",
+   "x": 5.2,
+   "y": 10,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-2",
+   "netId": "gnd",
+   "x": 6.8,
+   "y": 10,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-1",
+   "netId": "ref",
+   "x": 9.2,
+   "y": 14,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-2",
+   "netId": "vcc",
+   "x": 10.8,
+   "y": 14,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-1",
+   "netId": "ref",
+   "x": 13.2,
+   "y": 14,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-2",
+   "netId": "gnd",
+   "x": 14.8,
+   "y": 14,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-1",
+   "netId": "cmp",
+   "x": 19.2,
+   "y": 12,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-2",
+   "netId": "drv",
+   "x": 20.8,
+   "y": 12,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED1-1",
+   "netId": "drv",
+   "x": 23.2,
+   "y": 12,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED1-2",
+   "netId": "led_a",
+   "x": 24.8,
+   "y": 12,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R5-1",
+   "netId": "led_a",
+   "x": 27.2,
+   "y": 12,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R5-2",
+   "netId": "gnd",
+   "x": 28.8,
+   "y": 12,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-1",
+   "netId": "vcc",
+   "x": 1.46,
+   "y": 17,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J1-2",
+   "netId": "gnd",
+   "x": 4,
+   "y": 17,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J1-3",
+   "netId": "cmp",
+   "x": 6.54,
+   "y": 17,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "U1": {
+   "x": 14,
+   "y": 8,
+   "rot": 0,
+   "layer": "top",
+   "value": "LM393",
+   "footprint": "SOIC-8"
+  },
+  "LDR1": {
+   "x": 6,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": "GL5528",
+   "footprint": "LDR-0805"
+  },
+  "R1": {
+   "x": 6,
+   "y": 10,
+   "rot": 0,
+   "layer": "top",
+   "value": "10k",
+   "footprint": "R0603"
+  },
+  "R2": {
+   "x": 10,
+   "y": 14,
+   "rot": 0,
+   "layer": "top",
+   "value": "10k",
+   "footprint": "R0603"
+  },
+  "R3": {
+   "x": 14,
+   "y": 14,
+   "rot": 0,
+   "layer": "top",
+   "value": "10k",
+   "footprint": "R0603"
+  },
+  "R4": {
+   "x": 20,
+   "y": 12,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "LED1": {
+   "x": 24,
+   "y": 12,
+   "rot": 0,
+   "layer": "top",
+   "value": "LED",
+   "footprint": "C0603"
+  },
+  "R5": {
+   "x": 28,
+   "y": 12,
+   "rot": 0,
+   "layer": "top",
+   "value": "470R",
+   "footprint": "R0603"
+  },
+  "J1": {
+   "x": 4,
+   "y": 17,
+   "rot": 90,
+   "layer": "top",
+   "value": "PWR/OUT",
+   "footprint": "HDR-3P"
+  }
+ }
+}

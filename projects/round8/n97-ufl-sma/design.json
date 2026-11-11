@@ -1,0 +1,163 @@
+{
+ "width": 40,
+ "height": 18,
+ "grid": 0.3,
+ "layers": 2,
+ "trackW": 0.2,
+ "clearance": 0.1,
+ "viaOuter": 0.6,
+ "viaDrill": 0.3,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "rf",
+   "name": "RF"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  }
+ ],
+ "pads": [
+  {
+   "id": "J1-1",
+   "netId": "rf",
+   "x": 7.2,
+   "y": 9.5,
+   "w": 0.35,
+   "h": 0.9,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-2",
+   "netId": "rf",
+   "x": 8,
+   "y": 9.5,
+   "w": 0.35,
+   "h": 0.9,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-3",
+   "netId": "gnd",
+   "x": 8.8,
+   "y": 9.5,
+   "w": 0.35,
+   "h": 0.9,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-4",
+   "netId": "gnd",
+   "x": 8,
+   "y": 7.7,
+   "w": 2.8,
+   "h": 1.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J2-1",
+   "netId": "rf",
+   "x": 30,
+   "y": 9,
+   "w": 1.4,
+   "h": 1.4,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "J2-2",
+   "netId": "gnd",
+   "x": 27.4,
+   "y": 11.6,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J2-3",
+   "netId": "gnd",
+   "x": 32.6,
+   "y": 11.6,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J2-4",
+   "netId": "gnd",
+   "x": 32.6,
+   "y": 6.4,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J2-5",
+   "netId": "gnd",
+   "x": 27.4,
+   "y": 6.4,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C1-1",
+   "netId": "gnd",
+   "x": 18.525,
+   "y": 4,
+   "w": 0.55,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C1-2",
+   "netId": "gnd",
+   "x": 19.475,
+   "y": 4,
+   "w": 0.55,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "J1": {
+   "x": 8,
+   "y": 9,
+   "rot": 0,
+   "layer": "top",
+   "value": "U.FL",
+   "footprint": "UFL"
+  },
+  "J2": {
+   "x": 30,
+   "y": 9,
+   "rot": 0,
+   "layer": "top",
+   "value": "SMA",
+   "footprint": "SMA-E"
+  },
+  "C1": {
+   "x": 19,
+   "y": 4,
+   "rot": 0,
+   "layer": "top",
+   "value": "NA",
+   "footprint": "C0402"
+  }
+ }
+}

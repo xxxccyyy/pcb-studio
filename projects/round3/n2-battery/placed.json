@@ -1,0 +1,112 @@
+{
+ "width": 40,
+ "height": 25,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "bat",
+   "name": "BAT+3V"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "led_n",
+   "name": "LED_N"
+  }
+ ],
+ "pads": [
+  {
+   "id": "BAT1-1",
+   "netId": "bat",
+   "x": 19.5,
+   "y": 21.3,
+   "w": 2,
+   "h": 2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "BAT1-2",
+   "netId": "gnd",
+   "x": 24.9,
+   "y": 21.3,
+   "w": 2,
+   "h": 2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "R1-1",
+   "netId": "bat",
+   "x": 19.5,
+   "y": 19.5,
+   "w": 0.8,
+   "h": 0.9,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-2",
+   "netId": "led_n",
+   "x": 22.5,
+   "y": 19.5,
+   "w": 0.8,
+   "h": 0.9,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED1-1",
+   "netId": "led_n",
+   "x": 23.1,
+   "y": 18.3,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED1-2",
+   "netId": "gnd",
+   "x": 23.1,
+   "y": 21.3,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "BAT1": {
+   "x": 22.2,
+   "y": 21.3,
+   "rot": 270,
+   "layer": "top"
+  },
+  "R1": {
+   "x": 21,
+   "y": 19.5,
+   "rot": 270,
+   "layer": "top"
+  },
+  "LED1": {
+   "x": 23.1,
+   "y": 19.8,
+   "rot": 0,
+   "layer": "top"
+  }
+ }
+}

@@ -1,0 +1,120 @@
+[
+ {
+  "name": "p21-via-05",
+  "timeSec": 2.4,
+  "err": null,
+  "status": "complete",
+  "connected": 20,
+  "total": 20,
+  "vias": 1,
+  "drcErrors": []
+ },
+ {
+  "name": "p22-via-15",
+  "timeSec": 1.9,
+  "err": null,
+  "status": "complete",
+  "connected": 20,
+  "total": 20,
+  "vias": 1,
+  "drcErrors": []
+ },
+ {
+  "name": "p23-via-30",
+  "timeSec": 2.1,
+  "err": null,
+  "status": "complete",
+  "connected": 20,
+  "total": 20,
+  "vias": 1,
+  "drcErrors": []
+ },
+ {
+  "name": "p24-via-60",
+  "timeSec": 2.3,
+  "err": null,
+  "status": "complete",
+  "connected": 20,
+  "total": 20,
+  "vias": 1,
+  "drcErrors": []
+ },
+ {
+  "name": "p25-via-120",
+  "timeSec": 1.9,
+  "err": null,
+  "status": "complete",
+  "connected": 20,
+  "total": 20,
+  "vias": 1,
+  "drcErrors": []
+ },
+ {
+  "name": "p26-ws2812-8x8",
+  "timeSec": 220.3,
+  "err": null,
+  "status": "partial",
+  "connected": 260,
+  "total": 260,
+  "vias": 91,
+  "drcErrors": [
+   "走线-焊盘间距"
+  ]
+ },
+ {
+  "name": "p27-cnc-shield",
+  "timeSec": 713.4,
+  "err": null,
+  "status": "partial",
+  "connected": 64,
+  "total": 64,
+  "vias": 22,
+  "drcErrors": [
+   "间距冲突",
+   "间距冲突",
+   "间距冲突",
+   "间距冲突",
+   "间距冲突",
+   "间距冲突",
+   "间距冲突",
+   "间距冲突",
+   "焊盘间距",
+   "焊盘间距",
+   "焊盘间距",
+   "走线间距",
+   "走线间距",
+   "走线间距",
+   "走线间距"
+  ]
+ },
+ {
+  "name": "p28-shield",
+  "timeSec": 16.8,
+  "err": null,
+  "status": "complete",
+  "connected": 59,
+  "total": 59,
+  "vias": 10,
+  "drcErrors": []
+ },
+ {
+  "name": "p29-hat",
+  "timeSec": 13.3,
+  "err": null,
+  "status": "complete",
+  "connected": 56,
+  "total": 56,
+  "vias": 9,
+  "drcErrors": []
+ },
+ {
+  "name": "p30-thermocouple",
+  "timeSec": 49.2,
+  "err": null,
+  "status": "complete",
+  "connected": 52,
+  "total": 52,
+  "vias": 23,
+  "drcErrors": []
+ }
+]

@@ -1,0 +1,11 @@
+import { readFileSync } from 'node:fs';
+const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const mA = html.match(new RegExp('// ==== ROUTER CORE START ====([\\s\\S]*?)// ==== ROUTER CORE END ===='));
+const mB = html.match(new RegExp('// ==== EXAMPLES START ====([\\s\\S]*?)// ==== EXAMPLES END ===='));
+const core = new Function(mA[1] + '\n' + mB[1] + '\nreturn {footprintPads};')();
+console.log("DIP-N, 16 →", core.footprintPads('DIP-N', 16).length);
+console.log("DIP-N,18 →", core.footprintPads('DIP-N', 18).length);
+console.log("SOIC-16 →", core.footprintPads('SOIC-16').length);
+console.log("SOIC-8 →", core.footprintPads('SOIC-8').length);
+console.log("排针 1×N,6 →", core.footprintPads('排针 1×N', 6).length);
+console.log("0603 →", core.footprintPads('0603').length);

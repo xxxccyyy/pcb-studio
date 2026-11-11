@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PCB Studio · PCB 设计工作台</title>
+<style>
+
+:root{color-scheme:dark;--bg:#16181c;--panel:#202328;--panel2:#1b1e23;--panel3:#292d34;--line:#30343c;--line2:#3d424c;--text:#e2e5ea;--dim:#8e96a4;--accent:#76a8ff;--accent2:#c0c9d9;--ok:#71c9a2;--warn:#e6b968;--err:#ef8585;--primary1:#4c83f3;--primary2:#4c83f3}
+[hidden]{display:none!important}*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}body{font:12px/1.5 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:grid;grid-template-rows:52px 40px minmax(0,1fr)}
+button,input,select{font:inherit}button{display:inline-flex;align-items:center;justify-content:center;gap:5px;color:var(--text);background:#292d34;border:1px solid var(--line2);border-radius:5px;padding:6px 10px;cursor:pointer;transition:background .15s,border-color .15s}button:hover{background:#363c47;border-color:#66758c}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}button.primary{background:#4c83f3;border-color:#6294f5;color:white;font-weight:600}button.primary:hover{background:#6294f5}button.danger{background:#42282d;border-color:#6a3b43;color:#f2a3ab}button.mini{padding:3px 7px;font-size:11px}button.active{color:#a9c8ff;background:#2c3d58;border-color:#5579aa}input,select{background:#181b20;border:1px solid var(--line2);border-radius:4px;color:var(--text);padding:5px 7px;min-width:0;flex:1 1 70px;width:auto;outline:none}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 2px #76a8ff18}input[type=checkbox]{flex:none;width:13px;height:13px;accent-color:#6696f3}input[type=number]{font-variant-numeric:tabular-nums}
+header{display:flex;align-items:center;padding:0 16px;gap:12px;background:#202328;border-bottom:1px solid #101215;z-index:70}header h1{font-size:14px;font-weight:650;letter-spacing:.3px;display:flex;align-items:center;gap:9px;white-space:nowrap;margin-right:8px}.logo{width:28px;height:28px;border:1px solid #6f9df4;border-radius:7px;display:grid;place-items:center;color:#b6d0ff;background:#2b3c56;font-size:24px;font-weight:400}.brand-sub{font-size:9px;letter-spacing:1.8px;display:block;color:var(--dim);font-weight:500;line-height:1.2}.grp{display:flex;align-items:center;gap:5px}.sep{height:18px;width:1px;background:var(--line2);flex:none}header button{background:transparent;border-color:transparent;padding:5px 8px}header .primary{margin-left:auto}header #exampleSel{flex:none;width:156px!important;font-size:11px}header .local-badge{margin-left:auto;font-size:11px;color:var(--dim);white-space:nowrap;display:flex;align-items:center;gap:6px}.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok)}
+.menu{position:relative}.menu>button:after{content:'⌄';color:var(--dim);margin-left:4px}.menu>div{display:none;position:absolute;top:100%;left:0;padding:6px;background:var(--panel3);border:1px solid var(--line2);border-radius:6px;min-width:230px;box-shadow:0 12px 30px #0006}.menu:hover>div,.menu:focus-within>div{display:block}.menu>div button{display:block;text-align:left;width:100%;padding:8px}.mi{color:var(--dim);margin-right:8px}
+.workspace-bar{display:flex;align-items:stretch;background:#191c20;border-bottom:1px solid var(--line);padding:0 16px;gap:20px}.workspace-caption{width:228px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim)}.document-tab{display:flex;align-items:center;gap:9px;border-bottom:2px solid var(--accent);padding:0 16px;background:#23272d;color:var(--text);min-width:220px}.document-tab svg{color:#91b5f8}.document-tab .tab-kind{font-size:9px;letter-spacing:.5px;border:1px solid var(--line2);border-radius:3px;color:var(--dim);padding:0 4px;margin-left:12px}.workspace-meta{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:11px;color:var(--dim)}.workspace-meta b{font-weight:400;color:#c5cbd5}
+main{display:grid;grid-template-columns:264px minmax(0,1fr) 286px;overflow:hidden;min-height:0}aside{background:var(--panel2);overflow:auto;min-height:0;scrollbar-width:thin;scrollbar-color:#424852 transparent}.design-sidebar{border-right:1px solid var(--line)}.inspector-sidebar{border-left:1px solid var(--line)}.sidebar-head{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;font-weight:600;font-size:12px;letter-spacing:.3px}.sidebar-head small{font:9px "Segoe UI",sans-serif;letter-spacing:1.3px;color:var(--dim)}.sidebar-tabs{display:flex;padding:0 12px 12px;gap:4px}.sidebar-tabs span{padding:5px 9px;color:var(--dim);font-size:11px}.sidebar-tabs .selected{color:#b9d0fc;background:#2d394c;border-radius:4px}.project-card{margin:0 12px 8px;padding:11px;background:#242830;border:1px solid var(--line);border-radius:5px}.project-card strong{font-size:12px;font-weight:500;display:block}.project-card p{font-size:10px;color:var(--dim);margin-top:4px}.project-card .live-dot{margin-right:5px}
+details{border-bottom:1px solid var(--line);background:transparent}details>summary{list-style:none;cursor:pointer;padding:12px 13px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;user-select:none}details>summary::-webkit-details-marker{display:none}details>summary:before{content:'›';color:var(--dim);font-size:15px;line-height:1;transition:transform .15s}details[open]>summary:before{transform:rotate(90deg)}details>summary:hover{background:#24282f}details>summary .no{display:none}details>summary .hint{margin-left:auto;font-size:9px;color:var(--dim);font-weight:400}.sec{padding:0 13px 14px;display:flex;flex-direction:column;gap:9px}.row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.row label{min-width:62px;color:var(--dim);font-size:11px}.grow{flex:1;min-width:0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.grid2 .row{gap:3px}.grid2 .row label{min-width:0;width:100%;font-size:10px}.grid2 input,.grid2 select{width:100%}.minihead{border-top:1px solid var(--line);padding-top:10px;color:var(--accent2);font-size:10px;font-weight:600;margin-top:4px}.about{font-size:10px;line-height:1.7;color:var(--dim)}.sidebar-foot{padding:14px;font-size:10px;color:#717a88}.tools{display:grid;grid-template-columns:1fr 1fr;gap:5px}.tools button{font-size:10px;padding:6px 2px}.route-advanced{border:1px solid var(--line);border-radius:4px}.route-advanced>summary{padding:7px 8px;font-size:10px;color:var(--dim)}.route-advanced .sec{padding:0 8px 10px;font-size:10px}.route-advanced .row label{min-width:52px}#propsEmpty{border:1px dashed var(--line2);border-radius:5px;padding:12px 10px;color:var(--dim);font-size:11px;line-height:1.8}#propsForm{display:flex;flex-direction:column;gap:8px}
+#netList{display:flex;flex-direction:column;max-height:248px;overflow:auto;gap:2px;margin:0 -5px}.netRow{display:flex;align-items:center;gap:5px;padding:6px 5px;border:1px solid transparent;border-radius:4px;cursor:pointer}.netRow:hover{background:#292e37}.netRow.sel{background:#28384f;border-color:#496387}.netDot{width:6px;height:6px;border-radius:2px;flex:none}.netRow .nm{flex:1;min-width:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:11px Consolas,monospace}.netRow .st{font-size:9px;color:var(--dim)}.netRow .ln{font-size:9px;color:var(--dim)}.netRow .st.ok{color:var(--ok)}.netRow .st.bad{color:var(--err)}.netRow .st.part{color:var(--warn)}.netRow button{font-size:10px;padding:1px 3px;border-color:transparent;background:transparent;color:var(--dim)}.netRow button:hover{background:#3c4656;color:white}.netEdit{background:#232e3e;padding:8px;border:1px solid #466385;border-radius:4px;display:flex;flex-direction:column;gap:7px}.netEdit .row label{min-width:46px}
+#progressWrap{display:none}#progressBar{height:4px;background:#101318;border-radius:3px;overflow:hidden}#progressFill{height:100%;width:0;background:var(--accent);transition:width .1s}#progressText{font-size:10px;color:var(--dim);margin-top:5px}#stats{font-size:11px;color:var(--dim);line-height:1.9;background:#171a1f;padding:8px;border:1px solid var(--line);border-radius:4px}#stats:empty{display:none}#stats b{color:var(--text);font-weight:500}#drcList{font-size:11px;line-height:1.8;max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px}#drcList .d-ok{color:var(--ok)}#drcList .d-err{color:var(--err)}#drcList .d-warn{color:var(--warn)}#drcList .d-info{color:var(--dim)}.fabTable{width:100%;border-collapse:collapse;font-size:10px}.fabTable td{padding:4px;border-top:1px solid var(--line);vertical-align:top}
+#canvasWrap{position:relative;overflow:hidden;background:#14171c;min-width:0;min-height:0}canvas{display:block;position:absolute;inset:0;touch-action:none}.canvas-topbar{position:absolute;z-index:3;top:37px;left:38px;right:14px;display:flex;align-items:center;gap:6px;pointer-events:none}.canvas-topbar>*{pointer-events:auto}.canvas-context{background:#22262deF;border:1px solid #3c424e;border-radius:5px;display:flex;gap:8px;align-items:center;padding:5px 9px;box-shadow:0 3px 10px #0002;font-size:10px}.canvas-context select{border:0;background:transparent;padding:0;font-size:10px;width:88px}.canvas-context .layer-dot{width:7px;height:7px;background:#e36b6b;border-radius:2px}.canvas-context .mode-label{border-right:1px solid var(--line2);padding-right:8px;color:var(--dim)}.canvas-topbar .canvas-actions{margin-left:auto;display:flex;gap:5px}.canvas-actions button{background:#252a32eF;font-size:10px;padding:6px 9px}.canvas-actions .primary{background:#4779df}.canvas-toolbar{position:absolute;z-index:4;left:38px;top:90px;padding:5px;display:flex;flex-direction:column;gap:5px;background:#23272eee;border:1px solid #414752;border-radius:8px;box-shadow:0 5px 18px #0003}.canvas-toolbar button{width:34px;height:34px;padding:7px;background:transparent;border-color:transparent;border-radius:5px}.canvas-toolbar button.active{background:#344b71;border-color:#5279af;color:#c8dcff}.canvas-toolbar button:hover{background:#353e4d}.canvas-toolbar .tool-separator{height:1px;background:var(--line2);margin:2px 3px}svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;flex:none}.viewport-caption{position:absolute;bottom:62px;left:42px;color:#818b9c;font-size:10px;pointer-events:none}.viewport-caption strong{color:#b1bac8;font-size:11px;font-weight:500;display:block;margin-bottom:2px}.viewport-controls{position:absolute;bottom:43px;right:18px;display:flex;align-items:center;background:#252a32f5;border:1px solid #424956;border-radius:6px;padding:3px;box-shadow:0 5px 18px #0003;gap:2px;z-index:3}.viewport-controls button{border:0;background:transparent;padding:5px 8px;min-width:29px;font-size:14px}.viewport-controls #zoomValue{font:10px Consolas,monospace;min-width:48px;text-align:center;color:#c6cfdf}.viewport-controls .control-sep{width:1px;height:15px;background:var(--line2);margin:0 3px}.layer-strip{position:absolute;bottom:42px;left:50%;transform:translateX(-50%);display:flex;gap:3px;padding:4px;border:1px solid #3b424e;background:#232830ee;border-radius:6px;z-index:3}.layer-strip button{font-size:10px;background:transparent;border:1px solid transparent;padding:4px 7px;white-space:nowrap;color:var(--dim)}.layer-strip button.active{background:#303947;border-color:#485568;color:#dce4ee}.layer-strip i{display:inline-block;width:6px;height:6px;border-radius:2px}.top-swatch{background:#e36b6b}.bottom-swatch{background:#689ce9}#statusbar{position:absolute;z-index:5;bottom:0;left:0;right:0;height:26px;background:#1e232b;border-top:1px solid #343b48;display:flex;align-items:center;gap:12px;padding:0 12px;color:#9da8ba;font:10px Consolas,"Microsoft YaHei",monospace;pointer-events:none}#sbTool{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:35%}#sbPos{min-width:125px;color:#cad3e0}#sbMsg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#viewOpts{display:flex;flex-wrap:wrap;gap:9px 12px}#viewOpts label{display:flex;gap:5px;align-items:center;font-size:11px;cursor:pointer}.legend{display:flex;flex-wrap:wrap;gap:7px 12px;color:var(--dim);font-size:10px}.legend span{display:flex;align-items:center;gap:5px}.sw{width:10px;height:3px;border-radius:2px}.toast{position:fixed;top:105px;left:50%;transform:translateX(-50%);z-index:100;max-width:75%;padding:9px 16px;background:#2c384c;border:1px solid #5e80b6;border-radius:6px;color:var(--text);font-size:12px;box-shadow:0 5px 20px #0005;opacity:0;transition:opacity .2s;pointer-events:none}.toast.show{opacity:1}::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#424852;border-radius:4px}::-webkit-scrollbar-track{background:transparent}
+.netRow{display:grid;grid-template-columns:8px minmax(0,1fr) auto auto;gap:5px 6px}.netActions{grid-column:2/-1;display:none;align-items:center;flex-wrap:wrap;gap:4px;padding:3px 0 1px}.netRow.sel .netActions,.netRow:hover .netActions,.netRow:focus-within .netActions{display:flex}.netRow:focus-visible{outline:1px solid var(--accent);outline-offset:-1px}.netRow .nm{min-width:0}.netRow .netActions button{font-size:11px;padding:2px 4px}.netRow .netActions button.primary{color:#e6b968}
+body.canvas-focus main{grid-template-columns:minmax(0,1fr)}body.canvas-focus aside{display:none}body.canvas-focus #focusCanvas{background:#344b71;color:#c8dcff}
+@media(min-width:1700px){main{grid-template-columns:280px minmax(0,1fr) 304px}.workspace-caption{width:244px}.netRow .nm{font-size:12px}}
+@media(max-width:1199px){main{grid-template-columns:230px minmax(0,1fr) 252px}header{gap:5px;padding:0 10px}header h1{font-size:12px;margin-right:3px}header .local-badge{display:none}header #exampleSel{width:125px!important}.workspace-caption{width:204px}.canvas-actions #quickDrc{display:none}.viewport-caption{display:none}.layer-strip{left:38px;transform:none;bottom:86px}.netRow .ln{display:none}.workspace-meta{gap:7px}}
+@media(max-width:900px){main{grid-template-columns:224px minmax(0,1fr)}.inspector-sidebar{display:none}body.inspector-open main{grid-template-columns:minmax(0,1fr) 260px}body.inspector-open .design-sidebar{display:none}body.inspector-open .inspector-sidebar{display:block}.workspace-meta{display:none}header h1 .brand-sub{display:none}header .sep,header #exampleSel{display:none}.workspace-caption{width:196px}#inspectorToggle{display:inline-flex!important}}
+@media(max-width:640px){body{grid-template-rows:48px 36px minmax(0,1fr)}main{grid-template-columns:minmax(0,1fr)}.design-sidebar{display:none}header h1{font-size:11px;gap:5px}header{gap:2px;padding:0 7px}header .logo{width:24px;height:24px;font-size:20px}header button{font-size:10px;padding:5px}header #btnNew,header #btnRedo{display:none}.workspace-caption{display:none}.document-tab{min-width:0;padding:0 9px}.workspace-bar{padding:0 8px;gap:0}.canvas-topbar{left:34px;right:9px}.canvas-context .mode-label{display:none}.canvas-actions button{padding:5px;font-size:9px}.canvas-toolbar{left:34px}.layer-strip{left:34px}.viewport-controls{right:10px}#sbTool{display:none}#sbMsg{font-size:9px}#sbPos{min-width:100px}body.inspector-open main{grid-template-columns:minmax(0,1fr) 240px}body.inspector-open #canvasWrap{min-width:0}}
+body.canvas-focus main{grid-template-columns:minmax(0,1fr)!important}body.canvas-focus aside{display:none!important}
+/* CAD drawing controls: subdued chrome, high-contrast copper palette. */
+#canvasWrap{background:#0b1018}.canvas-context,.canvas-toolbar,.viewport-controls,.layer-strip{background:#192331f5;border-color:#35465d}.canvas-context select{width:116px}.canvas-toolbar button.active{background:#294562;border-color:#679bb7;color:#b7f0f4}.top-swatch{background:#f07878}.bottom-swatch{background:#649bff}.canvas-context .layer-dot{background:#f07878}.layer-strip{max-width:calc(100% - 72px);overflow-x:auto}.layer-strip i{flex:none}.legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}.legend .sw{width:12px;height:5px}.legend .airwire-swatch{height:1px;opacity:.8}#viewOpts{display:grid;grid-template-columns:1fr 1fr;gap:9px 8px}#viewOpts label{font-size:10px}.canvas-context{flex-shrink:0}
+@media(max-width:640px){.canvas-context select{width:94px}.canvas-topbar .canvas-context{padding:5px 7px}.layer-strip{max-width:calc(100% - 55px)}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="logo">⌗</span><span>PCB Studio<small class="brand-sub">DESIGN WORKSPACE</small></span></h1>
+  <div class="grp">
+    <button id="btnNew" title="清空画布，从零开始">新建</button>
+    <select id="exampleSel" style="width:150px" title="载入内置示例电路"><option value="">载入示例电路…</option></select>
+    <button id="btnSave" title="保存工程 JSON（含布线结果与手动走线）">保存</button>
+    <button id="btnOpen" title="打开工程 JSON">打开</button>
+  </div>
+  <div class="sep"></div>
+  <div class="menu">
+    <button title="导入外部设计数据">导入</button>
+    <div>
+      <button id="btnKiCad"><span class="mi">◆</span>KiCad 工程 (.kicad_pcb)</button>
+      <button id="btnEasyEda"><span class="mi">◆</span>嘉立创EDA PCB (.json)</button>
+      <button id="btnSes"><span class="mi">◆</span>Freerouting 会话 (.ses)</button>
+    </div>
+  </div>
+  <div class="menu">
+    <button title="导出交付物">导出</button>
+    <div>
+      <button id="btnGbr"><span class="mi">◆</span>Gerber + 钻孔（交板厂）</button>
+      <button id="btnIpc"><span class="mi">◆</span>IPC-D-356A 电测网表</button>
+      <button id="btnDsn"><span class="mi">◆</span>Specctra DSN（给 Freerouting）</button>
+      <button id="btnSvg"><span class="mi">◆</span>SVG 矢量图</button>
+      <button id="btnPng"><span class="mi">◆</span>PNG 图片</button>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <div class="grp">
+    <button id="btnUndo" title="撤销 (Ctrl+Z)" disabled>↶ 撤销</button>
+    <button id="btnRedo" title="重做 (Ctrl+Y)" disabled>↷ 重做</button>
+  </div>
+  <span class="local-badge"><i class="live-dot"></i> 本地工作空间</span>
+  <input type="file" id="fileInput" accept=".json" style="display:none">
+  <input type="file" id="kicadInput" accept=".kicad_pcb,.kicad_mod,.txt" style="display:none">
+  <input type="file" id="easyedaInput" accept=".json" style="display:none">
+  <input type="file" id="sesInput" accept=".ses,.txt" style="display:none">
+</header>
+<div class="workspace-bar">
+  <div class="workspace-caption"><i class="live-dot"></i> 设计工作空间 <span style="margin-left:auto;font-size:9px">LOCAL</span></div>
+  <div class="document-tab"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8v8H8zM12 4V2m0 20v-2M4 12H2m20 0h-2"/></svg><span id="canvasTitle">PCB 编辑器</span><span class="tab-kind">PCB</span></div>
+  <div class="workspace-meta"><span id="boardMeta">2 层板</span><span>工作视图 <b>2D</b></span></div>
+  <button id="inspectorToggle" style="display:none;margin-left:auto;border:0;background:transparent" title="切换属性面板" aria-label="切换属性面板">属性 ☷</button>
+</div>
+<main>
+  <aside class="design-sidebar" aria-label="设计导航">
+    <div class="sidebar-head">设计导航 <small>EXPLORER</small></div>
+    <div class="project-card"><strong><i class="live-dot"></i> 当前 PCB 工程</strong><p>本地编辑 · JSON 工程 / KiCad 导入</p></div>
+    <details open>
+      <summary><span class="no">4</span>网络</summary>
+      <div class="sec">
+        <div class="row">
+          <input id="newNetName" placeholder="新网络名称，如 VCC" class="grow">
+          <button class="mini primary" id="btnAddNet">添加</button>
+        </div>
+        <div id="netList"></div>
+        <div class="about">点击网络设为“当前网络”（新放置的焊盘归入该网络）；双击名称可重命名。</div>
+      </div>
+    </details>
+
+    <details open>
+      <summary><span class="no">1</span>自动布线<span class="hint">核心动作</span></summary>
+      <div class="sec">
+        <div class="row">
+          <button class="primary grow" id="btnRoute" title="对全部网络执行自动布线（协商 + 优化）">自动布线</button>
+          <button id="btnStop" disabled title="中止正在进行的布线/优化">停止</button>
+        </div>
+        <div class="row">
+          <button class="grow" id="btnAutopcb" title="布局→试探布线→热点反馈→再布局→再布线，一键收敛">一键布局 + 布线</button>
+        </div>
+        <div class="row"><button class="grow" id="btnClear" title="清除全部自动布线（保留手动走线）">清除布线</button></div>
+        <details class="route-advanced"><summary>布线策略与高级参数</summary><div class="sec">        <div class="grid2">
+          <div class="row"><label>过孔代价</label><input id="rVia" type="number" step="1" min="1" value="15" title="换一层所需的步数成本，越大越少打过孔"></div>
+          <div class="row"><label>转弯代价</label><input id="rTurn" type="number" step="0.1" min="0" value="0.3" title="拐弯惩罚，越大走线越直"></div>
+        </div>
+        <div class="row"><label>最大迭代</label><input id="rIter" type="number" step="5" min="1" value="30" class="grow" title="PathFinder 协商轮数上限，密集板可调大"></div>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="checkbox" id="rDiag" checked> 45° 斜向布线（八方向搜索，含间距排除）</label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="checkbox" id="rBeautify" checked> 45° 拐角美化（保证间距的斜切角）</label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="checkbox" id="rOptimize" checked> 布线后优化（整板重跑 + 逐网拆-重布：减过孔 / 提布通率，耗时×4）</label>
+</div></details>
+        <div id="progressWrap">
+          <div id="progressBar"><div id="progressFill"></div></div>
+          <div id="progressText"></div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="no">6</span>覆铜与缝合</summary>
+      <div class="sec">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="checkbox" id="pourOn"> 启用覆铜（自动避让走线/焊盘/过孔，去除孤岛）</label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="checkbox" id="pourThermal" checked> 热焊盘（焊盘四周开窗，4 条筋条连接）</label>
+        <div class="grid2">
+          <div class="row"><label>层</label><select id="pourLayer"><option value="top">顶层</option><option value="bottom" selected>底层</option></select></div>
+          <div class="row"><label>网络</label><select id="pourNet"></select></div>
+        </div>
+        <div class="row">
+          <label>缝合孔间距</label><input id="stitchSp" type="number" step="0.5" min="1.5" value="5" style="width:60px">
+          <button class="mini" id="btnStitch" title="给铜皮打接地过孔（大面积铜皮必须缝合才算是地）">生成缝合孔</button>
+          <button class="mini" id="btnStitchClr">清除</button>
+        </div>
+        <div class="row">
+          <button class="mini" id="btnAutoReturn" title="高速网换层过孔旁 1.6mm 内无地导体时，自动补一颗地缝合孔（黑魔书 ch7 对策③；reach≈孔长时互感抵消才有效）">回流孔配对</button>
+          <span class="about grow">高速换层孔旁自动补地孔（reach 1.6mm ≈ 孔长）</span>
+        </div>
+        <div class="about">通常把 GND 铺在底层。布线完成后自动生成，修改设计或重布后随之刷新。</div>
+      </div>
+    </details><div class="sidebar-foot">A* + PathFinder 布线引擎<br>设计数据仅保存在本地设备</div></aside>
+  <div id="canvasWrap">
+    <canvas id="cv" aria-label="PCB 设计画布"></canvas>
+    <div class="canvas-topbar">
+      <div class="canvas-context"><span class="mode-label">编辑视图</span><i class="layer-dot"></i><select id="activeLayer" aria-label="当前布线层"><option value="top">顶层 · F.Cu</option><option value="bottom">底层 · B.Cu</option><option value="inner1" hidden>内层 1 · In1.Cu</option><option value="inner2" hidden>内层 2 · In2.Cu</option></select></div>
+      <div class="canvas-actions"><button id="quickDrc" title="执行设计规则检查">✓ DRC</button><button id="quickRoute" class="primary" title="自动布线">ϟ 自动布线</button><button id="quickStop" disabled hidden title="停止布线">停止</button></div>
+    </div>
+    <div class="canvas-toolbar" id="canvasToolbar" role="toolbar" aria-label="画布工具"><button data-tool="select" class="active" title="选择 / 移动 · V" aria-label="选择 / 移动 · V"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 14 9-7 1-3 7z"/></svg></button><button data-tool="pan" class="" title="平移画布 · H" aria-label="平移画布 · H"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12V5a2 2 0 0 1 4 0v6-8a2 2 0 0 1 4 0v9-5a2 2 0 0 1 4 0v9c0 5-3 6-7 6-3 0-4-1-6-4l-3-5c-1-2 1-3 3-1l1 1"/></svg></button><button data-tool="route" class="" title="手动布线 · R" aria-label="手动布线 · R"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h5l6-12h5"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="6" r="2"/></svg></button><button data-tool="pad" class="" title="放置焊盘 · P" aria-label="放置焊盘 · P"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/><circle cx="12" cy="12" r="3"/></svg></button><button data-tool="keepout" class="" title="绘制禁布区 · K" aria-label="绘制禁布区 · K"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/><path d="m7 17 10-10M7 12l5-5m0 10 5-5"/></svg></button><button data-tool="delete" class="" title="删除对象 · X" aria-label="删除对象 · X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v6m4-6v6"/></svg></button><div class="tool-separator"></div><button id="focusCanvas" aria-label="专注画布" aria-pressed="false" title="专注模式 · Tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
+    <div class="viewport-caption"><strong>PCB 设计画布</strong><span id="toolHint">滚轮缩放 · 拖动平移 · F 适应窗口</span></div>
+    <div class="layer-strip" id="layerButtons" role="toolbar" aria-label="图层可见性"><button data-view="top" class="active" aria-pressed="true"><i class="top-swatch" data-cad-color="top"></i>顶层</button><button data-view="bottom" class="active" aria-pressed="true"><i class="bottom-swatch" data-cad-color="bottom"></i>底层</button><button data-view="inner1" class="active" aria-pressed="true" hidden><i data-cad-color="inner1"></i>内1</button><button data-view="inner2" class="active" aria-pressed="true" hidden><i data-cad-color="inner2"></i>内2</button><button data-view="rats" class="active" aria-pressed="true">预拉线</button><button data-view="grid" class="active" aria-pressed="true">网格</button></div>
+    <div class="viewport-controls" role="toolbar" aria-label="画布缩放"><button id="zoomOut" title="缩小" aria-label="缩小">−</button><span id="zoomValue">100%</span><button id="zoomIn" title="放大" aria-label="放大">+</button><span class="control-sep"></span><button id="zoomFit" title="适应窗口 · F" aria-label="适应窗口"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M8 8h8v8H8z"/></svg></button></div>
+
+    <div id="statusbar">
+      <span id="sbPos">—</span>
+      <span id="sbTool"></span>
+      <span id="sbMsg" class="grow" style="text-align:right"></span>
+    </div>
+  </div>
+  <aside class="inspector-sidebar" aria-label="属性检查器"><div class="sidebar-head">属性检查器 <small>INSPECTOR</small></div>    <details open>
+      <summary><span class="no">3</span>对象属性与封装</summary>
+      <div class="sec">
+        <div id="propsEmpty">选择工具说明：单击选中元件并拖动移动；空白处拖动可平移视图；滚轮缩放；Delete 删除选中对象。</div>
+        <div id="propsForm" style="display:none">
+          <div class="row" id="rowNet"><label>网络</label><select id="pNet"></select></div>
+          <div class="grid2">
+            <div class="row"><label>宽</label><input id="pW" type="number" step="0.1" min="0.2"></div>
+            <div class="row"><label>高</label><input id="pH" type="number" step="0.1" min="0.2"></div>
+          </div>
+          <div class="grid2">
+            <div class="row"><label>X</label><input id="pX" type="number" step="0.25"></div>
+            <div class="row"><label>Y</label><input id="pY" type="number" step="0.25"></div>
+          </div>
+          <div class="grid2">
+            <div class="row" id="rowShape"><label>形状</label><select id="pShape"><option value="rect">矩形</option><option value="circle">圆形</option></select></div>
+            <div class="row" id="rowLayer"><label>所在层</label><select id="pLayer"><option value="both">通孔</option><option value="top">顶层表贴</option><option value="bottom">底层表贴</option></select></div>
+          </div>
+          <button class="danger mini" id="pDel" style="align-self:flex-start">删除该对象</button>
+        </div>
+        <div class="minihead">常用封装</div>
+        <div class="row"><label>封装库</label><select id="fpSel" class="grow"></select></div>
+        <div class="row"><label>引脚数 N</label><input id="fpN" type="number" step="1" min="2" max="40" value="8" style="width:70px">
+          <button class="mini" id="fpPlace" title="放到视图中心，随后可逐焊盘拖动/改网络">放置</button></div>
+        <div class="about">贴片阻容为 IPC-7351 nominal 参考值（JLC 封装指南）；新放置焊盘自动归入当前网络。</div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="no">5</span>设计规则与计算器</summary>
+      <div class="sec" id="designParams">
+        <div class="row"><label>预设</label><select id="dPreset" class="grow">
+          <option value="">自定义…</option>
+          <option value="jlc2">嘉立创双层 1oz（常用）</option>
+          <option value="fine">精细双层（细线密脚）</option>
+          <option value="jlc4">嘉立创四层（沉金）</option>
+          <option value="power">大电流（粗线）</option>
+          <option value="oshpark2">OSHPark 双层（紫板，min 0.15/0.15/孔 0.33）</option>
+          <option value="pcbway2">PCBWay 双层（min 0.1/0.1/孔 0.15）</option>
+        </select></div>
+        <div class="grid2">
+          <div class="row"><label>板宽 mm</label><input id="dW" type="number" step="1" min="10"></div>
+          <div class="row"><label>板高 mm</label><input id="dH" type="number" step="1" min="10"></div>
+        </div>
+        <div class="grid2">
+          <div class="row"><label>栅格 mm</label><input id="dGrid" type="number" step="0.05" min="0.1"></div>
+          <div class="row"><label>层数</label><select id="dLayers"><option value="2">2 层</option><option value="4">4 层</option><option value="1">单层</option></select></div>
+        </div>
+        <div class="row"><label>成品铜厚</label><select id="dCopper" class="grow">
+          <option value="1">1 oz</option><option value="1.5">1.5 oz（多层）</option><option value="2">2 oz</option>
+          <option value="2.5">2.5 oz</option><option value="3.5">3.5 oz</option><option value="4.5">4.5 oz</option>
+          <option value="5">5 oz</option><option value="6">6 oz</option>
+        </select></div>
+        <div class="grid2">
+          <div class="row"><label>线宽 mm</label><input id="dTrack" type="number" step="0.05" min="0.1"></div>
+          <div class="row"><label>间距 mm</label><input id="dClr" type="number" step="0.05" min="0.05"></div>
+        </div>
+        <div class="grid2">
+          <div class="row"><label>过孔外径</label><input id="dVia" type="number" step="0.05" min="0.3"></div>
+          <div class="row"><label>钻孔 mm</label><input id="dDrill" type="number" step="0.05" min="0.2"></div>
+        </div>
+        <div class="about">栅格自动不小于“线宽+间距”，以保证不同网络走线间距合格。</div>
+        <div class="minihead">载流计算器（IPC-2152 量级）</div>
+        <div class="grid2">
+          <div class="row"><label>载流 A</label><input id="ampI" type="number" step="0.5" min="0.1" value="1"></div>
+          <div class="row"><label>ΔT ℃</label><select id="ampDT"><option value="10">10</option><option value="20">20</option><option value="30">30</option></select></div>
+        </div>
+        <div class="grid2">
+          <div class="row"><label>位置</label><select id="ampLayer"><option value="outer">外层</option><option value="inner">内层</option></select></div>
+          <div class="row"><label>铜厚</label><select id="ampOz"></select></div>
+        </div>
+        <div class="row"><button class="mini" id="ampApply">应用为线宽</button><span class="about grow" id="ampOut"></span></div>
+        <div class="about">过孔载流：0.3mm 孔保守按 1A/孔，大电流多孔并联。精确请查 IPC-2152；四层板内层常见 0.5oz，1A 需 ≥1.6mm。</div>
+        <div class="minihead">阻抗估算器（IPC-2141 量级）</div>
+        <div class="grid2">
+          <div class="row"><label>介质 Er</label><input id="impEr" type="number" step="0.1" min="1" value="4.3"></div>
+          <div class="row"><label>介质厚 mm</label><input id="impH" type="number" step="0.05" min="0.05" value="0.15"></div>
+        </div>
+        <div class="grid2">
+          <div class="row"><label>模型</label><select id="impType"><option value="microstrip">微带（表层）</option><option value="stripline">带状线（内层）</option></select></div>
+          <div class="row"><label>线宽 mm</label><input id="impW" type="number" step="0.05" min="0.05" value="0.2"></div>
+        </div>
+        <div class="row"><span class="about grow" id="impOut"></span></div>
+        <div class="row"><button class="mini" id="imp50">按 50Ω 反算线宽</button><button class="mini" id="imp90">按 90Ω 反算（USB 差分单线）</button></div>
+        <div class="about">阻抗为 IPC-2141 量级估算（FR-4 常用），投板前以板厂叠层与 SI 仿真为准。双面板表层参考距离≈板厚。</div>
+      </div>
+    </details>
+
+    <details open>
+      <summary><span class="no">2</span>设计检查</summary>
+      <div class="sec">
+        <div class="row">
+          <button class="primary mini grow" id="btnDrc" title="执行设计规则检查 + 嘉立创 DFM 分级">DRC 检查</button>
+          <button class="mini grow" id="btnFab" title="生成投板前逐项核对表">📋 投板前检查表</button>
+        </div>
+        <div id="drcList"><div class="d-ok">尚无检查结果，布线后自动执行。</div></div>
+        <div id="stats"></div>
+      </div>
+    </details>
+
+    <details open>
+      <summary><span class="no">7</span>显示与图层</summary>
+      <div class="sec">
+        <div id="viewOpts">
+          <label><input type="checkbox" id="vTop" checked> 顶层</label>
+          <label><input type="checkbox" id="vBottom" checked> 底层</label>
+          <label hidden><input type="checkbox" id="vInner1" checked> 内层 1</label>
+          <label hidden><input type="checkbox" id="vInner2" checked> 内层 2</label>
+          <label><input type="checkbox" id="vRats" checked> 预拉线</label>
+          <label><input type="checkbox" id="vTeardrop" checked> 泪滴</label>
+          <label><input type="checkbox" id="vGrid" checked> 网格</label>
+          <label title="按焊盘外接范围绘制，仅作分组参考，不是制造丝印"><input type="checkbox" id="vRefs" checked> 元件参考框</label>
+          <label title="放大后显示引脚编号，通孔编号不覆盖钻孔"><input type="checkbox" id="vPadNumbers" checked> 引脚编号</label>
+          <label title="放大后显示焊盘网络名称"><input type="checkbox" id="vNetNames" checked> 网络标注</label>
+          <label title="淡化非当前布线层，但保留其可见性"><input type="checkbox" id="vContrast"> 当前层聚焦</label>
+          <label title="突出左侧选中的网络，其余网络淡化"><input type="checkbox" id="vHighlight"> 网络高亮</label>
+        </div>
+        <div class="legend">
+          <span><i class="sw" data-cad-color="top"></i>顶层 · 珊瑚红</span>
+          <span><i class="sw" data-cad-color="bottom"></i>底层 · 钴蓝</span>
+          <span><i class="sw" data-cad-color="inner1"></i>内1 · 紫</span>
+          <span><i class="sw" data-cad-color="inner2"></i>内2 · 青绿</span>
+          <span><i class="sw" data-cad-color="pad"></i>通孔焊盘 · 淡金</span>
+          <span><i class="sw" data-cad-color="via"></i>过孔 · 银灰</span>
+          <span><i class="sw" data-cad-color="keepout"></i>禁布区 · 紫斜线</span>
+          <span><i class="sw airwire-swatch" data-cad-color="airwire"></i>预拉线 · 细虚线</span>
+          <span><i class="sw" data-cad-color="selection"></i>选中 · 冰青</span>
+        </div>
+        <div class="about">贴片焊盘随铜层着色，通孔用淡金铜环 + 真实钻孔；走线按实际线宽绘制。参考框仅显示焊盘组范围，不写入丝印。</div>
+        <button class="mini" id="btnFit" style="align-self:flex-start" title="缩放平移到整块板可见">适应窗口</button>
+      </div>
+    </details></aside>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+document.getElementById('inspectorToggle').addEventListener('click',()=>{document.body.classList.toggle('inspector-open');});
+</script>
+{{ENGINE}}
+{{WORKER}}
+{{WORKER_CLIENT}}
+{{UI}}
+</body>
+</html>

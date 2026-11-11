@@ -1,0 +1,93 @@
+{
+ "width": 40,
+ "height": 25,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "bat",
+   "name": "BAT+3V"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "led_n",
+   "name": "LED_N"
+  }
+ ],
+ "pads": [
+  {
+   "id": "BAT1-1",
+   "netId": "bat",
+   "x": 10,
+   "y": 10,
+   "w": 2,
+   "h": 2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "BAT1-2",
+   "netId": "gnd",
+   "x": 10,
+   "y": 15,
+   "w": 2,
+   "h": 2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "R1-1",
+   "netId": "bat",
+   "x": 18,
+   "y": 8,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-2",
+   "netId": "led_n",
+   "x": 18,
+   "y": 11,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED1-1",
+   "netId": "led_n",
+   "x": 24,
+   "y": 8,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED1-2",
+   "netId": "gnd",
+   "x": 24,
+   "y": 11,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {}
+}

@@ -1,0 +1,127 @@
+{
+ "status": "partial",
+ "iterations": 50,
+ "timeMs": 1472,
+ "nets": [
+  {
+   "netId": "v33",
+   "name": "3V3",
+   "paths": [
+    [
+     {
+      "x": 15.25,
+      "y": 28.75,
+      "l": 0
+     },
+     {
+      "x": 14.75,
+      "y": 29.25,
+      "l": 0
+     },
+     {
+      "x": 14.25,
+      "y": 29.75,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    6870,
+    6869,
+    6990,
+    6989,
+    6988,
+    7109,
+    7108
+   ],
+   "connected": 2,
+   "total": 3
+  },
+  {
+   "netId": "gnd",
+   "name": "GND",
+   "paths": [
+    [
+     {
+      "x": 7.75,
+      "y": 28.75,
+      "l": 0
+     },
+     {
+      "x": 7.75,
+      "y": 29.25,
+      "l": 0
+     },
+     {
+      "x": 7.75,
+      "y": 29.75,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    6855,
+    6975,
+    7095
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "sck",
+   "name": "SCK",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 0
+  },
+  {
+   "netId": "mosi",
+   "name": "MOSI",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 0
+  },
+  {
+   "netId": "miso",
+   "name": "MISO",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 1
+  },
+  {
+   "netId": "tx",
+   "name": "TX",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 1
+  },
+  {
+   "netId": "rx",
+   "name": "RX",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 1
+  }
+ ],
+ "overuse": [],
+ "stats": {
+  "connected": 7,
+  "total": 8,
+  "trackTop": 2.414213562373095,
+  "trackBot": 0,
+  "vias": 0,
+  "trackLen": 2.414213562373095
+ }
+}

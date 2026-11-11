@@ -1,0 +1,453 @@
+{
+ "width": 50,
+ "height": 25,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "lv",
+   "name": "1V8"
+  },
+  {
+   "id": "hv",
+   "name": "3V3"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "uart_tx_l",
+   "name": "UART_TX_1V8"
+  },
+  {
+   "id": "uart_tx_h",
+   "name": "UART_TX_3V3"
+  },
+  {
+   "id": "uart_rx_l",
+   "name": "UART_RX_1V8"
+  },
+  {
+   "id": "uart_rx_h",
+   "name": "UART_RX_3V3"
+  },
+  {
+   "id": "gpio1_l",
+   "name": "GPIO1_1V8"
+  },
+  {
+   "id": "gpio1_h",
+   "name": "GPIO1_3V3"
+  },
+  {
+   "id": "gpio2_l",
+   "name": "GPIO2_1V8"
+  },
+  {
+   "id": "gpio2_h",
+   "name": "GPIO2_3V3"
+  }
+ ],
+ "pads": [
+  {
+   "id": "Q1-1",
+   "netId": "uart_tx_l",
+   "x": 9.05,
+   "y": 8,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q1-2",
+   "netId": "uart_tx_h",
+   "x": 10.95,
+   "y": 8,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q1-3",
+   "netId": "lv",
+   "x": 10,
+   "y": 11,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-1",
+   "netId": "uart_tx_l",
+   "x": 8,
+   "y": 4,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-2",
+   "netId": "lv",
+   "x": 8,
+   "y": 2,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-1",
+   "netId": "uart_tx_h",
+   "x": 12,
+   "y": 4,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-2",
+   "netId": "hv",
+   "x": 12,
+   "y": 2,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q2-1",
+   "netId": "uart_rx_l",
+   "x": 19.05,
+   "y": 8,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q2-2",
+   "netId": "uart_rx_h",
+   "x": 20.95,
+   "y": 8,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q2-3",
+   "netId": "lv",
+   "x": 20,
+   "y": 11,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-1",
+   "netId": "uart_rx_l",
+   "x": 18,
+   "y": 4,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-2",
+   "netId": "lv",
+   "x": 18,
+   "y": 2,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-1",
+   "netId": "uart_rx_h",
+   "x": 22,
+   "y": 4,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-2",
+   "netId": "hv",
+   "x": 22,
+   "y": 2,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q3-1",
+   "netId": "gpio1_l",
+   "x": 29.05,
+   "y": 8,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q3-2",
+   "netId": "gpio1_h",
+   "x": 30.95,
+   "y": 8,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q3-3",
+   "netId": "lv",
+   "x": 30,
+   "y": 11,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R5-1",
+   "netId": "gpio1_l",
+   "x": 28,
+   "y": 4,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R5-2",
+   "netId": "lv",
+   "x": 28,
+   "y": 2,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R6-1",
+   "netId": "gpio1_h",
+   "x": 32,
+   "y": 4,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R6-2",
+   "netId": "hv",
+   "x": 32,
+   "y": 2,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q4-1",
+   "netId": "gpio2_l",
+   "x": 39.05,
+   "y": 8,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q4-2",
+   "netId": "gpio2_h",
+   "x": 40.95,
+   "y": 8,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "Q4-3",
+   "netId": "lv",
+   "x": 40,
+   "y": 11,
+   "w": 0.6,
+   "h": 1,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R7-1",
+   "netId": "gpio2_l",
+   "x": 38,
+   "y": 4,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R7-2",
+   "netId": "lv",
+   "x": 38,
+   "y": 2,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R8-1",
+   "netId": "gpio2_h",
+   "x": 42,
+   "y": 4,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R8-2",
+   "netId": "hv",
+   "x": 42,
+   "y": 2,
+   "w": 0.8,
+   "h": 0.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-1",
+   "netId": "uart_tx_l",
+   "x": 2,
+   "y": 4,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J2-1",
+   "netId": "uart_tx_h",
+   "x": 48,
+   "y": 4,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J1-2",
+   "netId": "uart_rx_l",
+   "x": 2,
+   "y": 6.54,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J2-2",
+   "netId": "uart_rx_h",
+   "x": 48,
+   "y": 6.54,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J1-3",
+   "netId": "gpio1_l",
+   "x": 2,
+   "y": 9.08,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J2-3",
+   "netId": "gpio1_h",
+   "x": 48,
+   "y": 9.08,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J1-4",
+   "netId": "gpio2_l",
+   "x": 2,
+   "y": 11.62,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J2-4",
+   "netId": "gpio2_h",
+   "x": 48,
+   "y": 11.62,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J1-5",
+   "netId": "lv",
+   "x": 2,
+   "y": 14.16,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J2-5",
+   "netId": "hv",
+   "x": 48,
+   "y": 14.16,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {}
+}

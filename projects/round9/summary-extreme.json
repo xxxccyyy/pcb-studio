@@ -1,0 +1,98 @@
+[
+ {
+  "tier": "extreme",
+  "name": "n128-pmt-tower",
+  "pads": 47,
+  "nets": 14,
+  "timeSec": 4.1,
+  "err": null,
+  "status": "complete",
+  "connected": 47,
+  "total": 47,
+  "vias": 0,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": []
+ },
+ {
+  "tier": "extreme",
+  "name": "n129-ld-driver",
+  "pads": 31,
+  "nets": 9,
+  "timeSec": 3.5,
+  "err": null,
+  "status": "complete",
+  "connected": 29,
+  "total": 29,
+  "vias": 1,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": [
+   "插件孔环宽",
+   "插件孔环宽",
+   "插件孔环宽"
+  ]
+ },
+ {
+  "tier": "extreme",
+  "name": "n130-btb",
+  "pads": 142,
+  "nets": 22,
+  "timeSec": 935.2,
+  "err": null,
+  "status": "complete",
+  "connected": 119,
+  "total": 119,
+  "vias": 24,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": [
+   "DFM 间距",
+   "DFM 钻孔",
+   "DFM 板边"
+  ]
+ },
+ {
+  "tier": "extreme",
+  "name": "n131-wien",
+  "pads": 44,
+  "nets": 10,
+  "timeSec": 5.6,
+  "err": null,
+  "status": "complete",
+  "connected": 40,
+  "total": 40,
+  "vias": 16,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": []
+ },
+ {
+  "tier": "extreme",
+  "name": "n132-strobe",
+  "pads": 31,
+  "nets": 8,
+  "timeSec": 1.8,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 0,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": [
+   "插件孔环宽",
+   "插件孔环宽"
+  ]
+ }
+]

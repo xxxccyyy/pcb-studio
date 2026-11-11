@@ -1,0 +1,10 @@
+# 临时产物（探针/对拍副本/CPU 剖析——深度优化与审计的中间产物，报告已固化结论）
+.scratch/
+# Python
+__pycache__/
+*.pyc
+# 剖析与日志
+*.cpuprofile
+*.log
+# 依赖（本项目零依赖，防御性保留）
+node_modules/

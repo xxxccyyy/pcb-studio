@@ -1,0 +1,102 @@
+[
+ {
+  "name": "p11-density-1",
+  "timeSec": 1.5,
+  "err": null,
+  "status": "complete",
+  "connected": 12,
+  "total": 12,
+  "vias": 1,
+  "drcErrors": []
+ },
+ {
+  "name": "p12-density-2",
+  "timeSec": 2.9,
+  "err": null,
+  "status": "complete",
+  "connected": 20,
+  "total": 20,
+  "vias": 3,
+  "drcErrors": []
+ },
+ {
+  "name": "p13-density-3",
+  "timeSec": 15.8,
+  "err": null,
+  "status": "complete",
+  "connected": 32,
+  "total": 32,
+  "vias": 9,
+  "drcErrors": []
+ },
+ {
+  "name": "p14-density-4",
+  "timeSec": 20.4,
+  "err": null,
+  "status": "complete",
+  "connected": 40,
+  "total": 40,
+  "vias": 9,
+  "drcErrors": []
+ },
+ {
+  "name": "p15-density-6",
+  "timeSec": 22.8,
+  "err": null,
+  "status": "complete",
+  "connected": 60,
+  "total": 60,
+  "vias": 7,
+  "drcErrors": []
+ },
+ {
+  "name": "p16-star-2",
+  "timeSec": 2.8,
+  "err": null,
+  "status": "complete",
+  "connected": 16,
+  "total": 16,
+  "vias": 1,
+  "drcErrors": []
+ },
+ {
+  "name": "p17-star-4",
+  "timeSec": 4.9,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 0,
+  "drcErrors": []
+ },
+ {
+  "name": "p18-star-6",
+  "timeSec": 7.8,
+  "err": null,
+  "status": "complete",
+  "connected": 40,
+  "total": 40,
+  "vias": 5,
+  "drcErrors": []
+ },
+ {
+  "name": "p19-star-7",
+  "timeSec": 13,
+  "err": null,
+  "status": "complete",
+  "connected": 46,
+  "total": 46,
+  "vias": 5,
+  "drcErrors": []
+ },
+ {
+  "name": "p20-star-7b",
+  "timeSec": 12.5,
+  "err": null,
+  "status": "complete",
+  "connected": 46,
+  "total": 46,
+  "vias": 5,
+  "drcErrors": []
+ }
+]

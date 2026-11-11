@@ -1,0 +1,105 @@
+[
+ {
+  "name": "p41-dense-nets",
+  "timeSec": 11.8,
+  "err": null,
+  "status": "complete",
+  "connected": 36,
+  "total": 36,
+  "vias": 8,
+  "drcErrors": []
+ },
+ {
+  "name": "p42-all-tht",
+  "timeSec": 5.6,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 3,
+  "drcErrors": []
+ },
+ {
+  "name": "p43-single-layer",
+  "timeSec": 45.6,
+  "err": null,
+  "status": "partial",
+  "connected": 20,
+  "total": 20,
+  "vias": 0,
+  "drcErrors": [
+   "间距冲突",
+   "走线间距"
+  ]
+ },
+ {
+  "name": "p44-led-strip",
+  "timeSec": 33.8,
+  "err": null,
+  "status": "complete",
+  "connected": 44,
+  "total": 44,
+  "vias": 11,
+  "drcErrors": []
+ },
+ {
+  "name": "p45-center-keepout",
+  "timeSec": 11.2,
+  "err": null,
+  "status": "complete",
+  "connected": 44,
+  "total": 44,
+  "vias": 14,
+  "drcErrors": []
+ },
+ {
+  "name": "p46-sip9",
+  "timeSec": 7.3,
+  "err": null,
+  "status": "complete",
+  "connected": 22,
+  "total": 22,
+  "vias": 2,
+  "drcErrors": []
+ },
+ {
+  "name": "p47-db25",
+  "timeSec": 20.6,
+  "err": null,
+  "status": "complete",
+  "connected": 40,
+  "total": 40,
+  "vias": 8,
+  "drcErrors": []
+ },
+ {
+  "name": "p48-term15",
+  "timeSec": 16.4,
+  "err": null,
+  "status": "complete",
+  "connected": 51,
+  "total": 51,
+  "vias": 7,
+  "drcErrors": []
+ },
+ {
+  "name": "p49-daisy",
+  "timeSec": 10.3,
+  "err": null,
+  "status": "complete",
+  "connected": 37,
+  "total": 37,
+  "vias": 8,
+  "drcErrors": []
+ },
+ {
+  "name": "p50-broadcast",
+  "timeSec": 33.4,
+  "err": null,
+  "status": "complete",
+  "connected": 46,
+  "total": 46,
+  "vias": 13,
+  "drcErrors": []
+ }
+]

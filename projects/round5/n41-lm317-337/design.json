@@ -1,0 +1,417 @@
+{
+ "width": 55,
+ "height": 32,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "vp_in",
+   "name": "VP_IN"
+  },
+  {
+   "id": "vn_in",
+   "name": "VN_IN"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "vp_out",
+   "name": "VP_OUT"
+  },
+  {
+   "id": "vn_out",
+   "name": "VN_OUT"
+  },
+  {
+   "id": "vp_adj",
+   "name": "VP_ADJ"
+  },
+  {
+   "id": "vn_adj",
+   "name": "VN_ADJ"
+  }
+ ],
+ "pads": [
+  {
+   "id": "U1-1",
+   "netId": "vp_adj",
+   "x": 14,
+   "y": 10,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "U1-2",
+   "netId": "vp_out",
+   "x": 16.54,
+   "y": 10,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "U1-3",
+   "netId": "vp_in",
+   "x": 19.08,
+   "y": 10,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "U2-1",
+   "netId": "vn_adj",
+   "x": 14,
+   "y": 22,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "U2-2",
+   "netId": "vn_in",
+   "x": 16.54,
+   "y": 22,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "U2-3",
+   "netId": "vn_out",
+   "x": 19.08,
+   "y": 22,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.5
+  },
+  {
+   "id": "RV1-1",
+   "netId": "vp_out",
+   "x": 23.46,
+   "y": 8,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "RV1-2",
+   "netId": "vp_adj",
+   "x": 26,
+   "y": 8,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "RV1-3",
+   "netId": "gnd",
+   "x": 28.54,
+   "y": 8,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "RV2-1",
+   "netId": "vn_out",
+   "x": 23.46,
+   "y": 24,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "RV2-2",
+   "netId": "vn_adj",
+   "x": 26,
+   "y": 24,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "RV2-3",
+   "netId": "gnd",
+   "x": 28.54,
+   "y": 24,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "C1-1",
+   "netId": "vp_in",
+   "x": 7.2,
+   "y": 8,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C1-2",
+   "netId": "gnd",
+   "x": 8.8,
+   "y": 8,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C2-1",
+   "netId": "vn_in",
+   "x": 7.2,
+   "y": 24,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C2-2",
+   "netId": "gnd",
+   "x": 8.8,
+   "y": 24,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C3-1",
+   "netId": "vp_out",
+   "x": 33.2,
+   "y": 8,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C3-2",
+   "netId": "gnd",
+   "x": 34.8,
+   "y": 8,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C4-1",
+   "netId": "vn_out",
+   "x": 33.2,
+   "y": 24,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C4-2",
+   "netId": "gnd",
+   "x": 34.8,
+   "y": 24,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-1",
+   "netId": "vp_in",
+   "x": 1,
+   "y": 16,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J1-2",
+   "netId": "gnd",
+   "x": 6,
+   "y": 16,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J1-3",
+   "netId": "vn_in",
+   "x": 11,
+   "y": 16,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-1",
+   "netId": "vp_out",
+   "x": 38.5,
+   "y": 16,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-2",
+   "netId": "gnd",
+   "x": 43.5,
+   "y": 16,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-3",
+   "netId": "vn_out",
+   "x": 48.5,
+   "y": 16,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-4",
+   "netId": "gnd",
+   "x": 53.5,
+   "y": 16,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "U1": {
+   "x": 15.04,
+   "y": 10,
+   "rot": 0,
+   "layer": "top",
+   "value": "LM317",
+   "footprint": "TO-220"
+  },
+  "U2": {
+   "x": 15.04,
+   "y": 22,
+   "rot": 0,
+   "layer": "top",
+   "value": "LM337",
+   "footprint": "TO-220"
+  },
+  "RV1": {
+   "x": 26,
+   "y": 8,
+   "rot": 90,
+   "layer": "top",
+   "value": "10k",
+   "footprint": "POT-3P"
+  },
+  "RV2": {
+   "x": 26,
+   "y": 24,
+   "rot": 90,
+   "layer": "top",
+   "value": "10k",
+   "footprint": "POT-3P"
+  },
+  "C1": {
+   "x": 8,
+   "y": 8,
+   "rot": 0,
+   "layer": "top",
+   "value": "100n",
+   "footprint": "C0603"
+  },
+  "C2": {
+   "x": 8,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "100n",
+   "footprint": "C0603"
+  },
+  "C3": {
+   "x": 34,
+   "y": 8,
+   "rot": 0,
+   "layer": "top",
+   "value": "10u",
+   "footprint": "C0603"
+  },
+  "C4": {
+   "x": 34,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "10u",
+   "footprint": "C0603"
+  },
+  "J1": {
+   "x": 6,
+   "y": 16,
+   "rot": 90,
+   "layer": "top",
+   "value": "DC-IN",
+   "footprint": "TERM-3P"
+  },
+  "J2": {
+   "x": 46,
+   "y": 16,
+   "rot": 90,
+   "layer": "top",
+   "value": "RAIL-OUT",
+   "footprint": "TERM-4P"
+  }
+ }
+}

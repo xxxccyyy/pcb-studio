@@ -1,0 +1,110 @@
+{
+ "design": "projects/round11/p10-grid-08/design.json",
+ "rounds": 3,
+ "runs": [
+  {
+   "run": 1,
+   "timeSec": 2.4,
+   "status": "partial",
+   "connected": 28,
+   "total": 28,
+   "vias": 6,
+   "stages": [
+    {
+     "stage": "R1 初始布线",
+     "viaCost": 15,
+     "extra": {},
+     "status": "partial",
+     "connected": 28,
+     "total": 28,
+     "vias": 7,
+     "drcErrors": 4,
+     "hash": "144348d4"
+    },
+    {
+     "stage": "R1 优化 1/2",
+     "viaCost": 4.5,
+     "extra": {},
+     "status": "partial",
+     "connected": 28,
+     "total": 28,
+     "vias": 6,
+     "drcErrors": 4,
+     "hash": "d55da433"
+    },
+    {
+     "stage": "R1 优化 2/2",
+     "viaCost": 1.5,
+     "extra": {},
+     "status": "partial",
+     "connected": 28,
+     "total": 28,
+     "vias": 11,
+     "drcErrors": 4,
+     "hash": "b1c23cbe"
+    },
+    {
+     "stage": "R1 逐网优化",
+     "status": "partial",
+     "connected": 28,
+     "total": 28,
+     "vias": 6,
+     "drcErrors": 4,
+     "hash": "d55da433"
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "timeSec": 2.2,
+   "status": "partial",
+   "connected": 28,
+   "total": 28,
+   "vias": 6,
+   "stages": [
+    {
+     "stage": "R1 初始布线",
+     "viaCost": 15,
+     "extra": {},
+     "status": "partial",
+     "connected": 28,
+     "total": 28,
+     "vias": 7,
+     "drcErrors": 4,
+     "hash": "144348d4"
+    },
+    {
+     "stage": "R1 优化 1/2",
+     "viaCost": 4.5,
+     "extra": {},
+     "status": "partial",
+     "connected": 28,
+     "total": 28,
+     "vias": 6,
+     "drcErrors": 4,
+     "hash": "d55da433"
+    },
+    {
+     "stage": "R1 优化 2/2",
+     "viaCost": 1.5,
+     "extra": {},
+     "status": "partial",
+     "connected": 28,
+     "total": 28,
+     "vias": 11,
+     "drcErrors": 4,
+     "hash": "b1c23cbe"
+    },
+    {
+     "stage": "R1 逐网优化",
+     "status": "partial",
+     "connected": 28,
+     "total": 28,
+     "vias": 6,
+     "drcErrors": 4,
+     "hash": "d55da433"
+    }
+   ]
+  }
+ ]
+}

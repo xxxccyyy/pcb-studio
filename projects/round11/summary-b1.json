@@ -1,0 +1,124 @@
+[
+ {
+  "name": "p01-555-tiny",
+  "timeSec": 26.3,
+  "err": null,
+  "status": "partial",
+  "connected": 15,
+  "total": 26,
+  "vias": 3,
+  "drcErrors": [
+   "未连通",
+   "未连通",
+   "未连通",
+   "未连通",
+   "未连通",
+   "未连通",
+   "未连通",
+   "焊盘重叠",
+   "焊盘重叠",
+   "焊盘间距",
+   "焊盘重叠",
+   "焊盘重叠",
+   "焊盘间距",
+   "焊盘间距",
+   "焊盘间距",
+   "走线-焊盘间距"
+  ]
+ },
+ {
+  "name": "p02-555-small",
+  "timeSec": 17.7,
+  "err": null,
+  "status": "complete",
+  "connected": 26,
+  "total": 26,
+  "vias": 9,
+  "drcErrors": []
+ },
+ {
+  "name": "p03-555-mid",
+  "timeSec": 3.6,
+  "err": null,
+  "status": "complete",
+  "connected": 26,
+  "total": 26,
+  "vias": 3,
+  "drcErrors": []
+ },
+ {
+  "name": "p04-555-large",
+  "timeSec": 3.2,
+  "err": null,
+  "status": "complete",
+  "connected": 26,
+  "total": 26,
+  "vias": 3,
+  "drcErrors": []
+ },
+ {
+  "name": "p05-555-xlarge",
+  "timeSec": 3.1,
+  "err": null,
+  "status": "complete",
+  "connected": 26,
+  "total": 26,
+  "vias": 3,
+  "drcErrors": []
+ },
+ {
+  "name": "p06-grid-03",
+  "timeSec": 5.3,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 5,
+  "drcErrors": []
+ },
+ {
+  "name": "p07-grid-04",
+  "timeSec": 4.9,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 6,
+  "drcErrors": []
+ },
+ {
+  "name": "p08-grid-05",
+  "timeSec": 4.8,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 6,
+  "drcErrors": []
+ },
+ {
+  "name": "p09-grid-06",
+  "timeSec": 4.1,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 6,
+  "drcErrors": []
+ },
+ {
+  "name": "p10-grid-08",
+  "timeSec": 4,
+  "err": null,
+  "status": "partial",
+  "connected": 28,
+  "total": 28,
+  "vias": 6,
+  "drcErrors": [
+   "走线-焊盘间距",
+   "走线-焊盘间距",
+   "走线-焊盘间距",
+   "走线-焊盘间距"
+  ]
+ }
+]

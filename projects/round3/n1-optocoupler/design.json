@@ -1,0 +1,175 @@
+{
+ "width": 40,
+ "height": 25,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "v5",
+   "name": "5V"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "sig_in",
+   "name": "SIG_IN"
+  },
+  {
+   "id": "sig_out",
+   "name": "SIG_OUT"
+  },
+  {
+   "id": "iso_v",
+   "name": "ISO_V"
+  },
+  {
+   "id": "iso_g",
+   "name": "ISO_G"
+  }
+ ],
+ "pads": [
+  {
+   "id": "OC1-1",
+   "netId": "sig_in",
+   "x": 6,
+   "y": 8,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "OC1-2",
+   "netId": "gnd",
+   "x": 8.54,
+   "y": 8,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "OC1-3",
+   "netId": "iso_g",
+   "x": 8.54,
+   "y": 11.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "OC1-4",
+   "netId": "iso_v",
+   "x": 6,
+   "y": 11.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "OC2-1",
+   "netId": "sig_out",
+   "x": 18,
+   "y": 8,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "OC2-2",
+   "netId": "gnd",
+   "x": 20.54,
+   "y": 8,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "OC2-3",
+   "netId": "iso_g",
+   "x": 20.54,
+   "y": 11.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "OC2-4",
+   "netId": "iso_v",
+   "x": 18,
+   "y": 11.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J1-1",
+   "netId": "sig_in",
+   "x": 2,
+   "y": 5,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J1-2",
+   "netId": "gnd",
+   "x": 2,
+   "y": 7.54,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J2-1",
+   "netId": "iso_v",
+   "x": 38,
+   "y": 5,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J2-2",
+   "netId": "iso_g",
+   "x": 38,
+   "y": 7.54,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {}
+}

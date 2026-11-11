@@ -1,0 +1,93 @@
+[
+ {
+  "tier": "hard",
+  "name": "n143-seg-clock",
+  "pads": 58,
+  "nets": 18,
+  "timeSec": 8,
+  "err": null,
+  "status": "complete",
+  "connected": 46,
+  "total": 46,
+  "vias": 4,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": []
+ },
+ {
+  "tier": "hard",
+  "name": "n144-relay8",
+  "pads": 52,
+  "nets": 15,
+  "timeSec": 5.9,
+  "err": null,
+  "status": "complete",
+  "connected": 44,
+  "total": 44,
+  "vias": 4,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": []
+ },
+ {
+  "tier": "hard",
+  "name": "n145-three-zone",
+  "pads": 51,
+  "nets": 12,
+  "timeSec": 5.5,
+  "err": null,
+  "status": "partial",
+  "connected": 42,
+  "total": 42,
+  "vias": 15,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [
+   "走线-禁布区冲突",
+   "走线-禁布区冲突"
+  ],
+  "drcWarns": []
+ },
+ {
+  "tier": "hard",
+  "name": "n146-bus-bar",
+  "pads": 28,
+  "nets": 8,
+  "timeSec": 2,
+  "err": null,
+  "status": "complete",
+  "connected": 28,
+  "total": 28,
+  "vias": 3,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": []
+ },
+ {
+  "tier": "hard",
+  "name": "n147-panel",
+  "pads": 31,
+  "nets": 6,
+  "timeSec": 2.3,
+  "err": null,
+  "status": "complete",
+  "connected": 24,
+  "total": 24,
+  "vias": 3,
+  "overuse": 0,
+  "badRef": 0,
+  "singlePad": [],
+  "drcErrors": [],
+  "drcWarns": [
+   "插件孔环宽",
+   "插件孔环宽"
+  ]
+ }
+]

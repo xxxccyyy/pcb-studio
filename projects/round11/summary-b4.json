@@ -1,0 +1,104 @@
+[
+ {
+  "name": "p31-onewire",
+  "timeSec": 11.8,
+  "err": null,
+  "status": "complete",
+  "connected": 31,
+  "total": 31,
+  "vias": 0,
+  "drcErrors": []
+ },
+ {
+  "name": "p32-rs485-multi",
+  "timeSec": 43.1,
+  "err": null,
+  "status": "complete",
+  "connected": 43,
+  "total": 43,
+  "vias": 14,
+  "drcErrors": []
+ },
+ {
+  "name": "p33-servo16",
+  "timeSec": 149.2,
+  "err": null,
+  "status": "complete",
+  "connected": 82,
+  "total": 82,
+  "vias": 26,
+  "drcErrors": []
+ },
+ {
+  "name": "p34-iso-output",
+  "timeSec": 34.5,
+  "err": null,
+  "status": "partial",
+  "connected": 98,
+  "total": 98,
+  "vias": 32,
+  "drcErrors": [
+   "焊盘间距"
+  ]
+ },
+ {
+  "name": "p35-quad-charge",
+  "timeSec": 100.3,
+  "err": null,
+  "status": "complete",
+  "connected": 80,
+  "total": 80,
+  "vias": 24,
+  "drcErrors": []
+ },
+ {
+  "name": "p36-mixer",
+  "timeSec": 10.5,
+  "err": null,
+  "status": "complete",
+  "connected": 46,
+  "total": 46,
+  "vias": 10,
+  "drcErrors": []
+ },
+ {
+  "name": "p37-lock",
+  "timeSec": 1.6,
+  "err": null,
+  "status": "complete",
+  "connected": 21,
+  "total": 21,
+  "vias": 0,
+  "drcErrors": []
+ },
+ {
+  "name": "p38-power-tree",
+  "timeSec": 4.8,
+  "err": null,
+  "status": "complete",
+  "connected": 40,
+  "total": 40,
+  "vias": 8,
+  "drcErrors": []
+ },
+ {
+  "name": "p39-min-board",
+  "timeSec": 0.2,
+  "err": null,
+  "status": "complete",
+  "connected": 9,
+  "total": 9,
+  "vias": 0,
+  "drcErrors": []
+ },
+ {
+  "name": "p40-single-net",
+  "timeSec": 0.1,
+  "err": null,
+  "status": "complete",
+  "connected": 2,
+  "total": 2,
+  "vias": 0,
+  "drcErrors": []
+ }
+]

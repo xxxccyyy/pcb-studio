@@ -1,0 +1,193 @@
+{
+ "status": "complete",
+ "iterations": 0,
+ "timeMs": 157,
+ "nets": [
+  {
+   "netId": "v33",
+   "name": "3V3",
+   "paths": [
+    [
+     {
+      "x": 50.875,
+      "y": 15.875,
+      "l": 0
+     },
+     {
+      "x": 50.875,
+      "y": 16.125,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    15323,
+    15563
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "gnd",
+   "name": "GND",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 1
+  },
+  {
+   "netId": "sda",
+   "name": "SDA",
+   "paths": [
+    [
+     {
+      "x": 40.625,
+      "y": 16.125,
+      "l": 0
+     },
+     {
+      "x": 40.375,
+      "y": 15.875,
+      "l": 0
+     },
+     {
+      "x": 40.375,
+      "y": 15.625,
+      "l": 0
+     },
+     {
+      "x": 40.375,
+      "y": 15.375,
+      "l": 0
+     },
+     {
+      "x": 40.375,
+      "y": 15.125,
+      "l": 0
+     },
+     {
+      "x": 40.375,
+      "y": 14.875,
+      "l": 0
+     },
+     {
+      "x": 40.375,
+      "y": 14.625,
+      "l": 0
+     },
+     {
+      "x": 40.375,
+      "y": 14.375,
+      "l": 0
+     },
+     {
+      "x": 40.625,
+      "y": 14.375,
+      "l": 0
+     },
+     {
+      "x": 40.875,
+      "y": 14.375,
+      "l": 0
+     },
+     {
+      "x": 41.125,
+      "y": 14.375,
+      "l": 0
+     },
+     {
+      "x": 41.375,
+      "y": 14.125,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    15522,
+    15521,
+    15282,
+    15281,
+    15041,
+    14801,
+    14561,
+    14321,
+    14081,
+    13841,
+    13842,
+    13843,
+    13844,
+    13845,
+    13604,
+    13605
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "scl",
+   "name": "SCL",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 1
+  },
+  {
+   "netId": "spi_sck",
+   "name": "SPI_SCK",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 0
+  },
+  {
+   "netId": "spi_mosi",
+   "name": "SPI_MOSI",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 0
+  },
+  {
+   "netId": "nrst",
+   "name": "NRST",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 0
+  },
+  {
+   "netId": "swdio",
+   "name": "SWDIO",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 1
+  },
+  {
+   "netId": "swclk",
+   "name": "SWCLK",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 1
+  }
+ ],
+ "overuse": [],
+ "stats": {
+  "connected": 8,
+  "total": 8,
+  "trackTop": 3.207106781186548,
+  "trackBot": 0,
+  "vias": 0,
+  "trackLen": 3.207106781186548
+ }
+}

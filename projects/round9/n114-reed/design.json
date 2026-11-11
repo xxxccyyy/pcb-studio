@@ -1,0 +1,302 @@
+{
+ "width": 48,
+ "height": 20,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "v5",
+   "name": "V5"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "reed1",
+   "name": "REED1"
+  },
+  {
+   "id": "reed2",
+   "name": "REED2"
+  },
+  {
+   "id": "led1",
+   "name": "LED1"
+  },
+  {
+   "id": "led2",
+   "name": "LED2"
+  }
+ ],
+ "pads": [
+  {
+   "id": "SW1-1",
+   "netId": "reed1",
+   "x": 4,
+   "y": 6,
+   "w": 1.6,
+   "h": 2.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "SW1-2",
+   "netId": "gnd",
+   "x": 16,
+   "y": 6,
+   "w": 1.6,
+   "h": 2.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "SW2-1",
+   "netId": "reed2",
+   "x": 4,
+   "y": 13,
+   "w": 1.6,
+   "h": 2.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "SW2-2",
+   "netId": "gnd",
+   "x": 16,
+   "y": 13,
+   "w": 1.6,
+   "h": 2.6,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-1",
+   "netId": "v5",
+   "x": 19.2,
+   "y": 6,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-2",
+   "netId": "reed1",
+   "x": 20.8,
+   "y": 6,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-1",
+   "netId": "v5",
+   "x": 19.2,
+   "y": 13,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-2",
+   "netId": "reed2",
+   "x": 20.8,
+   "y": 13,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-1",
+   "netId": "reed1",
+   "x": 27.2,
+   "y": 6,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-2",
+   "netId": "led1",
+   "x": 28.8,
+   "y": 6,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-1",
+   "netId": "reed2",
+   "x": 27.2,
+   "y": 13,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-2",
+   "netId": "led2",
+   "x": 28.8,
+   "y": 13,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "LED1-1",
+   "netId": "led1",
+   "x": 36,
+   "y": 6,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED1-2",
+   "netId": "gnd",
+   "x": 38.54,
+   "y": 6,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED2-1",
+   "netId": "led2",
+   "x": 36,
+   "y": 13,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "LED2-2",
+   "netId": "gnd",
+   "x": 38.54,
+   "y": 13,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J1-1",
+   "netId": "v5",
+   "x": 1.73,
+   "y": 10,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J1-2",
+   "netId": "gnd",
+   "x": 4.27,
+   "y": 10,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "SW1": {
+   "x": 10,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": " Reed",
+   "footprint": "REED-2"
+  },
+  "SW2": {
+   "x": 10,
+   "y": 13,
+   "rot": 0,
+   "layer": "top",
+   "value": "Reed",
+   "footprint": "REED-2"
+  },
+  "R1": {
+   "x": 20,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": "10k",
+   "footprint": "R0603"
+  },
+  "R2": {
+   "x": 20,
+   "y": 13,
+   "rot": 0,
+   "layer": "top",
+   "value": "10k",
+   "footprint": "R0603"
+  },
+  "R3": {
+   "x": 28,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "R4": {
+   "x": 28,
+   "y": 13,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "LED1": {
+   "x": 36,
+   "y": 6,
+   "rot": 0,
+   "layer": "top",
+   "value": "LED",
+   "footprint": "LED-THT"
+  },
+  "LED2": {
+   "x": 36,
+   "y": 13,
+   "rot": 0,
+   "layer": "top",
+   "value": "LED",
+   "footprint": "LED-THT"
+  },
+  "J1": {
+   "x": 3,
+   "y": 10,
+   "rot": 90,
+   "layer": "top",
+   "value": "5V",
+   "footprint": "HDR-2P"
+  }
+ }
+}

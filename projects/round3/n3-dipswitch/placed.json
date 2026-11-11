@@ -1,0 +1,295 @@
+{
+ "width": 40,
+ "height": 25,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "vcc",
+   "name": "VCC"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "sw0",
+   "name": "SW0"
+  },
+  {
+   "id": "sw1",
+   "name": "SW1"
+  },
+  {
+   "id": "sw2",
+   "name": "SW2"
+  },
+  {
+   "id": "sw3",
+   "name": "SW3"
+  }
+ ],
+ "pads": [
+  {
+   "id": "SW1-1",
+   "netId": "sw0",
+   "x": 12.9,
+   "y": 9.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "SW1-2",
+   "netId": "gnd",
+   "x": 12.9,
+   "y": 13.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-1",
+   "netId": "sw0",
+   "x": 11.1,
+   "y": 9.9,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-2",
+   "netId": "vcc",
+   "x": 11.1,
+   "y": 11.7,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-1",
+   "netId": "sw0",
+   "x": 11.1,
+   "y": 5.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "SW1-3",
+   "netId": "sw1",
+   "x": 15.3,
+   "y": 9.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "SW1-4",
+   "netId": "gnd",
+   "x": 15.3,
+   "y": 13.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-1",
+   "netId": "sw1",
+   "x": 14.7,
+   "y": 7.5,
+   "w": 0.8,
+   "h": 0.9,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-2",
+   "netId": "vcc",
+   "x": 12.9,
+   "y": 7.5,
+   "w": 0.8,
+   "h": 0.9,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-2",
+   "netId": "sw1",
+   "x": 13.5,
+   "y": 5.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "SW1-5",
+   "netId": "sw2",
+   "x": 18.3,
+   "y": 9.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "SW1-6",
+   "netId": "gnd",
+   "x": 18.3,
+   "y": 13.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-1",
+   "netId": "sw2",
+   "x": 15.3,
+   "y": 12.3,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-2",
+   "netId": "vcc",
+   "x": 15.3,
+   "y": 10.5,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-3",
+   "netId": "sw2",
+   "x": 16.5,
+   "y": 5.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "SW1-7",
+   "netId": "sw3",
+   "x": 20.7,
+   "y": 9.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "SW1-8",
+   "netId": "gnd",
+   "x": 20.7,
+   "y": 13.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-1",
+   "netId": "sw3",
+   "x": 14.1,
+   "y": 12.3,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R4-2",
+   "netId": "vcc",
+   "x": 14.1,
+   "y": 10.5,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-4",
+   "netId": "sw3",
+   "x": 18.9,
+   "y": 5.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "J1-5",
+   "netId": "vcc",
+   "x": 11.1,
+   "y": 8.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "J1": {
+   "x": 15,
+   "y": 7.2,
+   "rot": 0,
+   "layer": "top"
+  },
+  "SW1": {
+   "x": 16.8,
+   "y": 11.4,
+   "rot": 0,
+   "layer": "top"
+  },
+  "R1": {
+   "x": 11.1,
+   "y": 10.8,
+   "rot": 180,
+   "layer": "top"
+  },
+  "R2": {
+   "x": 13.8,
+   "y": 7.5,
+   "rot": 270,
+   "layer": "top"
+  },
+  "R3": {
+   "x": 15.3,
+   "y": 11.4,
+   "rot": 0,
+   "layer": "top"
+  },
+  "R4": {
+   "x": 14.1,
+   "y": 11.4,
+   "rot": 0,
+   "layer": "top"
+  }
+ }
+}

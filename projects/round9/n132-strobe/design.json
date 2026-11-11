@@ -1,0 +1,493 @@
+{
+ "width": 76,
+ "height": 40,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.3,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "hv",
+   "name": "HV"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "cap_t",
+   "name": "CAP_T"
+  },
+  {
+   "id": "scr_a",
+   "name": "SCR_A"
+  },
+  {
+   "id": "trig1",
+   "name": "TRIG1"
+  },
+  {
+   "id": "trig2",
+   "name": "TRIG2"
+  },
+  {
+   "id": "lamp_a",
+   "name": "LAMP_A"
+  },
+  {
+   "id": "lamp_k",
+   "name": "LAMP_K"
+  }
+ ],
+ "pads": [
+  {
+   "id": "C1-1",
+   "netId": "hv",
+   "x": 11.5,
+   "y": 10,
+   "w": 2.8,
+   "h": 2.8,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 1
+  },
+  {
+   "id": "C1-2",
+   "netId": "cap_t",
+   "x": 16.5,
+   "y": 10,
+   "w": 2.8,
+   "h": 2.8,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 1
+  },
+  {
+   "id": "C2-1",
+   "netId": "hv",
+   "x": 18.5,
+   "y": 10,
+   "w": 2.8,
+   "h": 2.8,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 1
+  },
+  {
+   "id": "C2-2",
+   "netId": "cap_t",
+   "x": 23.5,
+   "y": 10,
+   "w": 2.8,
+   "h": 2.8,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 1
+  },
+  {
+   "id": "C3-1",
+   "netId": "hv",
+   "x": 25.5,
+   "y": 10,
+   "w": 2.8,
+   "h": 2.8,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 1
+  },
+  {
+   "id": "C3-2",
+   "netId": "cap_t",
+   "x": 30.5,
+   "y": 10,
+   "w": 2.8,
+   "h": 2.8,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 1
+  },
+  {
+   "id": "D1-1",
+   "netId": "hv",
+   "x": 6.45,
+   "y": 10,
+   "w": 1.3,
+   "h": 1.6,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "D1-2",
+   "netId": "cap_t",
+   "x": 9.55,
+   "y": 10,
+   "w": 1.3,
+   "h": 1.6,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "S1-1",
+   "netId": "trig2",
+   "x": 40,
+   "y": 10,
+   "w": 2,
+   "h": 2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.7
+  },
+  {
+   "id": "S1-2",
+   "netId": "cap_t",
+   "x": 42.54,
+   "y": 10,
+   "w": 2,
+   "h": 2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.7
+  },
+  {
+   "id": "S1-3",
+   "netId": "scr_a",
+   "x": 45.08,
+   "y": 10,
+   "w": 2,
+   "h": 2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.7
+  },
+  {
+   "id": "R1-1",
+   "netId": "scr_a",
+   "x": 32.73,
+   "y": 24,
+   "w": 1.3,
+   "h": 1.3,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "R1-2",
+   "netId": "lamp_k",
+   "x": 35.27,
+   "y": 24,
+   "w": 1.3,
+   "h": 1.3,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "R2-1",
+   "netId": "lamp_k",
+   "x": 38.73,
+   "y": 24,
+   "w": 1.3,
+   "h": 1.3,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "R2-2",
+   "netId": "gnd",
+   "x": 41.27,
+   "y": 24,
+   "w": 1.3,
+   "h": 1.3,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.35
+  },
+  {
+   "id": "T1-1",
+   "netId": "trig1",
+   "x": 53.46,
+   "y": 13.46,
+   "w": 1.9,
+   "h": 1.9,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.6
+  },
+  {
+   "id": "T1-2",
+   "netId": "trig2",
+   "x": 58.54,
+   "y": 13.46,
+   "w": 1.9,
+   "h": 1.9,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.6
+  },
+  {
+   "id": "T1-3",
+   "netId": null,
+   "x": 53.46,
+   "y": 16,
+   "w": 1.9,
+   "h": 1.9,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.6
+  },
+  {
+   "id": "T1-4",
+   "netId": "lamp_a",
+   "x": 58.54,
+   "y": 16,
+   "w": 1.9,
+   "h": 1.9,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.6
+  },
+  {
+   "id": "T1-5",
+   "netId": null,
+   "x": 53.46,
+   "y": 18.54,
+   "w": 1.9,
+   "h": 1.9,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.6
+  },
+  {
+   "id": "T1-6",
+   "netId": null,
+   "x": 58.54,
+   "y": 18.54,
+   "w": 1.9,
+   "h": 1.9,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.6
+  },
+  {
+   "id": "C4-1",
+   "netId": "trig1",
+   "x": 46.6,
+   "y": 30,
+   "w": 1.45,
+   "h": 1.25,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C4-2",
+   "netId": "trig2",
+   "x": 49.4,
+   "y": 30,
+   "w": 1.45,
+   "h": 1.25,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-1",
+   "netId": "trig2",
+   "x": 53.2,
+   "y": 30,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R3-2",
+   "netId": "gnd",
+   "x": 54.8,
+   "y": 30,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-1",
+   "netId": "hv",
+   "x": 1.5,
+   "y": 30,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J1-2",
+   "netId": "gnd",
+   "x": 6.5,
+   "y": 30,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-1",
+   "netId": "trig1",
+   "x": 65.5,
+   "y": 30,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-2",
+   "netId": "trig2",
+   "x": 70.5,
+   "y": 30,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J3-1",
+   "netId": "lamp_a",
+   "x": 66.73,
+   "y": 10,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J3-2",
+   "netId": "lamp_k",
+   "x": 69.27,
+   "y": 10,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "C1": {
+   "x": 14,
+   "y": 10,
+   "rot": 0,
+   "layer": "top",
+   "value": "100u-350V",
+   "footprint": "CAP-THT"
+  },
+  "C2": {
+   "x": 21,
+   "y": 10,
+   "rot": 0,
+   "layer": "top",
+   "value": "100u-350V",
+   "footprint": "CAP-THT"
+  },
+  "C3": {
+   "x": 28,
+   "y": 10,
+   "rot": 0,
+   "layer": "top",
+   "value": "100u-350V",
+   "footprint": "CAP-THT"
+  },
+  "D1": {
+   "x": 8,
+   "y": 10,
+   "rot": 0,
+   "layer": "top",
+   "value": "1N4007",
+   "footprint": "DIODE-THT"
+  },
+  "S1": {
+   "x": 41.54,
+   "y": 10,
+   "rot": 0,
+   "layer": "top",
+   "value": "SCR-70TPS",
+   "footprint": "TO-220"
+  },
+  "R1": {
+   "x": 34,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "0R5",
+   "footprint": "R-THT"
+  },
+  "R2": {
+   "x": 40,
+   "y": 24,
+   "rot": 0,
+   "layer": "top",
+   "value": "0R5",
+   "footprint": "R-THT"
+  },
+  "T1": {
+   "x": 56,
+   "y": 16,
+   "rot": 0,
+   "layer": "top",
+   "value": "TRIG-XFMR",
+   "footprint": "XFMR-6"
+  },
+  "C4": {
+   "x": 48,
+   "y": 30,
+   "rot": 0,
+   "layer": "top",
+   "value": "100n",
+   "footprint": "C1206"
+  },
+  "R3": {
+   "x": 54,
+   "y": 30,
+   "rot": 0,
+   "layer": "top",
+   "value": "1k",
+   "footprint": "R0603"
+  },
+  "J1": {
+   "x": 4,
+   "y": 30,
+   "rot": 0,
+   "layer": "top",
+   "value": "300V",
+   "footprint": "TB-2P"
+  },
+  "J2": {
+   "x": 68,
+   "y": 30,
+   "rot": 0,
+   "layer": "top",
+   "value": "TRIG",
+   "footprint": "TB-2P"
+  },
+  "J3": {
+   "x": 68,
+   "y": 10,
+   "rot": 90,
+   "layer": "top",
+   "value": "LAMP",
+   "footprint": "HDR-2P"
+  }
+ }
+}

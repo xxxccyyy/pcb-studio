@@ -1,0 +1,300 @@
+{
+ "width": 58,
+ "height": 30,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "vbus",
+   "name": "VBUS"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "vdrive",
+   "name": "VDRIVE"
+  },
+  {
+   "id": "gate",
+   "name": "GATE"
+  },
+  {
+   "id": "coll",
+   "name": "COLL"
+  },
+  {
+   "id": "emit",
+   "name": "EMIT"
+  }
+ ],
+ "pads": [
+  {
+   "id": "Q1-1",
+   "netId": "gate",
+   "x": 12.55,
+   "y": 14,
+   "w": 2.6,
+   "h": 2.6,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.9
+  },
+  {
+   "id": "Q1-2",
+   "netId": "coll",
+   "x": 18,
+   "y": 14,
+   "w": 2.6,
+   "h": 2.6,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.9
+  },
+  {
+   "id": "Q1-3",
+   "netId": "emit",
+   "x": 23.45,
+   "y": 14,
+   "w": 2.6,
+   "h": 2.6,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.9
+  },
+  {
+   "id": "Q1-4",
+   "netId": "gnd",
+   "x": 18,
+   "y": 7,
+   "w": 4,
+   "h": 4,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 1.6
+  },
+  {
+   "id": "R1-1",
+   "netId": "vdrive",
+   "x": 7.2,
+   "y": 10,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R1-2",
+   "netId": "gate",
+   "x": 8.8,
+   "y": 10,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-1",
+   "netId": "gate",
+   "x": 7.2,
+   "y": 18,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "R2-2",
+   "netId": "emit",
+   "x": 8.8,
+   "y": 18,
+   "w": 0.9,
+   "h": 0.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "D1-1",
+   "netId": "emit",
+   "x": 27.4,
+   "y": 8,
+   "w": 2.4,
+   "h": 3.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "D1-2",
+   "netId": "gate",
+   "x": 32.6,
+   "y": 8,
+   "w": 2.4,
+   "h": 3.8,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "C1-1",
+   "netId": "vbus",
+   "x": 38.73,
+   "y": 20,
+   "w": 1.6,
+   "h": 1.6,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.4
+  },
+  {
+   "id": "C1-2",
+   "netId": "gnd",
+   "x": 41.27,
+   "y": 20,
+   "w": 1.6,
+   "h": 1.6,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.4
+  },
+  {
+   "id": "J1-1",
+   "netId": "vbus",
+   "x": 1.5,
+   "y": 22,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J1-2",
+   "netId": "gnd",
+   "x": 6.5,
+   "y": 22,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-1",
+   "netId": "coll",
+   "x": 47.5,
+   "y": 8,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J2-2",
+   "netId": "emit",
+   "x": 52.5,
+   "y": 8,
+   "w": 2.2,
+   "h": 2.2,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.8
+  },
+  {
+   "id": "J3-1",
+   "netId": "vdrive",
+   "x": 2.73,
+   "y": 8,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J3-2",
+   "netId": "gnd",
+   "x": 5.27,
+   "y": 8,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "Q1": {
+   "x": 18,
+   "y": 14,
+   "rot": 0,
+   "layer": "top",
+   "value": "IGBT",
+   "footprint": "TO-247"
+  },
+  "R1": {
+   "x": 8,
+   "y": 10,
+   "rot": 90,
+   "layer": "top",
+   "value": "10R",
+   "footprint": "R0603"
+  },
+  "R2": {
+   "x": 8,
+   "y": 18,
+   "rot": 90,
+   "layer": "top",
+   "value": "10k",
+   "footprint": "R0603"
+  },
+  "D1": {
+   "x": 30,
+   "y": 8,
+   "rot": 0,
+   "layer": "top",
+   "value": "BAT54",
+   "footprint": "SMC"
+  },
+  "C1": {
+   "x": 40,
+   "y": 20,
+   "rot": 0,
+   "layer": "top",
+   "value": "1u-450V",
+   "footprint": "C-THT"
+  },
+  "J1": {
+   "x": 4,
+   "y": 22,
+   "rot": 90,
+   "layer": "top",
+   "value": "BUS",
+   "footprint": "TB-2P"
+  },
+  "J2": {
+   "x": 50,
+   "y": 8,
+   "rot": 90,
+   "layer": "top",
+   "value": "LOAD",
+   "footprint": "TB-2P"
+  },
+  "J3": {
+   "x": 4,
+   "y": 8,
+   "rot": 90,
+   "layer": "top",
+   "value": "DRV",
+   "footprint": "HDR-2P"
+  }
+ }
+}

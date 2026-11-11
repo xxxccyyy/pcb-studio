@@ -1,0 +1,194 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="65mm" height="45mm" viewBox="0 0 65 45">
+<rect x="0" y="0" width="65" height="45" fill="#0f3d2e"/>
+<rect x="12.75" y="27.3" width="34.5" height="5.4" fill="none" stroke="#a78bfa" stroke-width="0.15" stroke-dasharray="0.8 0.4"/>
+<g id="bottom">
+<path d="M30.300 20.100L30.300 24.680Q30.300 24.900 30.456 25.056L30.900 25.500" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25.500 34.500L25.056 34.944Q24.900 35.100 24.697 35.184L23.655 35.616Q23.451 35.700 23.231 35.700L13.544 35.700Q13.324 35.700 13.121 35.784L12.757 35.935Q12.600 36.000 12.480 36.120L12.420 36.180Q12.300 36.300 12.130 36.300L10.120 36.300Q9.900 36.300 9.900 36.080L9.900 28.720Q9.900 28.500 9.984 28.297L10.664 26.655Q10.749 26.451 10.904 26.296L20.896 16.304Q21.051 16.149 21.255 16.064L22.897 15.384Q23.100 15.300 23.320 15.300L37.280 15.300Q37.500 15.300 37.500 15.520L37.500 18.680Q37.500 18.900 37.344 19.056L32.256 24.144Q32.100 24.300 32.100 24.520L32.100 25.500" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M26.100 36.300L24.900 35.100" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="30.300" cy="20.100" r="0.4" fill="#facc15"/><circle cx="30.300" cy="20.100" r="0.2" fill="#0f3d2e"/>
+<circle cx="26.100" cy="36.300" r="0.4" fill="#facc15"/><circle cx="26.100" cy="36.300" r="0.2" fill="#0f3d2e"/>
+<path d="M32.100 20.100L32.100 22.500" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M32.100 34.500L32.544 34.944Q32.700 35.100 32.903 35.184L33.945 35.616Q34.149 35.700 34.369 35.700L46.031 35.700Q46.251 35.700 46.455 35.616L47.543 35.165Q47.700 35.100 47.820 34.980L47.880 34.920Q48.000 34.800 48.065 34.643L48.216 34.279Q48.300 34.076 48.300 33.856L48.300 27.900" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M11.700 39.300L25.880 39.300Q26.100 39.300 26.303 39.216L27.945 38.536Q28.149 38.451 28.304 38.296L32.100 34.500" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M5.700 39.300L11.700 39.300" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="32.100" cy="20.100" r="0.4" fill="#facc15"/><circle cx="32.100" cy="20.100" r="0.2" fill="#0f3d2e"/>
+<circle cx="32.100" cy="22.500" r="0.4" fill="#facc15"/><circle cx="32.100" cy="22.500" r="0.2" fill="#0f3d2e"/>
+<circle cx="48.300" cy="27.900" r="0.4" fill="#facc15"/><circle cx="48.300" cy="27.900" r="0.2" fill="#0f3d2e"/>
+<path d="M60.300 37.500L50.504 27.704Q50.349 27.549 50.145 27.464L48.503 26.784Q48.300 26.700 48.080 26.700L47.100 26.700" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M61.500 3.300L61.500 3.680Q61.500 3.900 61.656 4.056L62.296 4.696Q62.451 4.851 62.536 5.055L63.216 6.697Q63.300 6.900 63.300 7.120L63.300 11.480Q63.300 11.700 63.216 11.903L62.536 13.545Q62.451 13.749 62.296 13.904L49.500 26.700" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="61.500" cy="3.900" r="0.4" fill="#facc15"/><circle cx="61.500" cy="3.900" r="0.2" fill="#0f3d2e"/>
+<path d="M34.500 17.700L32.320 17.700Q32.100 17.700 31.897 17.784L30.255 18.464Q30.051 18.549 29.896 18.704L24.456 24.144Q24.300 24.300 24.300 24.520L24.300 25.500" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="34.500" cy="17.700" r="0.4" fill="#facc15"/><circle cx="34.500" cy="17.700" r="0.2" fill="#0f3d2e"/>
+<path d="M60.300 8.700L47.680 21.320Q47.524 21.476 47.321 21.560L46.611 21.854Q46.500 21.900 46.380 21.900L46.320 21.900Q46.200 21.900 46.089 21.946L45.891 22.028Q45.688 22.112 45.532 22.268L42.300 25.500" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M53.100 17.700L46.868 23.932Q46.712 24.088 46.509 24.172L46.311 24.254Q46.200 24.300 46.080 24.300L46.020 24.300Q45.900 24.300 45.815 24.385L44.700 25.500" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="53.100" cy="17.700" r="0.4" fill="#facc15"/><circle cx="53.100" cy="17.700" r="0.2" fill="#0f3d2e"/>
+<path d="M61.500 33.900L61.944 34.344Q62.100 34.500 62.184 34.703L62.616 35.745Q62.700 35.949 62.700 36.169L62.700 38.480Q62.700 38.700 62.544 38.856L59.100 42.300" fill="none" stroke="#60a5fa" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="59.100" cy="42.300" r="0.4" fill="#facc15"/><circle cx="59.100" cy="42.300" r="0.2" fill="#0f3d2e"/>
+<polygon points="30.100,20.980 30.500,20.980 30.700,20.100 29.900,20.100" fill="#60a5fa"/>
+<polygon points="25.619,35.536 25.336,35.819 25.817,36.583 26.383,36.017" fill="#60a5fa"/>
+<polygon points="31.900,20.980 32.300,20.980 32.500,20.100 31.700,20.100" fill="#60a5fa"/>
+<polygon points="32.300,21.620 31.900,21.620 31.700,22.500 32.500,22.500" fill="#60a5fa"/>
+<polygon points="48.100,28.780 48.500,28.780 48.700,27.900 47.900,27.900" fill="#60a5fa"/>
+<polygon points="61.700,3.020 61.300,3.020 61.100,3.900 61.900,3.900" fill="#60a5fa"/>
+<polygon points="61.981,4.664 62.264,4.381 61.783,3.617 61.217,4.183" fill="#60a5fa"/>
+<polygon points="33.620,17.500 33.620,17.900 34.500,18.100 34.500,17.300" fill="#60a5fa"/>
+<polygon points="52.336,18.181 52.619,18.464 53.383,17.983 52.817,17.417" fill="#60a5fa"/>
+<polygon points="59.864,41.819 59.581,41.536 58.817,42.017 59.383,42.583" fill="#60a5fa"/>
+<circle cx="46.5" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="44.1" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="41.7" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="38.7" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="36.3" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="33.9" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="31.5" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="28.5" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="26.1" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="23.7" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="21.3" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="18.3" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="15.9" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="13.5" cy="26.1" r="0.85" fill="#eab308"/>
+<circle cx="13.5" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="15.9" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="18.3" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="21.3" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="23.7" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="26.1" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="28.5" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="31.5" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="33.9" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="36.3" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="38.7" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="41.7" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="44.1" cy="33.9" r="0.85" fill="#eab308"/>
+<circle cx="46.5" cy="33.9" r="0.85" fill="#eab308"/>
+<rect x="23.05" y="16.1" width="2.5" height="2" rx="0.4" fill="#eab308"/>
+<rect x="34.45" y="16.1" width="2.5" height="2" rx="0.4" fill="#eab308"/>
+<rect x="4.35" y="34.35" width="1.5" height="1.5" rx="0.30000000000000004" fill="#eab308"/>
+<rect x="10.35" y="34.35" width="1.5" height="1.5" rx="0.30000000000000004" fill="#eab308"/>
+<rect x="4.35" y="39.15" width="1.5" height="1.5" rx="0.30000000000000004" fill="#eab308"/>
+<rect x="10.35" y="39.15" width="1.5" height="1.5" rx="0.30000000000000004" fill="#eab308"/>
+<circle cx="60.9" cy="2.7" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="5.7" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="8.1" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="10.5" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="12.9" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="25.5" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="27.9" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="30.9" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="33.3" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="35.7" r="0.85" fill="#eab308"/>
+<circle cx="60.9" cy="38.1" r="0.85" fill="#eab308"/>
+</g>
+<g id="top">
+<path d="M29.700 39.300L29.320 39.300Q29.100 39.300 28.944 39.144L26.100 36.300" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M34.500 39.300L33.456 40.344Q33.300 40.500 33.080 40.500L30.520 40.500Q30.300 40.500 30.144 40.344L29.100 39.300" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18.900 9.900L22.696 13.696Q22.851 13.851 23.055 13.936L24.697 14.616Q24.900 14.700 25.120 14.700L26.480 14.700Q26.700 14.700 26.856 14.856L29.508 17.508Q29.664 17.664 29.748 17.867L30.216 18.997Q30.300 19.200 30.300 19.420L30.300 20.100" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M61.500 26.100L62.296 26.896Q62.451 27.051 62.536 27.255L63.216 28.897Q63.300 29.100 63.300 29.320L63.300 38.831Q63.300 39.051 63.216 39.255L62.765 40.343Q62.700 40.500 62.580 40.620L62.520 40.680Q62.400 40.800 62.243 40.865L61.879 41.016Q61.676 41.100 61.456 41.100L36.169 41.100Q35.949 41.100 35.745 41.016L34.703 40.584Q34.500 40.500 34.344 40.344L33.900 39.900" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M61.500 11.100L61.944 11.544Q62.100 11.700 62.184 11.903L62.616 12.945Q62.700 13.149 62.700 13.369L62.700 24.680Q62.700 24.900 62.544 25.056L61.500 26.100" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="30.300" cy="20.100" r="0.4" fill="#facc15"/><circle cx="30.300" cy="20.100" r="0.2" fill="#0f3d2e"/>
+<circle cx="26.100" cy="36.300" r="0.4" fill="#facc15"/><circle cx="26.100" cy="36.300" r="0.2" fill="#0f3d2e"/>
+<path d="M32.100 22.500L29.100 25.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M39.300 17.700L39.300 18.080Q39.300 18.300 39.144 18.456L38.504 19.096Q38.349 19.251 38.145 19.336L36.503 20.016Q36.300 20.100 36.080 20.100L32.100 20.100" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M48.300 27.900L48.300 25.970Q48.300 25.800 48.180 25.680L48.085 25.585Q48.000 25.500 47.880 25.500L47.820 25.500Q47.700 25.500 47.700 25.380L47.700 25.120Q47.700 24.900 47.480 24.900L47.220 24.900Q47.100 24.900 47.100 24.780L47.100 24.720Q47.100 24.600 47.015 24.515L46.885 24.385Q46.800 24.300 46.680 24.300L46.620 24.300Q46.500 24.300 46.415 24.215L46.320 24.120Q46.200 24.000 46.043 23.935L45.679 23.784Q45.476 23.700 45.256 23.700L34.369 23.700Q34.149 23.700 33.945 23.616L32.903 23.184Q32.700 23.100 32.544 22.944L32.100 22.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M31.500 39.300L32.015 38.785Q32.100 38.700 32.220 38.700L32.280 38.700Q32.400 38.700 32.511 38.654L32.811 38.530Q32.912 38.488 32.990 38.410L33.028 38.372Q33.106 38.294 33.207 38.252L33.387 38.178Q33.574 38.100 33.777 38.100L36.080 38.100Q36.300 38.100 36.456 38.256L37.696 39.496Q37.851 39.651 38.055 39.736L39.697 40.416Q39.900 40.500 40.120 40.500L59.480 40.500Q59.700 40.500 59.903 40.416L61.545 39.736Q61.749 39.651 61.904 39.496L62.069 39.331Q62.224 39.176 62.308 38.972L62.616 38.230Q62.700 38.027 62.700 37.807L62.700 30.520Q62.700 30.300 62.544 30.144L51.704 19.304Q51.549 19.149 51.345 19.064L49.703 18.384Q49.500 18.300 49.280 18.300L39.300 18.300" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M36.300 39.300L36.900 38.700" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M41.100 39.300L41.100 40.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M21.300 17.700L23.120 19.520Q23.276 19.676 23.479 19.760L24.189 20.054Q24.300 20.100 24.420 20.100L24.480 20.100Q24.600 20.100 24.711 20.146L24.909 20.228Q25.112 20.312 25.268 20.468L29.700 24.900" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M53.100 26.100L53.615 26.615Q53.700 26.700 53.700 26.820L53.700 26.880Q53.700 27.000 53.785 27.085L53.880 27.180Q54.000 27.300 54.170 27.300L54.830 27.300Q55.050 27.300 55.253 27.216L56.639 26.642Q56.842 26.558 56.998 26.402L57.900 25.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M60.300 13.500L53.100 20.700" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="32.100" cy="20.100" r="0.4" fill="#facc15"/><circle cx="32.100" cy="20.100" r="0.2" fill="#0f3d2e"/>
+<circle cx="32.100" cy="22.500" r="0.4" fill="#facc15"/><circle cx="32.100" cy="22.500" r="0.2" fill="#0f3d2e"/>
+<circle cx="48.300" cy="27.900" r="0.4" fill="#facc15"/><circle cx="48.300" cy="27.900" r="0.2" fill="#0f3d2e"/>
+<path d="M17.100 9.900L17.100 9.520Q17.100 9.300 17.256 9.144L21.496 4.904Q21.651 4.749 21.855 4.664L23.497 3.984Q23.700 3.900 23.920 3.900L61.500 3.900" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10.500 34.500L10.500 25.720Q10.500 25.500 10.584 25.297L11.264 23.655Q11.349 23.451 11.504 23.296L16.096 18.704Q16.251 18.549 16.336 18.345L17.016 16.703Q17.100 16.500 17.100 16.280L17.100 9.900" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M5.700 34.500L10.500 34.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="61.500" cy="3.900" r="0.4" fill="#facc15"/><circle cx="61.500" cy="3.900" r="0.2" fill="#0f3d2e"/>
+<path d="M23.100 16.500L20.320 16.500Q20.100 16.500 20.100 16.720L20.100 18.680Q20.100 18.900 20.256 19.056L25.344 24.144Q25.500 24.300 25.500 24.520L25.500 25.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19.500 17.700L20.100 17.700" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M37.500 17.700L34.500 17.700" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="34.500" cy="17.700" r="0.4" fill="#facc15"/><circle cx="34.500" cy="17.700" r="0.2" fill="#0f3d2e"/>
+<path d="M60.300 6.300L54.104 12.496Q53.949 12.651 53.864 12.855L53.184 14.497Q53.100 14.700 53.100 14.920L53.100 17.700" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="53.100" cy="17.700" r="0.4" fill="#facc15"/><circle cx="53.100" cy="17.700" r="0.2" fill="#0f3d2e"/>
+<path d="M50.100 26.100L47.680 23.680Q47.524 23.524 47.321 23.440L46.611 23.146Q46.500 23.100 46.380 23.100L46.320 23.100Q46.200 23.100 46.089 23.054L45.891 22.972Q45.688 22.888 45.532 22.732L45.049 22.249Q44.894 22.094 44.691 22.010L43.180 21.384Q42.977 21.300 42.757 21.300L30.520 21.300Q30.300 21.300 30.097 21.216L28.455 20.536Q28.251 20.451 28.096 20.296L27.104 19.304Q26.949 19.149 26.864 18.945L26.184 17.303Q26.100 17.100 26.100 16.880L26.100 15.520Q26.100 15.300 25.880 15.300L20.920 15.300Q20.700 15.300 20.497 15.384L18.855 16.064Q18.651 16.149 18.496 16.304L18.331 16.469Q18.176 16.624 18.092 16.828L17.784 17.570Q17.700 17.773 17.700 17.993L17.700 20.480Q17.700 20.700 17.616 20.903L16.936 22.545Q16.851 22.749 16.696 22.904L14.100 25.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M60.300 30.300L55.120 30.300Q54.900 30.300 54.697 30.216L53.055 29.536Q52.851 29.451 52.696 29.296L50.256 26.856Q50.100 26.700 50.100 26.480L50.100 26.100" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M59.100 42.300L24.520 42.300Q24.300 42.300 24.097 42.216L22.455 41.536Q22.251 41.451 22.096 41.296L17.080 36.280Q16.924 36.124 16.721 36.040L16.011 35.746Q15.900 35.700 15.780 35.700L15.720 35.700Q15.600 35.700 15.489 35.654L15.291 35.572Q15.088 35.488 14.932 35.332L14.100 34.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="59.100" cy="42.300" r="0.4" fill="#facc15"/><circle cx="59.100" cy="42.300" r="0.2" fill="#0f3d2e"/>
+<path d="M60.300 36.300L37.720 36.300Q37.500 36.300 37.297 36.216L35.655 35.536Q35.451 35.451 35.296 35.296L34.500 34.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M39.900 39.300L39.520 39.300Q39.300 39.300 39.144 39.144L37.656 37.656Q37.500 37.500 37.280 37.500L35.144 37.500Q34.924 37.500 34.721 37.416L34.357 37.265Q34.200 37.200 34.080 37.080L34.020 37.020Q33.900 36.900 33.730 36.900L32.920 36.900Q32.700 36.900 32.497 36.816L30.855 36.136Q30.651 36.051 30.496 35.896L29.100 34.500" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M54.900 26.100L54.900 25.670Q54.900 25.500 54.780 25.380L54.720 25.320Q54.600 25.200 54.443 25.135L54.079 24.984Q53.876 24.900 53.656 24.900L52.120 24.900Q51.900 24.900 51.900 25.120L51.900 26.100" fill="none" stroke="#f87171" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="26.581,37.064 26.864,36.781 26.383,36.017 25.817,36.583" fill="#f87171"/>
+<polygon points="30.500,19.220 30.100,19.220 29.900,20.100 30.700,20.100" fill="#f87171"/>
+<polygon points="31.336,22.981 31.619,23.264 32.383,22.783 31.817,22.217" fill="#f87171"/>
+<polygon points="32.980,20.300 32.980,19.900 32.100,19.700 32.100,20.500" fill="#f87171"/>
+<polygon points="48.500,27.020 48.100,27.020 47.900,27.900 48.700,27.900" fill="#f87171"/>
+<polygon points="32.581,23.264 32.864,22.981 32.383,22.217 31.817,22.783" fill="#f87171"/>
+<polygon points="60.620,3.700 60.620,4.100 61.500,4.300 61.500,3.500" fill="#f87171"/>
+<polygon points="35.380,17.900 35.380,17.500 34.500,17.300 34.500,18.100" fill="#f87171"/>
+<polygon points="53.300,16.820 52.900,16.820 52.700,17.700 53.500,17.700" fill="#f87171"/>
+<polygon points="58.220,42.100 58.220,42.500 59.100,42.700 59.100,41.900" fill="#f87171"/>
+<circle cx="46.5" cy="26.1" r="0.85" fill="#eab308"/><circle cx="46.5" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="44.1" cy="26.1" r="0.85" fill="#eab308"/><circle cx="44.1" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="41.7" cy="26.1" r="0.85" fill="#eab308"/><circle cx="41.7" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="38.7" cy="26.1" r="0.85" fill="#eab308"/><circle cx="38.7" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="36.3" cy="26.1" r="0.85" fill="#eab308"/><circle cx="36.3" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="33.9" cy="26.1" r="0.85" fill="#eab308"/><circle cx="33.9" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="31.5" cy="26.1" r="0.85" fill="#eab308"/><circle cx="31.5" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="28.5" cy="26.1" r="0.85" fill="#eab308"/><circle cx="28.5" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="26.1" cy="26.1" r="0.85" fill="#eab308"/><circle cx="26.1" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="23.7" cy="26.1" r="0.85" fill="#eab308"/><circle cx="23.7" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="21.3" cy="26.1" r="0.85" fill="#eab308"/><circle cx="21.3" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="18.3" cy="26.1" r="0.85" fill="#eab308"/><circle cx="18.3" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="15.9" cy="26.1" r="0.85" fill="#eab308"/><circle cx="15.9" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="13.5" cy="26.1" r="0.85" fill="#eab308"/><circle cx="13.5" cy="26.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="13.5" cy="33.9" r="0.85" fill="#eab308"/><circle cx="13.5" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="15.9" cy="33.9" r="0.85" fill="#eab308"/><circle cx="15.9" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="18.3" cy="33.9" r="0.85" fill="#eab308"/><circle cx="18.3" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="21.3" cy="33.9" r="0.85" fill="#eab308"/><circle cx="21.3" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="23.7" cy="33.9" r="0.85" fill="#eab308"/><circle cx="23.7" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="26.1" cy="33.9" r="0.85" fill="#eab308"/><circle cx="26.1" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="28.5" cy="33.9" r="0.85" fill="#eab308"/><circle cx="28.5" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="31.5" cy="33.9" r="0.85" fill="#eab308"/><circle cx="31.5" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="33.9" cy="33.9" r="0.85" fill="#eab308"/><circle cx="33.9" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="36.3" cy="33.9" r="0.85" fill="#eab308"/><circle cx="36.3" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="38.7" cy="33.9" r="0.85" fill="#eab308"/><circle cx="38.7" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="41.7" cy="33.9" r="0.85" fill="#eab308"/><circle cx="41.7" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="44.1" cy="33.9" r="0.85" fill="#eab308"/><circle cx="44.1" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="46.5" cy="33.9" r="0.85" fill="#eab308"/><circle cx="46.5" cy="33.9" r="0.2" fill="#0f3d2e"/>
+<rect x="23.05" y="16.1" width="2.5" height="2" rx="0.4" fill="#eab308"/><circle cx="24.3" cy="17.1" r="0.2" fill="#0f3d2e"/>
+<rect x="34.45" y="16.1" width="2.5" height="2" rx="0.4" fill="#eab308"/><circle cx="35.7" cy="17.1" r="0.2" fill="#0f3d2e"/>
+<rect x="19.05" y="17.3" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="20.85" y="17.3" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="37.05" y="17.3" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="38.849999999999994" y="17.3" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="29.85" y="19.700000000000003" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="31.650000000000002" y="19.700000000000003" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="29.25" y="38.9" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="31.05" y="38.9" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="33.925" y="38.824999999999996" width="1.15" height="0.95" rx="0.19" fill="#eab308"/>
+<rect x="35.724999999999994" y="38.824999999999996" width="1.15" height="0.95" rx="0.19" fill="#eab308"/>
+<rect x="39.449999999999996" y="38.9" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="40.65" y="38.9" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="16.650000000000002" y="9.5" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="18.45" y="9.5" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="49.65" y="25.700000000000003" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="51.449999999999996" y="25.700000000000003" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="52.65" y="25.700000000000003" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="54.449999999999996" y="25.700000000000003" width="0.9" height="0.8" rx="0.16000000000000003" fill="#eab308"/>
+<rect x="4.35" y="34.35" width="1.5" height="1.5" rx="0.30000000000000004" fill="#eab308"/><circle cx="5.1" cy="35.1" r="0.2" fill="#0f3d2e"/>
+<rect x="10.35" y="34.35" width="1.5" height="1.5" rx="0.30000000000000004" fill="#eab308"/><circle cx="11.1" cy="35.1" r="0.2" fill="#0f3d2e"/>
+<rect x="4.35" y="39.15" width="1.5" height="1.5" rx="0.30000000000000004" fill="#eab308"/><circle cx="5.1" cy="39.9" r="0.2" fill="#0f3d2e"/>
+<rect x="10.35" y="39.15" width="1.5" height="1.5" rx="0.30000000000000004" fill="#eab308"/><circle cx="11.1" cy="39.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="2.7" r="0.85" fill="#eab308"/><circle cx="60.9" cy="2.7" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="5.7" r="0.85" fill="#eab308"/><circle cx="60.9" cy="5.7" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="8.1" r="0.85" fill="#eab308"/><circle cx="60.9" cy="8.1" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="10.5" r="0.85" fill="#eab308"/><circle cx="60.9" cy="10.5" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="12.9" r="0.85" fill="#eab308"/><circle cx="60.9" cy="12.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="25.5" r="0.85" fill="#eab308"/><circle cx="60.9" cy="25.5" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="27.9" r="0.85" fill="#eab308"/><circle cx="60.9" cy="27.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="30.9" r="0.85" fill="#eab308"/><circle cx="60.9" cy="30.9" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="33.3" r="0.85" fill="#eab308"/><circle cx="60.9" cy="33.3" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="35.7" r="0.85" fill="#eab308"/><circle cx="60.9" cy="35.7" r="0.2" fill="#0f3d2e"/>
+<circle cx="60.9" cy="38.1" r="0.85" fill="#eab308"/><circle cx="60.9" cy="38.1" r="0.2" fill="#0f3d2e"/>
+</g>
+</svg>

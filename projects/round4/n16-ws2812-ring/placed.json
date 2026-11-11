@@ -1,0 +1,467 @@
+{
+ "width": 50,
+ "height": 50,
+ "grid": 0.6,
+ "layers": 2,
+ "trackW": 0.4,
+ "clearance": 0.2,
+ "viaOuter": 0.8,
+ "viaDrill": 0.4,
+ "copperWeight": "1",
+ "nets": [
+  {
+   "id": "v5",
+   "name": "5V"
+  },
+  {
+   "id": "gnd",
+   "name": "GND"
+  },
+  {
+   "id": "din",
+   "name": "DIN"
+  },
+  {
+   "id": "d1",
+   "name": "D1"
+  },
+  {
+   "id": "d2",
+   "name": "D2"
+  },
+  {
+   "id": "d3",
+   "name": "D3"
+  },
+  {
+   "id": "d4",
+   "name": "D4"
+  },
+  {
+   "id": "d5",
+   "name": "D5"
+  },
+  {
+   "id": "d6",
+   "name": "D6"
+  },
+  {
+   "id": "d7",
+   "name": "D7"
+  }
+ ],
+ "pads": [
+  {
+   "id": "WS1-1",
+   "netId": "v5",
+   "x": 21.3,
+   "y": 6.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS1-2",
+   "netId": "d1",
+   "x": 17.1,
+   "y": 6.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS1-3",
+   "netId": "gnd",
+   "x": 17.1,
+   "y": 11.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS1-4",
+   "netId": "din",
+   "x": 21.3,
+   "y": 11.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS2-1",
+   "netId": "v5",
+   "x": 11.7,
+   "y": 4.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS2-2",
+   "netId": "d2",
+   "x": 11.7,
+   "y": 8.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS2-3",
+   "netId": "gnd",
+   "x": 17.1,
+   "y": 8.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS2-4",
+   "netId": "d1",
+   "x": 17.1,
+   "y": 4.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS3-1",
+   "netId": "v5",
+   "x": 23.1,
+   "y": 4.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS3-2",
+   "netId": "d3",
+   "x": 18.9,
+   "y": 4.5,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS3-3",
+   "netId": "gnd",
+   "x": 18.9,
+   "y": 9.9,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS3-4",
+   "netId": "d2",
+   "x": 23.1,
+   "y": 9.9,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS4-1",
+   "netId": "v5",
+   "x": 13.5,
+   "y": 2.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS4-2",
+   "netId": "d4",
+   "x": 13.5,
+   "y": 6.9,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS4-3",
+   "netId": "gnd",
+   "x": 18.9,
+   "y": 6.9,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS4-4",
+   "netId": "d3",
+   "x": 18.9,
+   "y": 2.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS5-1",
+   "netId": "v5",
+   "x": 9.9,
+   "y": 5.1,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS5-2",
+   "netId": "d5",
+   "x": 9.9,
+   "y": 9.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS5-3",
+   "netId": "gnd",
+   "x": 15.3,
+   "y": 9.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS5-4",
+   "netId": "d4",
+   "x": 15.3,
+   "y": 5.1,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS6-1",
+   "netId": "v5",
+   "x": 9.9,
+   "y": 6.9,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS6-2",
+   "netId": "d6",
+   "x": 9.9,
+   "y": 11.1,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS6-3",
+   "netId": "gnd",
+   "x": 15.3,
+   "y": 11.1,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS6-4",
+   "netId": "d5",
+   "x": 15.3,
+   "y": 6.9,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS7-1",
+   "netId": "v5",
+   "x": 11.7,
+   "y": 6.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS7-2",
+   "netId": "d7",
+   "x": 7.5,
+   "y": 6.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS7-3",
+   "netId": "gnd",
+   "x": 7.5,
+   "y": 11.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS7-4",
+   "netId": "d6",
+   "x": 11.7,
+   "y": 11.7,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS8-1",
+   "netId": "v5",
+   "x": 8.1,
+   "y": 3.9,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS8-2",
+   "netId": null,
+   "x": 3.9,
+   "y": 3.9,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS8-3",
+   "netId": "gnd",
+   "x": 3.9,
+   "y": 9.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "WS8-4",
+   "netId": "d7",
+   "x": 8.1,
+   "y": 9.3,
+   "w": 1.2,
+   "h": 1.2,
+   "shape": "rect",
+   "layer": "top"
+  },
+  {
+   "id": "J1-1",
+   "netId": "v5",
+   "x": 13.5,
+   "y": 11.7,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J1-2",
+   "netId": "gnd",
+   "x": 13.5,
+   "y": 8.7,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  },
+  {
+   "id": "J1-3",
+   "netId": "din",
+   "x": 13.5,
+   "y": 14.7,
+   "w": 1.7,
+   "h": 1.7,
+   "shape": "circle",
+   "layer": "both",
+   "holeR": 0.45
+  }
+ ],
+ "keepouts": [],
+ "manual": [],
+ "stitching": [],
+ "comps": {
+  "J1": {
+   "x": 13.5,
+   "y": 11.7,
+   "rot": 270,
+   "layer": "top"
+  },
+  "WS1": {
+   "x": 19.2,
+   "y": 9,
+   "rot": 90,
+   "layer": "top"
+  },
+  "WS2": {
+   "x": 14.4,
+   "y": 6.6,
+   "rot": 0,
+   "layer": "top"
+  },
+  "WS3": {
+   "x": 21,
+   "y": 7.2,
+   "rot": 90,
+   "layer": "top"
+  },
+  "WS4": {
+   "x": 16.2,
+   "y": 4.8,
+   "rot": 0,
+   "layer": "top"
+  },
+  "WS5": {
+   "x": 12.6,
+   "y": 7.2,
+   "rot": 0,
+   "layer": "top"
+  },
+  "WS6": {
+   "x": 12.6,
+   "y": 9,
+   "rot": 0,
+   "layer": "top"
+  },
+  "WS8": {
+   "x": 6,
+   "y": 6.6,
+   "rot": 90,
+   "layer": "top"
+  },
+  "WS7": {
+   "x": 9.6,
+   "y": 9,
+   "rot": 90,
+   "layer": "top"
+  }
+ }
+}
