@@ -1,0 +1,802 @@
+{
+ "status": "partial",
+ "iterations": 30,
+ "timeMs": 11385,
+ "nets": [
+  {
+   "netId": "e1",
+   "name": "KEY1",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 5
+  },
+  {
+   "netId": "e2",
+   "name": "GND",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 24,
+   "total": 40
+  },
+  {
+   "netId": "e3",
+   "name": "NRST",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 5
+  },
+  {
+   "netId": "e4",
+   "name": "PA7",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 4
+  },
+  {
+   "netId": "e5",
+   "name": "PA5",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 4
+  },
+  {
+   "netId": "e6",
+   "name": "PB0",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e7",
+   "name": "PB1",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e8",
+   "name": "PA4",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e9",
+   "name": "3V3",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 12,
+   "total": 24
+  },
+  {
+   "netId": "e10",
+   "name": "LCD2_12",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e11",
+   "name": "USB1_B4A9",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 3
+  },
+  {
+   "netId": "e12",
+   "name": "DP",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e13",
+   "name": "DN",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e14",
+   "name": "PA3",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e15",
+   "name": "PA6",
+   "paths": [
+    [
+     {
+      "x": 39.5,
+      "y": 2.5,
+      "l": 1
+     },
+     {
+      "x": 39.5,
+      "y": 3,
+      "l": 1
+     },
+     {
+      "x": 39.85355339059328,
+      "y": 3.853553390593274,
+      "l": 1
+     },
+     {
+      "x": 42.5,
+      "y": 6.5,
+      "l": 1
+     },
+     {
+      "x": 42.5,
+      "y": 10.5,
+      "l": 1
+     },
+     {
+      "x": 41.5,
+      "y": 11.5,
+      "l": 1
+     },
+     {
+      "x": 41.5,
+      "y": 11.5,
+      "l": 2
+     },
+     {
+      "x": 42,
+      "y": 11.5,
+      "l": 2
+     },
+     {
+      "x": 42.5,
+      "y": 12,
+      "l": 2
+     },
+     {
+      "x": 42.5,
+      "y": 15.5,
+      "l": 2
+     },
+     {
+      "x": 42.5,
+      "y": 15.5,
+      "l": 1
+     },
+     {
+      "x": 42.5,
+      "y": 15.5,
+      "l": 0
+     }
+    ],
+    [
+     {
+      "x": 27.5,
+      "y": 8.5,
+      "l": 0
+     },
+     {
+      "x": 27.5,
+      "y": 9,
+      "l": 0
+     },
+     {
+      "x": 28,
+      "y": 9.5,
+      "l": 0
+     },
+     {
+      "x": 28.5,
+      "y": 9.5,
+      "l": 0
+     },
+     {
+      "x": 28.5,
+      "y": 9.5,
+      "l": 1
+     },
+     {
+      "x": 29.5,
+      "y": 8.5,
+      "l": 1
+     },
+     {
+      "x": 29.5,
+      "y": 8,
+      "l": 1
+     },
+     {
+      "x": 29.853553390593273,
+      "y": 7.146446609406726,
+      "l": 1
+     },
+     {
+      "x": 32.651471862576145,
+      "y": 4.348528137423857,
+      "l": 1
+     },
+     {
+      "x": 34.7,
+      "y": 3.5,
+      "l": 1
+     },
+     {
+      "x": 39.5,
+      "y": 3.5,
+      "l": 1
+     }
+    ]
+   ],
+   "vias": [
+    {
+     "x": 41.5,
+     "y": 11.5
+    },
+    {
+     "x": 42.5,
+     "y": 15.5
+    },
+    {
+     "x": 28.5,
+     "y": 9.5
+    }
+   ],
+   "cells": [
+    1417,
+    1470,
+    1471,
+    1523,
+    1524,
+    1525,
+    1577,
+    1578,
+    1579,
+    1631,
+    1632,
+    1685,
+    1738,
+    1791,
+    1844,
+    1843,
+    1897,
+    1896,
+    624,
+    3168,
+    4440,
+    3169,
+    3222,
+    3275,
+    3328,
+    3381,
+    837,
+    2109,
+    4653,
+    451,
+    504,
+    505,
+    1777,
+    3049,
+    4321,
+    1778,
+    1724,
+    1725,
+    1672,
+    1673,
+    1619,
+    1620,
+    1621,
+    1567,
+    1568,
+    1569,
+    1515,
+    1516,
+    1517,
+    1463,
+    1464,
+    1465,
+    1466,
+    1467,
+    1468,
+    1469
+   ],
+   "connected": 3,
+   "total": 3
+  },
+  {
+   "netId": "e16",
+   "name": "PB9",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e17",
+   "name": "USB5V",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 3,
+   "total": 10
+  },
+  {
+   "netId": "e18",
+   "name": "R2_1",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 2
+  },
+  {
+   "netId": "e19",
+   "name": "V3",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 4
+  },
+  {
+   "netId": "e20",
+   "name": "R3_1",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 2
+  },
+  {
+   "netId": "e21",
+   "name": "USART1_TX",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 4
+  },
+  {
+   "netId": "e22",
+   "name": "USART1_RX",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 2,
+   "total": 4
+  },
+  {
+   "netId": "e23",
+   "name": "U6_22",
+   "paths": [
+    [
+     {
+      "x": 24.5,
+      "y": 8.5,
+      "l": 0
+     },
+     {
+      "x": 24.5,
+      "y": 9.5,
+      "l": 0
+     },
+     {
+      "x": 25.5,
+      "y": 10.5,
+      "l": 0
+     },
+     {
+      "x": 27.5,
+      "y": 10.5,
+      "l": 0
+     },
+     {
+      "x": 27.5,
+      "y": 10.5,
+      "l": 1
+     },
+     {
+      "x": 24.5,
+      "y": 7.5,
+      "l": 1
+     },
+     {
+      "x": 24.5,
+      "y": 5.5,
+      "l": 1
+     },
+     {
+      "x": 24.5,
+      "y": 5.5,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [
+    {
+     "x": 27.5,
+     "y": 10.5
+    },
+    {
+     "x": 24.5,
+     "y": 5.5
+    }
+   ],
+   "cells": [
+    448,
+    501,
+    502,
+    554,
+    555,
+    556,
+    557,
+    1829,
+    3101,
+    4373,
+    1828,
+    1776,
+    1775,
+    1774,
+    1722,
+    1721,
+    1720,
+    1668,
+    1667,
+    1614,
+    1561,
+    289,
+    2833,
+    4105
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "e24",
+   "name": "U4_4",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 2
+  },
+  {
+   "netId": "e25",
+   "name": "C2_2",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e26",
+   "name": "C3_2",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e27",
+   "name": "PA0",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e28",
+   "name": "PA1",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 2
+  },
+  {
+   "netId": "e29",
+   "name": "PA2",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e30",
+   "name": "PB2",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e31",
+   "name": "PB10",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e32",
+   "name": "PB12",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e33",
+   "name": "PB13",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e34",
+   "name": "PB14",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e35",
+   "name": "PB15",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e36",
+   "name": "PA8",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e37",
+   "name": "PA9",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e38",
+   "name": "PA10",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e39",
+   "name": "PA11",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 2
+  },
+  {
+   "netId": "e40",
+   "name": "PA12",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e41",
+   "name": "PA15",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e42",
+   "name": "PB3",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e43",
+   "name": "PB4",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e44",
+   "name": "PB5",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 2
+  },
+  {
+   "netId": "e45",
+   "name": "PB8",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e46",
+   "name": "R7_1",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e47",
+   "name": "LED3_2",
+   "paths": [
+    [
+     {
+      "x": 2.5,
+      "y": 18.5,
+      "l": 0
+     },
+     {
+      "x": 4.5,
+      "y": 18.5,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    956,
+    957,
+    958
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "e48",
+   "name": "LED1",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 3
+  },
+  {
+   "netId": "e49",
+   "name": "LED4_2",
+   "paths": [
+    [
+     {
+      "x": 9.5,
+      "y": 18.5,
+      "l": 0
+     },
+     {
+      "x": 11.5,
+      "y": 18.5,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    963,
+    964,
+    965
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "e50",
+   "name": "LED2",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 1,
+   "total": 3
+  },
+  {
+   "netId": "e51",
+   "name": "SWD",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e52",
+   "name": "SWC",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  },
+  {
+   "netId": "e53",
+   "name": "LED5_1",
+   "paths": [],
+   "vias": [],
+   "cells": [],
+   "connected": 0,
+   "total": 2
+  }
+ ],
+ "overuse": [],
+ "stats": {
+  "connected": 59,
+  "total": 203,
+  "trackTop": 10.121320343559642,
+  "trackBot": 0,
+  "vias": 5,
+  "trackLen": 45.464059816272986,
+  "trackLayers": [
+   10.121320343559642,
+   30.6356326915268,
+   4.707106781186548,
+   0
+  ],
+  "trackInner": 35.34273947271335
+ },
+ "drcErrors": 196
+}

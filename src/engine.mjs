@@ -4118,11 +4118,16 @@ function verifyEasyEdaExport(design, result, eeText){
    核实（study/pcb-rnd 源码）：PAD~shape~x~y~w~h~layer~net~number~holeR~points~rot~
    id~…（points=f[10]、rot=f[11]）；TRACK~w~layer~net~{points}~id~locked；
    VIA~x~y~dia~net~holeR(半径)~id~locked；TEXT~type~x~y~strokeW~rot~mirror~layer~
-   net~height~string~…；LIB~x~y~attrs~rot~import~id~locked#@内含形状（#@$ 分隔）
-   ——内含形状为本地坐标（read_std_hi.c std_parse_subc → subc_finalize 在 x,y,rot
-   整体放置），旋转变换按 EasyEDA 屏幕坐标（y 向下）标准矩阵；pcb-rnd 的 -rot 是其
-   y 向上坐标系的翻转补偿，不适用于本模型。层号：1/2=顶/底铜、11=通孔、21..52=内层、
-   3/4=丝印、5/6=阻焊、99..101=doc（easystd_layertab + LAYERTAB_INNER 21..52）。
+   net~height~string~…；LIB~x~y~attrs~rot~import~id~locked#@内含形状（#@$ 分隔）。
+   **LIB 内含形状坐标两口径（开源广场实样 599 shape 对拍修正 0.11.2）**：嘉立创EDA
+   板文件的 LIB 内形状是 **doc 绝对坐标、PAD rot=板面绝对角**（LIB rot 仅描述朝向，
+   形状已按绝对位置/角度展开——实样：rot=180 的 LIB 内 PAD raw 绕 origin 对称
+   ±8 units、SOLIDREGION/TEXT 同为绝对）；pcb-rnd read_std 的 subc 本地坐标语义
+   （subc_finalize 在 x,y,rot 整体放置）适用于其 footprint 库流（docType 4/5），
+   与板文件不同——本导入器按板文件口径取 raw 坐标、不叠加 LIB 变换、rot 不加
+   libRot。层号：1/2=顶/底铜、11=通孔、21..52=内层、3/4=丝印、5/6=阻焊、
+   99..101=doc（easystd_layertab + LAYERTAB_INNER 21..52）；**10=边框层**（开源
+   广场实样：板框线画在层 10 的 TRACK，net 空或 S$ 计数线——兜底板框）。
    语义映射：TRACK→design.manual（计入连通/DRC/全部导出，netW 取各网众数线宽）；
    VIA→两点换层 stub（buildModel 惯例：换层点=全层过孔影响区，engine.mjs markFixed）；
    COPPERAREA/HOLE(NPTH) 不导入——design 无铜皮多边形/裸孔存储，接力用 pour 重铺，
@@ -4154,7 +4159,7 @@ function importEasyEdaPcbFull(eeText){
   const report={pads:0,nets:0,tracks:0,vias:0,texts:0,copperareas:0,holes:0,graphics:0,skipped:{},notes:[]};
   const skip=k=>{report.skipped[k]=(report.skipped[k]||0)+1;};
   const pads=[],tracks=[],vias=[],refTexts=[],keepRects=[];
-  let outline=null, sawInner=false;
+  let outline=null, outline2=null, sawInner=false;   // outline2 = 边框层(10)兜底候选
   const num=v=>{const n=parseFloat(v);return Number.isFinite(n)?n:0;};
   // LIB 本地→doc 坐标（EasyEDA 屏幕坐标 y 向下，标准旋转矩阵）
   const trX=(x,y,tf)=>tf?(tf.dx+x*tf.c-y*tf.s):x;
@@ -4173,9 +4178,7 @@ function importEasyEdaPcbFull(eeText){
       if(raw.startsWith('LIB~')){
         const parts=raw.split('#@$');
         const h=parts[0].split('~');
-        const rot=num(h[4]);
-        parseShapes(parts.slice(1),
-          {dx:num(h[1]), dy:num(h[2]), rot, c:Math.cos(rot*Math.PI/180), s:Math.sin(rot*Math.PI/180)},
+        parseShapes(parts.slice(1), null,   // 板文件口径：LIB 内形状已按绝对坐标展开（见头部注释）
           libComp||_eeLibAttrName(h[3])||('LIB'+(pads.length+tracks.length+1)));
         continue;
       }
@@ -4191,7 +4194,7 @@ function importEasyEdaPcbFull(eeText){
         }
         if(wU<=0||hU<=0){ skip('PAD-'+(f[1]||'nosize')); continue; }
         const xU=num(f[2]), yU=num(f[3]);
-        const rot=((num(f[11])+(tf?tf.rot:0))%360+360)%360;
+        const rot=((num(f[11]))%360+360)%360;   // PAD rot=板面绝对角（真实文件对拍，不叠加 LIB rot）
         pads.push({ x:trX(xU,yU,tf)*U, y:trY(xU,yU,tf)*U,
           w:wU*U, h:hU*U, wLocal:wU*U, hLocal:hU*U, rot,
           shape:(shape==='ELLIPSE'||shape==='CIRCLE')?'circle':'rect',
@@ -4202,6 +4205,19 @@ function importEasyEdaPcbFull(eeText){
       }
       if(t==='TRACK'&&f.length>=5){
         const layerId=String(f[2]||'').trim();
+        // 嘉立创EDA 标准版边框层=10（开源广场实测：4 条闭合矩形边线，net 空或 S$ 计数线）
+        // ——记入板框候选（仅在无 SOLIDREGION boardoutline 时兜底使用）
+        const _tNet=String(f[3]||'').trim();
+        if(layerId==='10'&&(_tNet===''||_tNet.startsWith('S$'))){
+          const n2=_eeParseNums(f[4]);
+          for(let k=0;k+1<n2.length;k+=2){
+            const gx=trX(n2[k],n2[k+1],tf)*U, gy=trY(n2[k],n2[k+1],tf)*U;
+            if(!outline2) outline2={x0:gx,y0:gy,x1:gx,y1:gy};
+            else{ outline2.x0=Math.min(outline2.x0,gx); outline2.y0=Math.min(outline2.y0,gy);
+                  outline2.x1=Math.max(outline2.x1,gx); outline2.y1=Math.max(outline2.y1,gy); }
+          }
+          continue;
+        }
         if(!['1','2','21','22'].includes(layerId)){ skip('TRACK-l'+(layerId||'?')); continue; }
         if(layerId==='21'||layerId==='22') sawInner=true;
         const pv=_eeParseNums(f[4]);
@@ -4228,6 +4244,12 @@ function importEasyEdaPcbFull(eeText){
       }
       if(t==='SOLIDREGION'){
         const pathField=f.find((x,k)=>k>0&&typeof x==='string'&&x.trim().startsWith('M '));
+        // 真实文件口径（开源广场实测）：SOLIDREGION~层~网名~path——层 1/2 带网名 =
+        // 异形铜皮区域（与 COPPERAREA 同语义：design 无铜皮存储，接力用 pour 重铺）
+        if(['1','2','11'].includes(String(f[1]||'').trim())&&String(f[2]||'').trim()&&pathField&&
+           !f.includes('boardoutline')&&!f.includes('keepout')){
+          skip('SOLIDREGION-铜皮'); continue;
+        }
         if(f.includes('boardoutline')&&pathField){
           const bb=pathBBox(pathField);
           if(bb&&!outline) outline={x0:bb.a*U,y0:bb.b*U,x1:bb.c*U,y1:bb.d*U};
@@ -4251,6 +4273,10 @@ function importEasyEdaPcbFull(eeText){
   // 板幅：boardoutline 包围盒精确取值；缺失则焊盘包围盒外扩 5mm（KiCad 导入同款回退）
   let bb;
   if(outline&&outline.x1-outline.x0>1e-6&&outline.y1-outline.y0>1e-6) bb=outline;
+  else if(outline2&&outline2.x1-outline2.x0>1e-6&&outline2.y1-outline2.y0>1e-6){
+    bb=outline2;   // 边框层兜底（开源广场实测：板框画在层 10 的线条）
+    report.notes.push('板框取自边框层(10)线条包围盒');
+  }
   else{
     if(!pads.length) throw new Error('文件中既无板框（SOLIDREGION boardoutline）也无焊盘，无法确定板幅');
     let a=1e9,b=1e9,c=-1e9,d=-1e9;

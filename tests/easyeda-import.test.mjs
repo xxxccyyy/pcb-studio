@@ -100,10 +100,12 @@ test('真实文件风格：LIB 块（本地坐标+90° 旋转）+ 非零 canvas 
     head: { docType: '3', editorVersion: '6.5.54' },
     canvas: 'CA~1000~1000~#000000~yes~#FFFFFF~10~1000~1000~line~9.8425~mm~1~45~visible~0.5~312.5~255.9~1~yes',
     shape: [
+      // 0.11.2 口径修正：板文件 LIB 内形状=doc 绝对坐标、PAD rot=板面绝对角
+      // （本地 (-4,-1.25)→rot90→绝对 (351.25,296)；(4,-1.25)→(348.75,296)）
       'LIB~350~300~`hash`abc`name`R5`Pre`R5`package`R0603~90~0~gge1~0#@$'
-      + 'PAD~RECT~-4~-1.25~2~1.2~11~GND~1~3~{}~0~gge11~0~~Y~0#@$'
-      + 'PAD~RECT~4~-1.25~2~1.2~1~VCC~2~0~{}~0~gge12~0~~Y~0#@$'
-      + 'TEXT~L~0~-6~4~0~0~3~~12~R5~~~gge13~Noto~0~~',
+      + 'PAD~RECT~351.25~296~2~1.2~11~GND~1~3~{}~90~gge11~0~~Y~0#@$'
+      + 'PAD~RECT~348.75~296~2~1.2~1~VCC~2~0~{}~90~gge12~0~~Y~0#@$'
+      + 'TEXT~L~344~294~4~0~0~3~~12~R5~~~gge13~Noto~0~~',
       'TRACK~2~1~VCC~{400,300,500,300}~gge20~0',
       'TRACK~2~21~GND~{400,320,500,320}~gge22~0',
       'VIA~500~300~3~VCC~1.5~gge21~0',
@@ -121,14 +123,15 @@ test('真实文件风格：LIB 块（本地坐标+90° 旋转）+ 非零 canvas 
   const p1 = imp.pads.find(p => p.id === 'R5-1'), p2 = imp.pads.find(p => p.id === 'R5-2');
   assert.ok(p1 && p2, 'LIB attrs `name`=R5 → 位号归属');
   assert.equal(p1.layer, 'both'); assert.equal(p2.layer, 'top');
-  // 90° 旋转：AABB 交换 + wLocal/hLocal/rotAbs 保留（spec 45° 真形状检查依赖）
+  // PAD rot=板面绝对角：AABB 交换 + wLocal/hLocal/rotAbs 保留（spec 45° 真形状检查依赖）
   for (const p of [p1, p2]) {
     assert.equal(p.rotAbs, 90);
     assert.equal(p.wLocal, 2 * U); assert.equal(p.hLocal, 1.2 * U);
     assert.ok(Math.abs(p.w - 1.2 * U) < 1e-6 && Math.abs(p.h - 2 * U) < 1e-6, '旋转 AABB w/h 互换');
   }
-  // LIB 本地坐标 90° 旋转 + 原点平移：pad1 本地 (-4,-1.25) → 板坐标 (x±,y±) 与 pad2 对称
-  assert.ok(Math.abs((p2.y - p1.y) - 8 * U) < 1e-6, '旋转后两 pad 沿 y 分离 8u');
+  // 绝对坐标：两 pad 绝对位置绕 origin 对称（348.75/351.25），板内相对位置差 2.5u
+  assert.ok(Math.abs((p1.x - p2.x) - 2.5 * U) < 1e-6, '绝对坐标差 2.5u');
+  assert.ok(Math.abs((p2.y - p1.y)) < 1e-6, '同 y（rot90 后沿 x 分离）');
   // 网络与线宽众数（TRACK 2u=0.508mm）
   assert.ok(imp.nets.some(n => n.name === 'VCC' && Math.abs(n.w - 0.508) < 1e-9), 'VCC 线宽众数 0.508');
   // VIA → stub（4 层：l 0↔3）
@@ -273,4 +276,44 @@ test('CLI import easyeda：端到端 JSON 输出 + -o 落盘 + 导入板 spec �
   const sp = JSON.parse(execFileSync(process.execPath, [CLI, 'spec', out], { encoding: 'utf8', timeout: 120000 }));
   assert.equal(sp.ok, true);
   rmSync(dir, { recursive: true, force: true });
+});
+
+// ---- 开源广场真实案例（ext-oshwhub-01）回归：0.11.2 抓出的两口径缺口 ----
+test('真实案例口径：LIB 绝对坐标 + 板框层 10 + 异形铜皮分类（合成复刻）', () => {
+  const ee = JSON.stringify({
+    head: { docType: '3', editorVersion: '6.5.22' },
+    // canvas 原点非零 + 单位 mil 标注（真实文件口径）
+    canvas: 'CA~1000~1000~#000000~yes~#FFFFFF~10~1000~1000~line~0.1~mil~0.3~45~visible~0.5~4020~3589~1~yes',
+    shape: [
+      // rot=180 的 LIB：内含 PAD 为 doc 绝对坐标（绕 origin 对称）、PAD rot=板面绝对角
+      'LIB~4255~3115.5~package`SW-SMD`link``Contributor`x~3DModel`Y~180~0~gge1~0#@\$'
+      + 'PAD~RECT~4246.988~3115.5~6~5.35~2~KEY1~1~0~{}~180~gge2~0~~Y~0#@\$'
+      + 'PAD~RECT~4263.012~3115.5~6~5.35~2~GND~2~0~{}~180~gge3~0~~Y~0',
+      // 顶层摊平焊盘（doc 绝对）
+      'PAD~RECT~4100~3100~6~5.35~1~SIG~1~0~{}~0~gge4~0~~Y~0',
+      // 板框：层 10 四条边线（net 空/S$）——嘉立创EDA 标准版边框层
+      'TRACK~1~10~~4084.78 3049.62 4291.5 3049.62~gge5~0',
+      'TRACK~1~10~~4291.5 3049.62 4291.5 3144.1~gge6~0',
+      'TRACK~1~10~~4291.5 3144.1 4084.78 3144.1~gge7~0',
+      'TRACK~1~10~~4084.78 3144.1 4084.78 3049.62~gge8~0',
+      // 异形铜皮：层 2 + 网名（真实文件的 SOLIDREGION 铜皮口径）
+      'SOLIDREGION~2~USB5V~M 4093 3100 L 4093 3115 L 4101 3115 L 4101 3100 Z~gge9~0',
+      // 内层走线 21 → 4 层识别
+      'TRACK~2~21~GND~{4100 3110 4200 3110}~gge10~0',
+      // LIB 内装饰 SOLIDREGION（层 100 doc）→ graphics 计数
+      'LIB~4241~3090~package`C0603`~90~0~gge11~0#@SOLIDREGION~100~~M 4243 3093 L 4239 3093 L 4239 3092 L 4243 3092 Z~gge12~0'],
+    BBox: {} });
+  const { design: imp, report } = core.importEasyEdaPcbFull(ee);
+  // 板框取自层 10 包围盒（52.51×23.50 ≈ (4291.5-4084.78)×0.254 × (3144.1-3049.62)×0.254）
+  assert.ok(Math.abs(imp.width - 52.5) < 0.1 && Math.abs(imp.height - 24.0) < 0.1,
+    `板幅 ${imp.width}×${imp.height} 应来自边框层`);
+  assert.ok(report.notes.some(n => /边框层/.test(n)), 'notes 记录边框层来源');
+  // LIB 绝对坐标：KEY1 pad 落在板内（doc 4247 → (4247-4084.78)×0.254 ≈ 41.2mm）
+  const k1 = imp.pads.find(p => p.id.startsWith('KEY1') || p.id.startsWith('LIB1-1'));
+  assert.ok(k1 && k1.x > 30 && k1.x < 52, `rot180 LIB pad 应在板内: ${k1 && k1.x}`);
+  assert.equal(k1.rotAbs, 180, 'PAD rot=板面绝对角（不叠加 LIB rot）');
+  // 异形铜皮单独计数（非 solid 装饰）
+  assert.equal(report.skipped['SOLIDREGION-铜皮'], 1);
+  // 21 层 → 4 层
+  assert.equal(imp.layers, 4);
 });

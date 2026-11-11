@@ -1,5 +1,38 @@
 # 更新日志
 
+## 0.11.2（2026-11-12）—— git 版本化 + 外部实测（KiCad 插件 mock + 开源广场案例 02）
+
+### 仓库
+- **git init**（仓库根=pcb-autorouter）：1050 文件初始入库，.scratch/排除，
+  core.autocrlf=false（字节级一致性文化），仓库本地占位身份
+
+### KiCad 插件（Part 2a）
+- **mock pcbnew 单元测试 8 项**（tests/kicad-plugin.test.py + node 驱动器，python
+  缺失如实 SKIP）：_repo_root 三条解析路径 / Run 命令序列（真 node CLI 子进程跑
+  import dsn→route→export ses 全链）/ SES 内容校验 / 四条错误路径
+- **插件真缺口修复**：PCB_STUDIO_NODE 指向无效路径时 WinError 2 原样抛出 →
+  isfile 校验+可操作报错
+- README 补**真机 headless 实测指引**（KiCad 自带 python 逐条命令；pcbnew 真机
+  调用链待用户装机后实测——如实待办）
+
+### 开源广场接力案例 02（Part 2b，[案例文档](docs/案例-外部板02-开源广场接力.md)）
+- **获取路径打通**：oshwhub 项目页 RSC → projectid → `lceda.cn/api/projects/{uuid}`
+  → documents docType 3 → `api/documents/{docUuid}` dataStr（972KB 真实 PCB）
+- **三个真实缺口修复**（each with 回归锁定）：
+  1. **板框层 10**：真实文件板框画在层 10 的 TRACK（非 SOLIDREGION boardoutline）
+     ——记入板框候选兜底
+  2. **LIB 坐标两口径修正**：板文件 LIB 内形状=doc 绝对坐标、PAD rot=板面绝对角
+     （实样对拍）——原 pcb-rnd 本地坐标语义致 150 焊盘飞出板外；修正后 spec
+     出板 208→0
+  3. **SOLIDREGION 网名铜皮分类**：层 1/2 带网名=异形铜皮，单独计数
+- 布通率分析（头部遗留）：manual 影响区线性侵蚀可布区（158 条→53/203，0 条→
+  104/203）——高占用板接力补线是栅格模型能力边界，**#12 形状布线的实证依据**
+- 回归：easyeda-import 11 项（真实案例口径合成复刻）；A/B 对拍 35/35 全等
+
+### 验证
+- 全量回归全绿（80+160+48+17+46+7+22）；build 一致 + 经典脚本守卫 OK
+- git 提交：Part1 初始入库 / Part2a 插件 mock / Part2b 本条（各带深度检查）
+
 ## 0.11.1（2026-11-12）—— 深度优化第二轮：分段归因驱动的 pour/会话优化
 
 第一轮收口后**分段计时插桩**（computePour 逐节计时）精确归因：孤岛处理 40.6%
