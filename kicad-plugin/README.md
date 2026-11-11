@@ -35,13 +35,47 @@ KiCad 当前板 ──ExportSpecctraDSN──▶ in.dsn
 ## 已知边界（如实）
 
 - **实测依赖**：引擎侧（importDSN/exportSES/CLI）在本仓库有全量回归（`tests/dsn-ses.test.mjs`）；
-  插件的 pcbnew 调用链（ExportSpecctraDSN/ImportSpecctraSES 的返回值语义、KiCad 版本差异）
-  需要 **装有 KiCad 的机器实测**——开发环境无 KiCad，只做了 Python 语法检查与逻辑复核。
+  插件逻辑层有 mock pcbnew 单元测试（`tests/kicad-plugin.test.py`——fake pcbnew/wx 注入 +
+  真实 node CLI 子进程，覆盖 repo_root 解析/命令序列/四条错误路径/route 输出容错，
+  `npm test` 自动运行）；**pcbnew 真机调用链仍需装有 KiCad 的机器实测**——
   首次实测若失败，把弹窗里的报错贴进 issue 即可定位。
 - 引擎是网格布线器：KiCad DSN 里的禁布区/regions/差分对约束导入侧跳过（`importDSN` 注释）；
   差分对/等长组建议在 PCB Studio 侧用 `rules` schema 声明后再 route。
 - route 未布通（`partial`）也会回读已布部分，弹窗明示连通数。
 - 铺铜/缝合孔/丝印在 KiCad 侧保留不动；如需 PCB Studio 的铺铜链路，回 KiCad 前在引擎侧完成。
+
+## 真机 headless 实测指引（装好 KiCad 后逐步执行）
+
+KiCad 自带 Python（内含 pcbnew 模块），无需打开 GUI 即可验证整条调用链。以下命令
+逐条复制执行（PowerShell，KiCad 8 路径为准；7.0 把 `8.0` 换 `7.0`）：
+
+```powershell
+# 0) 前置：确认 pcbnew 模块可导入
+& "C:\Program Files\KiCad\8.0\bin\python.exe" -c "import pcbnew; print(pcbnew.GetBuildVersion())"
+
+# 1) 准备一块最小 .kicad_pcb（或直接用你手头的真实工程）
+#    用本仓库测试夹具生成：projects/ext-icebreaker/icebreaker-v1.0e.kicad_pcb 是真实板
+
+# 2) KiCad 侧导出 DSN（headless）
+& "C:\Program Files\KiCad\8.0\bin\python.exe" -c "import pcbnew; print(pcbnew.ExportSpecctraDSN(r'D:\tmp\in.dsn'))"
+#    期望输出 True——在 KiCad 里先打开该工程（pcbnew 需要活动板）：
+#    无活动板时可走完整路径：pcbnew.LoadBoard(r'...kicad_pcb') 后再导出
+
+# 3) 引擎三连（node 侧）
+node ai\pcb.mjs import dsn D:\tmp\in.dsn -o D:\tmp\design.json
+node ai\pcb.mjs route D:\tmp\design.json -o D:\tmp\result.json
+node ai\pcb.mjs export ses D:\tmp\design.json D:\tmp\result.json -o D:\tmp\out.ses
+
+# 4) SES 回读 KiCad（headless 验证）
+& "C:\Program Files\KiCad\8.0\bin\python.exe" -c "import pcbnew; print(pcbnew.ImportSpecctraSES(r'D:\tmp\out.ses'))"
+#    期望 True——随后 pcbnew.SaveBoard(...) 存盘，用 KiCad GUI 打开目检走线
+
+# 5) 插件整链：设置 PCB_STUDIO_HOME 后在 KiCad GUI 里 Tools → PCB Studio 一键布线
+```
+
+实测关注点：①`ExportSpecctraDSN/ImportSpecctraSES` 的返回值语义（True/异常）；②KiCad
+导出的 DSN 刻度（importDSN 的 0.1µm 自适应是否命中）；③回读后走线层归属与过孔；
+④action plugin 在 7/8 两代的注册差异。结果（含报错原文）记录到 issue 或案例文档。
 
 ## 双向能力对照
 

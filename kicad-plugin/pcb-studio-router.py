@@ -82,6 +82,10 @@ class PcbStudioRouter(pcbnew.ActionPlugin):
             _msg("未找到 node（引擎为 Node.js 程序）：请安装 Node.js 或设置 PCB_STUDIO_NODE",
                  error=True)
             return
+        if not os.path.isfile(node):
+            _msg("PCB_STUDIO_NODE 指向的可执行文件不存在：" + node +
+                 "\n请修正该环境变量，或删除它改用 PATH 查找。", error=True)
+            return
         cli = os.path.join(repo, "ai", "pcb.mjs")
         via_cost = os.environ.get("PCB_STUDIO_VIA_COST", "15")
         try:
