@@ -1,0 +1,211 @@
+[
+ {
+  "name": "p01-lqfp144-mcu",
+  "pads": 184,
+  "nets": 84,
+  "status": "complete",
+  "connected": 184,
+  "total": 184,
+  "drcErrors": 0,
+  "ms": "705",
+  "ok": true
+ },
+ {
+  "name": "p02-dual-lqfp64",
+  "pads": 128,
+  "nets": 64,
+  "status": "complete",
+  "connected": 128,
+  "total": 128,
+  "drcErrors": 0,
+  "ms": "227",
+  "ok": true
+ },
+ {
+  "name": "p03-qfn32-farm",
+  "pads": 192,
+  "nets": 96,
+  "status": "complete",
+  "connected": 192,
+  "total": 192,
+  "drcErrors": 0,
+  "ms": "289",
+  "ok": true
+ },
+ {
+  "name": "p04-soic16-farm",
+  "pads": 192,
+  "nets": 96,
+  "status": "complete",
+  "connected": 192,
+  "total": 192,
+  "drcErrors": 0,
+  "ms": "279",
+  "ok": true
+ },
+ {
+  "name": "p05-ws2812-8x16",
+  "pads": 512,
+  "nets": 130,
+  "status": "complete",
+  "connected": 512,
+  "total": 512,
+  "drcErrors": 0,
+  "ms": "36438",
+  "ok": true
+ },
+ {
+  "name": "p06-dip40-tht",
+  "pads": 136,
+  "nets": 68,
+  "status": "complete",
+  "connected": 136,
+  "total": 136,
+  "drcErrors": 0,
+  "ms": "715",
+  "ok": true
+ },
+ {
+  "name": "p07-hdr-farm",
+  "pads": 72,
+  "nets": 36,
+  "status": "complete",
+  "connected": 72,
+  "total": 72,
+  "drcErrors": 0,
+  "ms": "203",
+  "ok": true
+ },
+ {
+  "name": "p08-dual-lqfp48-hdr",
+  "pads": 114,
+  "nets": 57,
+  "status": "complete",
+  "connected": 114,
+  "total": 114,
+  "drcErrors": 0,
+  "ms": "166",
+  "ok": true
+ },
+ {
+  "name": "p09-0603-farm",
+  "pads": 200,
+  "nets": 100,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "drcErrors": 0,
+  "ms": "199",
+  "ok": true
+ },
+ {
+  "name": "p10-lqfp100",
+  "pads": 120,
+  "nets": 56,
+  "status": "complete",
+  "connected": 120,
+  "total": 120,
+  "drcErrors": 0,
+  "ms": "264",
+  "ok": true
+ },
+ {
+  "name": "p11-mixed-mcu",
+  "pads": 124,
+  "nets": 62,
+  "status": "complete",
+  "connected": 124,
+  "total": 124,
+  "drcErrors": 0,
+  "ms": "171",
+  "ok": true
+ },
+ {
+  "name": "p12-power-mixed",
+  "pads": 98,
+  "nets": 45,
+  "status": "complete",
+  "connected": 98,
+  "total": 98,
+  "drcErrors": 0,
+  "ms": "280",
+  "ok": true
+ },
+ {
+  "name": "p13-backplane",
+  "pads": 66,
+  "nets": 33,
+  "status": "complete",
+  "connected": 66,
+  "total": 66,
+  "drcErrors": 0,
+  "ms": "158",
+  "ok": true
+ },
+ {
+  "name": "p14-shallow-mixed",
+  "pads": 88,
+  "nets": 44,
+  "status": "complete",
+  "connected": 88,
+  "total": 88,
+  "drcErrors": 0,
+  "ms": "62",
+  "ok": true
+ },
+ {
+  "name": "p15-triple-lqfp48",
+  "pads": 150,
+  "nets": 75,
+  "status": "complete",
+  "connected": 150,
+  "total": 150,
+  "drcErrors": 0,
+  "ms": "221",
+  "ok": true
+ },
+ {
+  "name": "p16-qfn-plus-lqfp144",
+  "pads": 186,
+  "nets": 93,
+  "status": "complete",
+  "connected": 186,
+  "total": 186,
+  "drcErrors": 0,
+  "ms": "255",
+  "ok": true
+ },
+ {
+  "name": "p17-broadcast-200",
+  "pads": 204,
+  "nets": 52,
+  "status": "complete",
+  "connected": 204,
+  "total": 204,
+  "drcErrors": 0,
+  "ms": "649",
+  "ok": true
+ },
+ {
+  "name": "p18-mixed-tech",
+  "pads": 164,
+  "nets": 82,
+  "status": "complete",
+  "connected": 164,
+  "total": 164,
+  "drcErrors": 0,
+  "ms": "506",
+  "ok": true
+ },
+ {
+  "name": "p19-qfn-dense-05",
+  "pads": 200,
+  "nets": 100,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "drcErrors": 0,
+  "ms": "214",
+  "ok": true
+ }
+]

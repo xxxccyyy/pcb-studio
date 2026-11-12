@@ -1297,7 +1297,13 @@ function createSession(design, opts){
         if(!cells.length) continue;
         let touching=false;
         for(const s of cells) if(tree.has(s)){ touching=true; break; }
-        if(touching) continue;
+        if(touching){
+          // 天然连通（pad cells 与树共享格）：cells 必须并入 net.cells——
+          // countConn 以 net.cells 判定，不并入则天然连通网每轮被误计为失败
+          // （M1 生成器实测：同网相邻脚 pad 距 < 格+盘径即触发，connected 恒 0）
+          for(const s of cells) net.cells.add(s);
+          continue;
+        }
         const src=cells.filter(s=>enterOK(net,s,hard));
         if(!src.length) continue;
         const path=astar(net, src, tree, hard);
