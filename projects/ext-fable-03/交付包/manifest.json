@@ -1,0 +1,159 @@
+{
+ "ok": true,
+ "project": "Handheld-Pet",
+ "generatedBy": "pcb-autorouter@0.9.0",
+ "design": {
+  "nets": 24,
+  "pads": 148,
+  "components": 27,
+  "layers": 4,
+  "width": 55,
+  "height": 40,
+  "external": true
+ },
+ "result": {
+  "nets": 24,
+  "total": 110,
+  "connectedSum": 99,
+  "vias": 23
+ },
+ "gates": {
+  "verify": {
+   "ok": true,
+   "findings": []
+  },
+  "drc": {
+   "errors": 8,
+   "warnings": 22,
+   "fabFail": 0,
+   "detail": [
+    "网络 USB_DP：还有 4 个焊盘未连通",
+    "网络 USB_DM：还有 4 个焊盘未连通",
+    "网络 CC1：还有 2 个焊盘未连通",
+    "走线距焊盘 LED2-1 过近",
+    "走线距焊盘 U1-26 过近",
+    "走线距焊盘 U1-16 过近",
+    "走线距焊盘 U1-17 过近",
+    "走线距焊盘 J1-B4A9 过近"
+   ]
+  },
+  "connectivity": {
+   "total": 110,
+   "connected": 99,
+   "ok": false
+  }
+ },
+ "override": {
+  "forced": true,
+  "reason": "--force"
+ },
+ "evidenceLevels": {
+  "roundtrip-verified": "写后回读对账通过（最强自证）",
+  "deterministic": "工具几何/文件生成（可机器复算）",
+  "datasheet-backed": "厂商参数表口径（BOM/检查表——人工复核 C 编号与封装）"
+ },
+ "artifacts": [
+  {
+   "file": "Handheld-Pet.嘉立创EDA.json",
+   "kind": "easyeda-pcb",
+   "bytes": 18508,
+   "evidence": "roundtrip-verified"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-F_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 17781,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-In1_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 10166,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-In2_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 7105,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-B_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 98594,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-F_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 4630,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-B_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 637,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-F_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 676,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-B_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 152,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet-Edge_Cuts.gbr",
+   "kind": "gerber",
+   "bytes": 136,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Handheld-Pet.drl",
+   "kind": "gerber",
+   "bytes": 1318,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "Handheld-Pet.ipc356.txt",
+   "kind": "ipc-d-356a",
+   "bytes": 10076,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "Handheld-Pet.svg",
+   "kind": "svg",
+   "bytes": 100605,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "Handheld-Pet.BOM.csv",
+   "kind": "bom",
+   "bytes": 524,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "Handheld-Pet.贴片坐标.csv",
+   "kind": "pos",
+   "bytes": 601,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "Handheld-Pet.渲染.png",
+   "kind": "render-png",
+   "bytes": 7523,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "Handheld-Pet.投板检查表.json",
+   "kind": "fab-checklist",
+   "bytes": 3816,
+   "evidence": "datasheet-backed"
+  }
+ ]
+}
