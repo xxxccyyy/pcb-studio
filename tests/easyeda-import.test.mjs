@@ -317,3 +317,33 @@ test('真实案例口径：LIB 绝对坐标 + 板框层 10 + 异形铜皮分类�
   // 21 层 → 4 层
   assert.equal(imp.layers, 4);
 });
+
+// ---- 0.11.4：无名 LIB 组的位号回收（真实案例 80/80 找回）----
+test('无名 LIB 位号回收：内部位号 TEXT 1:1 认领本组；冲突/缺失保 LIB{n}', () => {
+  const mk = (attrs, innerText, label) =>
+    `LIB~4255~3115.5~${attrs}~180~0~ggeH${label}#@$`
+    + `PAD~RECT~4246.988~3115.5~6~5.35~2~N1~1~0~{}~180~ggeP${label}~0~~Y~0#@$`
+    + `PAD~RECT~4263.012~3115.5~6~5.35~2~N2~2~0~{}~180~ggeQ${label}~0~~Y~0#@$`
+    + (innerText ? `TEXT~L~4255~3110~4~0~0~3~~12~${innerText}~~~ggeT${label}~Noto~0~~` : '');
+  const ee = JSON.stringify({ head: { docType: '3' },
+    canvas: 'CA~1000~1000~#000~yes~#FFF~10~1000~1000~line~0.1~mil~0.3~45~visible~0.5~4020~3589~1~yes',
+    shape: [
+      // 有 name 的 LIB：attrs 定名，内部位号 TEXT 不参与
+      mk('`name`R5`package`R0603', 'R5', 'A'),
+      // 无 name + 内部位号 → 回收
+      mk('`package`C0603', 'C7', 'B'),
+      // 无 name + 无内部位号 → 保 LIB{n}
+      mk('`package`L0603', '', 'C'),
+      // 无 name + 内部位号与 R5 冲突（同名）→ 保 LIB{n}
+      mk('`package`D0603', 'R5', 'D')],
+    BBox: {} });
+  const { design: imp } = core.importEasyEdaPcbFull(ee);
+  const comps = new Set(imp.pads.map(p => p.id.split('-')[0]));
+  assert.ok(comps.has('R5'), 'attrs name 定名');
+  assert.ok(comps.has('C7'), '无名 LIB 内部位号回收');
+  assert.ok([...comps].some(c => /^LIB\d+$/.test(c)), '无内部位号保 LIB{n}');
+  assert.ok([...comps].some(c => /^LIB\d+$/.test(c)), '同名冲突保 LIB{n}');
+  // R5 组的焊盘数 = attrs LIB 的 2 脚（冲突 LIB 未抢名）
+  const r5 = imp.pads.filter(p => p.id.startsWith('R5-')).length;
+  assert.equal(r5, 2, '同名冲突不抢已有组名');
+});

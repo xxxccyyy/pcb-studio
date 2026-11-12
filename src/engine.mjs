@@ -4191,14 +4191,16 @@ function importEasyEdaPcbFull(eeText){
     return {a,b,c,d};
   };
 
-  function parseShapes(list, tf, libComp){
+  function parseShapes(list, tf, libComp, libSyn){
     for(const raw of list){
       if(!raw||typeof raw!=='string'||!raw.trim()) continue;
       if(raw.startsWith('LIB~')){
         const parts=raw.split('#@$');
         const h=parts[0].split('~');
-        parseShapes(parts.slice(1), null,   // 板文件口径：LIB 内形状已按绝对坐标展开（见头部注释）
-          libComp||_eeLibAttrName(h[3])||('LIB'+(pads.length+tracks.length+1)));
+        const _attr=_eeLibAttrName(h[3]);
+        const _comp=libComp||_attr||('LIB'+(pads.length+tracks.length+1));
+        const _syn=libComp!=null?libSyn:(_attr==null);   // 合成标记：attrs 无 name 才是合成组（沿嵌套传播）
+        parseShapes(parts.slice(1), null, _comp, _syn);   // 板文件口径：LIB 内形状已按绝对坐标展开（见头部注释）
         continue;
       }
       const f=raw.split('~'), t=f[0];
@@ -4214,7 +4216,7 @@ function importEasyEdaPcbFull(eeText){
         if(wU<=0||hU<=0){ skip('PAD-'+(f[1]||'nosize')); continue; }
         const xU=num(f[2]), yU=num(f[3]);
         const rot=((num(f[11]))%360+360)%360;   // PAD rot=板面绝对角（真实文件对拍，不叠加 LIB rot）
-        pads.push({ x:trX(xU,yU,tf)*U, y:trY(xU,yU,tf)*U,
+        pads.push({ libSyn:!!libSyn, x:trX(xU,yU,tf)*U, y:trY(xU,yU,tf)*U,
           w:wU*U, h:hU*U, wLocal:wU*U, hLocal:hU*U, rot,
           shape:(shape==='ELLIPSE'||shape==='CIRCLE')?'circle':'rect',
           layer:layerId==='1'?'top':(layerId==='2'?'bottom':'both'),
@@ -4258,7 +4260,7 @@ function importEasyEdaPcbFull(eeText){
         const layerId=String(f[7]||'').trim();
         if(/^[A-Za-z]+\d+$/.test(s))
           refTexts.push({ x:trX(num(f[2]),num(f[3]),tf)*U, y:trY(num(f[2]),num(f[3]),tf)*U,
-            text:s, layer:layerId==='4'?'bottom':'top', rot:num(f[5]), lib:!!tf });
+            text:s, layer:layerId==='4'?'bottom':'top', rot:num(f[5]), lib:!!tf, owner:libComp||null });
         continue;
       }
       if(t==='SOLIDREGION'){
@@ -4287,7 +4289,7 @@ function importEasyEdaPcbFull(eeText){
       report.graphics++;
     }
   }
-  parseShapes(ee.shape, null, null);
+  parseShapes(ee.shape, null, null, false);
 
   // 板幅：boardoutline 包围盒精确取值；缺失则焊盘包围盒外扩 5mm（KiCad 导入同款回退）
   let bb;
@@ -4349,6 +4351,21 @@ function importEasyEdaPcbFull(eeText){
     if(p.comp!=null){
       if(!groups.has(p.comp)) groups.set(p.comp,[]);
       groups.get(p.comp).push(p);
+    }
+  }
+  // 无名 LIB 组的位号回收（0.11.4，开源广场实测：80 个封装 attrs 全无 `name`，
+  // 但每个 LIB 内部恰好有一个位号样式 TEXT——所有权 1:1 明确，直接回收为组名；
+  // 顶层 PA12 类网名/引脚名不参与（所有权不明，防误配））
+  {
+    const renamed=new Set();
+    for(const [lbl,ps] of [...groups]){
+      if(!ps.length||!ps[0].libSyn) continue;
+      const cand=refTexts.filter(t=>t.owner===lbl&&/^[A-Za-z]+\d+$/.test(t.text));
+      if(cand.length!==1||groups.has(cand[0].text)||renamed.has(cand[0].text)) continue;
+      groups.set(cand[0].text, ps);
+      groups.delete(lbl);
+      renamed.add(cand[0].text);
+      for(const p of ps) p.comp=cand[0].text;
     }
   }
   {
