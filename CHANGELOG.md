@@ -1,5 +1,29 @@
 # 更新日志
 
+## 0.11.6（2026-11-13）—— Fable 复刻试点：USB 会议扬声器（案例 03）
+
+Anthropic Fable 5.2（2026-11-09）用 Claude Code 设计三块 4 层板（USB 会议扬声器/
+语音中枢/手持宠物，Diode 制造"无需电路修复"）。本项目复刻第一个设备的
+**网表→可制造 PCB+原理图** 半程（固件/外壳/声学不在本项目范围）。
+
+### 全链（真实嘉立创器件）
+- **BOM 全 API 验证**：ESP32-S3-WROOM-1（C2913201）/MAX98357A（C910544）/
+  INMP441（C5438445，库存 0 如实标注）/AMS1117（C6186）/USBLC6（C7519）/
+  TYPE-C（C165948）/开关/LED/阻容——真符号+真封装拉取
+- **stamp 实例化**（新工具 .scratch/stamp-fable01.mjs）：器件封装实例化+网表意图
+  （USB→ESD→MCU、I2S 双设备共享主控时钟、电源树、去耦）→ 132 pads/17 nets/20 comps
+- **全链**：spec 0 problems（external 豁免；**rules 悬空引用拦截器抓出 VBUS/5V
+  网表意图错误**）→ place → autopcb 4 轮 **82/95（86%）**（USB 差分对+电源加宽）
+  → pour GND（6 缝合孔自动、GND 全接入）→ **DRC 0/0** → verify OK → deliver
+  17 件（--force 留痕：连通性 82/95 如实入 manifest）→ schem 真符号原理图 → render
+
+### 发现
+- **rules 悬空引用拦截实战首秀**：netClass.VBUS 引用已清理的网 → spec 即报错——
+  正确抓出 AI 写网表的电源树断链意图错误
+- deliver 门禁正确拦截（连通性 82/95）；DRC 计数差异（deliver 31 vs 命令 0）记录待查
+- 与 Fable 的能/不能边界对比表见案例 03（布线收尾差距=#12 立项依据；固件/外壳
+  不在范围）
+
 ## 0.11.5（2026-11-13）—— M1 里程碑达标 + 引擎级连通计数 bug 修复
 
 ### M1 达标（路线图阶段一 M1：「20 个 4 层 200-pad 级项目全绿」）
