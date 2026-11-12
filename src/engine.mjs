@@ -2745,7 +2745,9 @@ function importDSN(dsnText){
   if(!root||_sxHead(root)!=='pcb') throw new Error('不是 Specctra DSN 文件（缺少 pcb 头）');
   const design=designDefaults();
   const sxStr=v=>(v&&typeof v==='object'&&v.str!==undefined)?v.str:String(v);
-  design.name=sxStr(root[1]||'').replace(/\.dsn$/i,'');
+  const _headMatch=String(dsnText).match(/\(pcb\s+"([^"]*)"/);   // pcb 头的引号串（含未转义反斜杠路径）
+  design.name=(_headMatch?_headMatch[1]:sxStr(root[1]||'design')).replace(/\\/g,'/').split('/').pop().replace(/\.dsn$/i,'') || 'design';   // 原始文本提取（KiCad 10 写完整未转义路径；parseSexpr 的 Specctra 转义会吃掉反斜杠——basename 不得依赖它）
+  design.dsnLayers=null;   // structure 解析后填充（exportSES 回用时层名须与 DSN 一致，KiCad 10 实测）
   const parser=_sxChild(root,'parser');
   let unit='um', hostCad='';
   if(parser){
@@ -2766,14 +2768,16 @@ function importDSN(dsnText){
   if(sigLayers.length<1) throw new Error('DSN structure 中没有 signal 层');
   const L=Math.max(2, sigLayers.length);
   design.layers=(L===1||L===2||L===4)?L:4;
+  design.dsnLayers=sigLayers.map(x=>String(x));
   // ---- 刻度自适应（两种 dialect 差 10×）----
   // 本工具 exportDSN 与 Freerouting 实样（Issue026 交叉验证，docs/研读 line128）：
   //   raw=µm（mm×1000）；KiCad pcbnew ExportSpecctraDSN：raw=0.1µm（mm×10000，
   //   内部 nm/100）。host_cad 直接识别；否则按「典型尺寸合理性」打分——焊盘/
   //   过孔/线宽/间距落在 [0.05,2.5]mm 者得分（µm 口径全中，0.1µm 口径全偏小 10×）。
   let F=1000;
-  if(/kicad|pcbnew/i.test(hostCad)) F=10000;
-  else{
+  {
+    // 刻度判定全靠典型尺寸合理性打分（KiCad 10 实测教训：host_cad="KiCad's
+    // Pcbnew" 但刻度是 µm 口径——host 字符串与刻度无可靠绑定，不能短路）
     const sizes=[];
     if(library) for(const ps of _sxFind(library,'padstack')){
       const shp=_sxChild(ps,'shape');
@@ -2931,17 +2935,32 @@ function importDSN(dsnText){
    ImportSpecctraSES 可直接回读。 */
 function exportSES(design, result){
   const L=Math.max(1, design.layers|0);
-  const names=_DSN_LAYER_NAMES(L);
+  // 层名：DSN 导入板携带原始层名（KiCad 10 的 F.Cu/B.Cu——SES 层名须与 DSN 一致
+  // 否则 ImportSpecctraSES 拒绝）；自产板/EasyEDA 板用 Top/In/Bottom 惯例
+  const names=(Array.isArray(design.dsnLayers)&&design.dsnLayers.length>=L)?design.dsnLayers:_DSN_LAYER_NAMES(L);
   // SES 数值刻度 = DSN×R = mm×10000（resolution um 10 的 0.1µm 单位；Issue026 实样
   // 交叉验证 DSN 250 ↔ SES 2500——与 importSES 的 v/R×0.001 对称）
   const um=v=>Math.round(v*10000);
   const out=[];
   const base=(design.name||'design').replace(/\.dsn$/i,'');
-  out.push('(session "'+base+'"');
-  out.push('  (baseDesign "'+base+'.dsn")');
+  // 结构对齐 Freerouting SesWriter / KiCad 10 ImportSpecctraSES 真机实测（0.11.3）：
+  // base_design（下划线非驼峰）、placement 段含 resolution、routes 内必须带
+  // library_out（via padstack 形状定义——缺失则 KiCad 静默拒绝）、via 行 padstack
+  // 名带引号。
+  out.push('(session '+_dsnEsc(base)+'.ses');
+  out.push('  (base_design '+_dsnEsc(base)+'.dsn)');
+  out.push('  (placement');
+  out.push('    (resolution um 10)');
+  out.push('  )');
   out.push('  (routes');
   out.push('    (resolution um 10)');
-  out.push('    (parser (string_quote "") (space_in_quoted_tokens on))');
+  out.push('    (parser (string_quote ") (space_in_quoted_tokens on))');   // KiCad 同款自指引号（importSES 有词法修复）
+  out.push('    (library_out');
+  out.push('      (padstack ' + _dsnEsc('VIA_DEFAULT'));
+  for(const nm of names.slice(0, L))
+    out.push('        (shape (circle '+_dsnEsc(nm)+' '+um(design.viaOuter)+' 0 0))');
+  out.push('      )');
+  out.push('    )');   // library_out 闭合（0.11.3 真机实测：缺失则 KiCad 括号不配平静默拒绝）
   out.push('    (network_out');
   const merged=[...((result&&result.nets)||[])];
   for(const n of merged){
@@ -2967,14 +2986,14 @@ function exportSES(design, result){
         out.push('        (wire (path '+_dsnEsc(names[Math.min(it.l,L-1)])+' '+um(netW(design,n.netId))+' '+
           it.pts.map(pt=>um(pt.x)+' '+um(pt.y)).join(' ')+'))');
       else
-        out.push('        (via VIA_DEFAULT '+um(it.x)+' '+um(it.y)+')');
+        out.push('        (via '+_dsnEsc('VIA_DEFAULT')+' '+um(it.x)+' '+um(it.y)+' )');
     }
     out.push('      )');
   }
   out.push('    )');
   out.push('  )');
-  const netNames=merged.map(n=>(design.nets.find(x=>x.id===n.netId)||{}).name).filter(Boolean);
-  out.push('  (nets '+netNames.map(_dsnEsc).join(' ')+')');
+  // 无 (nets ...) 尾行——KiCad 10 ImportSpecctraSES 因它静默拒绝（真机实测 0.11.3；
+  // Freerouting SesWriter 也不写此行）
   out.push(')');
   return out.join('\n')+'\n';
 }

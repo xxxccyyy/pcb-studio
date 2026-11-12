@@ -129,7 +129,7 @@ test('刻度自适应：无 host_cad 时按典型尺寸合理性识别 0.1µm �
 test('SES 回读链：route→exportSES→importSES 逐点对账（含引号网名 LED_N）', () => {
   const { design: d, result: r } = routed555;
   const ses = core.exportSES(d, { nets: r.nets });
-  assert.ok(ses.includes('(session "myboard"'), 'session 头带板名');
+  assert.ok(ses.includes('(session myboard.ses'), 'session 头带板名（0.11.3 起 Freerouting 风格：无引号+.ses 后缀）');
   assert.ok(ses.includes('(net "LED_N"'), '下划线网名按 Freerouting 规则加引号');
   const back = core.importSES(ses, d);
   assert.equal(back.errors.length, 0, '回读零跳过: ' + JSON.stringify(back.errors));

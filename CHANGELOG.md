@@ -1,5 +1,33 @@
 # 更新日志
 
+## 0.11.3（2026-11-12）—— KiCad 10 真机实测：全链 7 步打通 + 4 个 KiCad 10 方言缺口
+
+用户装机（KiCad 10.0.6 / D:\KiCad）后按插件 README 的 headless 指引驱动真机实测。
+实测脚本 `.scratch/kicad-e2e.py`（7 步断言）：LoadBoard → ExportSpecctraDSN →
+import dsn → route（**complete**）→ export ses → ImportSpecctraSES（**True，10
+tracks 回读**）→ SaveBoard——**全链 PASS**；icebreaker 真板（636 pads）规模验证
+通过（ExportSpecctraDSN 233KB → 导入 558 pads）。
+
+### KiCad 10 方言缺口（实测抓出，全部修复）
+1. **ExportSpecctraDSN/ImportSpecctraSES 需双参重载**（board, path）——单参版在
+   headless 无活动板时静默返回 False
+2. **DSN 刻度=µm 口径**（mm×1000）：KiCad 10 的 host_cad="KiCad's Pcbnew" 但刻度
+   并非 0.1µm——host_cad 短路判定删除，全靠典型尺寸合理性打分（打分机制本为此设计）
+3. **SES 结构对齐 Freerouting SesWriter**：`base_design`（下划线非驼峰）、placement
+   段含 resolution、routes 内 **library_out（via padstack 形状定义）**——缺失或
+   括号不配平都**静默拒绝**（KiCad 不报错只返回 False）
+4. **`(nets ...)` 尾行致 KiCad 10 静默拒绝**（Freerouting 不写此行，已删）；
+   session 名不得含损坏路径（DSN 头的 Windows 路径经 parseSexpr 的 Specctra 转义
+   后反斜杠丢失——改从原始文本提取 pcb 头再取 basename）；层名用 design.dsnLayers
+   （DSN 原始层名 F.Cu/B.Cu，SES 须与 DSN 一致）
+
+### 回归
+- tests/dsn-ses.test.mjs session 头断言更新（Freerouting 风格无引号+.ses 后缀）
+- 全量回归全绿；build 一致 + 经典脚本守卫 OK；A/B 对拍架不受影响（负载无 DSN）
+- KiCad 真机链路脚本固化：.scratch/kicad-e2e.py（7 步断言，可重复执行）
+- GUI 注册（Tools 菜单）由 KiCad 自有加载器负责——headless 模拟 inspect.getfile
+  差异不追，用户 GUI 目检一次即可（README 已注明）
+
 ## 0.11.2（2026-11-12）—— git 版本化 + 外部实测（KiCad 插件 mock + 开源广场案例 02）
 
 ### 仓库

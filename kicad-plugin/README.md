@@ -46,6 +46,21 @@ KiCad 当前板 ──ExportSpecctraDSN──▶ in.dsn
 
 ## 真机 headless 实测指引（装好 KiCad 后逐步执行）
 
+> **实测状态（2026-11-12，KiCad 10.0.6 / Windows）**：✅ **全链 7 步通过**——
+> LoadBoard → ExportSpecctraDSN（需 **双参重载** `ExportSpecctraDSN(board, path)`，
+> 单参版 headless 无活动板返回 False）→ import dsn → route（complete）→ export ses →
+> ImportSpecctraSES（True，10 tracks 回读）→ SaveBoard。icebreaker 真板（636 pads）
+> ExportSpecctraDSN 233KB 导入验证通过。
+> **实测抓出并修复 4 个 KiCad 10 方言缺口**：①DSN 刻度=µm 口径（host_cad 字符串
+> 与刻度无绑定，host 短路判定删除、全靠尺寸合理性打分）；②SES 必须
+> `base_design`（下划线）+placement 段+library_out（via padstack 定义，缺闭合括号
+> 或整段缺失都会**静默拒绝**）；③**`(nets ...)` 尾行致 KiCad 10 静默拒绝**
+> （Freerouting SesWriter 不写此行，已删）；④session 名不得含损坏路径（DSN 头
+> 路径取 basename，parseSexpr 的 Specctra 转义会吃掉反斜杠）。
+> GUI 注册（Tools 菜单出现插件项）由 KiCad 自己的加载器负责——首次启动 KiCad
+> PCB 编辑器目检一次即可。
+> 实测脚本：`.scratch/kicad-e2e.py`（7 步断言，KiCad python 直接跑）。
+
 KiCad 自带 Python（内含 pcbnew 模块），无需打开 GUI 即可验证整条调用链。以下命令
 逐条复制执行（PowerShell，KiCad 8 路径为准；7.0 把 `8.0` 换 `7.0`）：
 
