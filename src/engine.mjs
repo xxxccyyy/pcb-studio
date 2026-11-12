@@ -4808,14 +4808,24 @@ function checkDRC(design, result, opts){
   const wOf=id=>widths.get(id)||design.trackW;
   const issues=[];
   const add=(sev,type,msg)=>{ if(issues.length<200) issues.push({sev,type,msg}); };
+  // 未连通（铺铜语义升级 0.11.7）：网内全部焊盘落入同网铜皮 = 已被铜皮接通，
+  // 不计未连通（真实 EDA 同口径——GND 类网的连接方式就是铜皮）。部分落入仍如实报错。
   for(const n of result.nets){
-    if(n.connected<n.total)
+    if(n.connected<n.total){
+      const _ps=(design.pads||[]).filter(p=>p.netId===n.netId);
+      const _mp=pourList.find(p=>p.netId===n.netId);
+      if(_ps.length&&_mp&&_ps.every(p=>pourContains(_mp,p.x,p.y))) continue;
       add('error','未连通','网络 '+n.name+'：还有 '+(n.total-n.connected)+' 个焊盘未连通');
+    }
   }
   for(const o of (result.overuse||[]).slice(0,60))
     add('error','间距冲突','(' + o.x.toFixed(2) + ', ' + o.y.toFixed(2) + ') mm 附近，第 ' + (o.l+1) + ' 层不同网络走线/过孔重叠');
   const pads=design.pads||[];
   // Different-net copper must meet the requested clearance, not merely avoid overlap.
+  // external 同元件豁免（0.11.7，与 spec 对等）：真实封装密距/重叠=封装作者
+  // ground truth（TYPE-C A6/A7 同位、ESP32-S3 模块 castellated 沿边 pad 1.5
+  // 重叠节距 1.27——开源广场/器件库实样），仅豁免同元件对，异元件仍全查。
+  const _extSameComp=design.external===true;
   // 深度优化（0.11.0）：外层格距快速过滤+层列表提升出热循环。保序充分性：
   // 焊盘边上任意点距中心 ≤ hypot(w,h)/2 ≤ maxPadR ⇒ 违规对中心距 < clearance+2·maxPadR，
   // 逐轴分量同界——轴距超界者必不违规，直接跳过（candidates 是保守超集，findings 不变）。
@@ -4826,6 +4836,7 @@ function checkDRC(design, result, opts){
   for(let i=0;i<pads.length;i++)for(let j=i+1;j<pads.length;j++){
     const a=pads[i], b=pads[j];
     if(a.netId!=null && b.netId!=null && a.netId===b.netId) continue;
+    if(_extSameComp && a.id.split('-')[0]===b.id.split('-')[0]) continue;   // external 同元件豁免
     if(Math.abs(a.x-b.x)>_padR2||Math.abs(a.y-b.y)>_padR2) continue;
     if(!_layerList.some(l=>padOnLayer(a,l,design.layers)&&padOnLayer(b,l,design.layers))) continue;
     const gap=padGap(a,b);
