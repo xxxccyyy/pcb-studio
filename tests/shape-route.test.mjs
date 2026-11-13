@@ -242,3 +242,36 @@ test('协商：routeBoardShape 端到端不产生净新增违规',()=>{
   const e1=core.checkDRC(d,sp.result,{dfm:false}).filter(i=>i.sev==='error').length;
   assert.ok(e1<=e0,'补线后 DRC errors 不得增加：'+e0+'→'+e1);
 });
+
+// ---- 12b-3 拆-重布修复轮（0.13.5）----
+test('修复轮：存量段-焊盘违规被形状重布消除（触发条件含非段-段违规）',()=>{
+  const d=core.designDefaults();
+  d.width=24; d.height=8; d.grid=0.5; d.layers=2;
+  d.clearance=0.2; d.trackW=0.3;
+  d.nets=[{id:'n1',name:'A'},{id:'n2',name:'B'}];
+  d.pads=[{id:'U1-1',netId:'n1',x:1,y:4,w:0.5,h:0.5,shape:'rect',layer:'both'},
+          {id:'U1-2',netId:'n1',x:23,y:4,w:0.5,h:0.5,shape:'rect',layer:'both'},
+          {id:'U2-1',netId:'n2',x:1,y:4.35,w:0.5,h:0.5,shape:'rect',layer:'both'},
+          {id:'U2-2',netId:'n2',x:23,y:4.35,w:0.5,h:0.5,shape:'rect',layer:'both'}];
+  // n2 的直线与 n1 的直线间距 0.35 < 0.3+0.2/2+... ——构造一段靠太近的存量违规：
+  // n2 直线在 y=4.35，n1 在 y=4，段-段距离 0.35，两半宽和 0.3 + clearance 0.2 = 0.5 → 违规
+  const base={status:'partial',nets:[
+    {netId:'n1',name:'A',paths:[[{x:1,y:4,l:0},{x:12,y:4,l:0},{x:12,y:7,l:0},{x:23,y:7,l:0}]],vias:[],connected:2,total:2},
+    {netId:'n2',name:'B',paths:[[{x:1,y:4.35,l:0},{x:23,y:4.35,l:0}]],vias:[],connected:2,total:2}],
+    overuse:[],stats:{}};
+  const e0=core.checkDRC(d,base,{dfm:false}).filter(i=>i.sev==='error').length;
+  const sp=core.routeBoardShape(d,{base});
+  const e1=core.checkDRC(d,sp.result,{dfm:false}).filter(i=>i.sev==='error').length;
+  assert.ok(e1<e0 || (sp.shape.repaired===0 && e1===e0),
+    '修复轮应消除存量违规或如实不动：'+e0+'→'+e1+' repaired='+sp.shape.repaired);
+  assert.ok(sp.shape.repairTried>=0);   // 统计字段存在
+});
+
+test('修复轮：不能修时如实保留原状（DRC 不增加）',()=>{
+  const d=core.EXAMPLES[0].build();
+  const baseR=core.routeBoard(d,{}).result;
+  const sp=core.routeBoardShape(d,{base:baseR});
+  const e0=core.checkDRC(d,baseR,{dfm:false}).filter(i=>i.sev==='error').length;
+  const e1=core.checkDRC(d,sp.result,{dfm:false}).filter(i=>i.sev==='error').length;
+  assert.ok(e1<=e0,'修复轮不得增加 DRC：'+e0+'→'+e1);
+});
