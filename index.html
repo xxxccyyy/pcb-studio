@@ -909,6 +909,8 @@ function createSession(design, opts){
     throw new Error('fanoutFirst must be off|auto|inner_first|outer_first');
   const fanoutEff=fanoutRaw==='auto'?(L===2?'inner_first':'off'):fanoutRaw;
   const fanoutRing=fanoutEff==='off'?new Map():detectBallArrays(design).ringByNetId;
+  // 借道阵列网铜的每格附加罚（0.13.22 F3，仅 fanoutFirst 开启时消费）
+  const fanoutBorrowPen=opts.fanoutBorrowPen!=null?opts.fanoutBorrowPen:10;
   let presFac = 2;               // 协商阶段占用代价系数（每轮翻倍）
 
   const usage=new Int16Array(TS);        // 每单元当前被几个网络占用
@@ -1288,6 +1290,15 @@ function createSession(design, opts){
             // 避免长距离借用被拆走线被逐格全额罚导致代价失真（index.html 源码研读笔记）。
             const prevOver = usage[cur]-(ownStamp[cur]===gen?1:0) > 0;
             ec += prevOver ? 1+presFac*(o-1) : presFac*o;
+            // 扇出借道附加罚（0.13.22 F3）：占用者为阵列网时加罚——0.13.21 冻结
+            // 证伪（单向冻结阻断全局重排）的"价格版"后手：只抬价格不动属主，
+            // 借道者在有余路时绕开逃逸通道，无余路时仍可冲突协商（与
+            // Freerouting 拆扇出铜 ×139 软保护同构——差别只在我们按格计价）。
+            // 仅 fanoutFirst 开启时生效；缺省 off 路径零改动。
+            if(fanoutEff!=='off'){
+              const foi=cellOwner[ns]-1;
+              if(foi>=0&&foi!==net.i&&nets[foi].fanoutRing!=null) ec+=fanoutBorrowPen;
+            }
           }
         }
         if(kind===1){
