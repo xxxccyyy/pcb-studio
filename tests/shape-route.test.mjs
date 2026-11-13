@@ -275,3 +275,53 @@ test('修复轮：不能修时如实保留原状（DRC 不增加）',()=>{
   const e1=core.checkDRC(d,sp.result,{dfm:false}).filter(i=>i.sev==='error').length;
   assert.ok(e1<=e0,'修复轮不得增加 DRC：'+e0+'→'+e1);
 });
+
+// ---- 12b-5 拆-重布级联（0.13.6）----
+test('级联：软协商过孔不落在异网铜上（gap=0 硬墙）',()=>{
+  // 构造：目标焊盘被异网焊盘包围，唯一"通道"是打在异网焊盘上
+  // ——软模式必须拒绝 gap=0 的过孔（短路），哪怕代价是 no-path
+  const d=base();
+  d.width=10; d.height=6;
+  d.nets=[{id:'n1',name:'A'},{id:'n2',name:'B'}];
+  d.pads=[{id:'U1-1',netId:'n1',x:1,y:3,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U1-2',netId:'n1',x:9,y:3,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U2-1',netId:'n2',x:4,y:3,w:0.6,h:0.6,shape:'rect',layer:'top'},
+          {id:'U2-2',netId:'n2',x:5.5,y:3,w:0.6,h:0.6,shape:'rect',layer:'top'},
+          {id:'U2-3',netId:'n2',x:7,y:3,w:0.6,h:0.6,shape:'rect',layer:'top'}];
+  const OBS=core.shpCollectObstacles(d,[],'n1');
+  const r=core.shpRouteNet(d,{id:'n1',name:'A'},OBS,{x0:0,x1:10,y0:0,y1:6},
+    {soft:true,penScale:40});
+  if(r){
+    // 任何产出的过孔都不得落在异网铜上
+    for(const v of r.vias){
+      for(const p of d.pads){
+        if(p.netId==='n1') continue;
+        const g=core.pointPadDistance(v.x,v.y,p);
+        assert.ok(g>1e-9,'过孔落在异网焊盘上（gap='+g+'）——短路');
+      }
+    }
+    // 走线同理：不得重叠异网铜
+    for(const path of r.paths) for(let k=1;k<path.length;k++){
+      const a=path[k-1], b=path[k];
+      if(a.l!==b.l) continue;
+      for(const p of d.pads){
+        if(p.netId==='n1') continue;
+        const g=core.segmentPadDistance(a,b,p);
+        assert.ok(g>1e-9,'走线重叠异网焊盘（gap='+g+'）');
+      }
+    }
+  }
+});
+
+test('级联：端到端 DRC 不劣化（DRC 优先字典序）',()=>{
+  for(const ex of core.EXAMPLES){
+    const d=ex.build();
+    const baseR=core.routeBoard(d,{}).result;
+    const sp=core.routeBoardShape(d,{base:baseR});
+    const e0=core.checkDRC(d,baseR,{dfm:false}).filter(i=>i.sev==='error').length;
+    const e1=core.checkDRC(d,sp.result,{dfm:false}).filter(i=>i.sev==='error').length;
+    assert.ok(e1<=e0,ex.name+' DRC 劣化：'+e0+'→'+e1);
+    assert.ok(sp.result.stats.connected>=baseR.stats.connected,
+      ex.name+' 连通数下降');
+  }
+});

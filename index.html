@@ -3947,6 +3947,7 @@ function routeBoardShape(design, opts={}){
   const cls=netClsMap(design);
   let applied=0;
   const notes=[];
+  const cascade=[];   // 级联候选：借道已落盘、待修复轮后全板裁决
   // geo 口径（0.13.4 修正三，对称三查）：该网与全板的交互违规数
   // = 段-段 + 段-异网焊盘 + 过孔间距（对异网焊盘/走线/过孔）。
   // 三个盲区都是 Fable/BGA 实测抓出的：①单网传 auditGeometry 恒 0；
@@ -4056,6 +4057,18 @@ function routeBoardShape(design, opts={}){
     } else {
       better = dConn>=dGeo*gainPerVio && dConn>0;
     }
+    // 级联候选（12b-5）：借道有连通增益但净违规为正、且 shapeCascade!==false
+    // 时，**暂不回滚**——先保留借道路径，交给后面的修复轮去消除被侵权侧的
+    // 违规（修复轮会尝试重布卷入违规的网），最终在修复轮结束后做全板裁决：
+    // 级联净收益 = Δ连通 - k×Δ全板违规，为正才保留，否则整组回滚。
+    // 这与 0.13.4 的"直接拒绝"的本质差别：修复轮可能把违规消掉，借道就
+    // 从"违规换连通"变成"零违规换连通"——只有试过才知道。
+    if(!better && dConn>0 && dGeo>0 && opts.shapeCascade!==false){
+      cascade.push({candIdx, saved, viaState:{...merged.nets[candIdx]}, netName:n.name, dConn, dGeo});
+      notes.push({net:n.name,cascade:true,conn:after.conn+'/'+after.total,
+        geo:before.geo+'→'+after.geo,wait:'待级联修复后全板裁决'});
+      return;
+    }
     if(better){ applied++; notes.push({net:n.name,ok:true,soft:usedSoft,conn:after.conn+'/'+after.total,
       geo:before.geo+'→'+after.geo,vias:before.vias+'→'+after.vias,len:+(after.len-before.len).toFixed(2)}); }
     else{
@@ -4133,6 +4146,51 @@ function routeBoardShape(design, opts={}){
     }
     if(!passFixed) break;   // 本轮零改进 → 熔断
   }
+  // 3c) 级联裁决（12b-5，子集枚举）：借道候选之间可能互相违规——逐个裁决
+  //     存在合成谬误（fable-01 实测：两个借道单独看各 +1 连通优于回滚，
+  //     合在一起互相违规，全保留后 DRC +5）。候选数通常 ≤3，直接 2^n 子集
+  //     枚举取全板字典序最优（连通优先，其次 -净违规）；全 0 子集 = 全回滚。
+  let cascadeKept=0, cascadeRolled=0;
+  if(cascade.length){
+    // 裁决口径用 checkDRC 权威计数（0.13.6）：netGeoVio 三查与 DRC 的
+    // 完整违规家族仍有口径差（擦边借道的段-焊盘/过孔-焊盘组合——
+    // netGeoVio 数到 N 而 DRC 报 M，逐项追口径差是打地鼠）。DRC 慢
+    // （每子集一次全板检查）但候选数 ≤ 2^n 且 n≤3，代价可控。
+    const boardScore=r=>{
+      const conn=r.nets.reduce((a,n)=>a+(n.connected||0),0);
+      const drcE=checkDRC(design,r,{dfm:false}).filter(i=>i.sev==='error').length;
+      // 字典序：DRC error 优先于连通（deliver 门禁 errors=0 是可交付硬线，
+      // 未连通只是 partial——1 个连通焊盘不值得换 4 个 DRC。0.13.6 定案）
+      return [-drcE, conn];
+    };
+    const nC=cascade.length, nMask=1<<nC;
+    let bestMask=0, bestScore=null;
+    for(let m=0;m<nMask;m++){
+      // 应用子集 m
+      for(let k=0;k<nC;k++){
+        const c=cascade[k];
+        merged.nets[c.candIdx]=(m>>k)&1 ? c.viaState : c.saved;
+      }
+      const sc=boardScore({nets:merged.nets});
+      if(bestScore===null || sc[0]>bestScore[0] ||
+         (sc[0]===bestScore[0] && sc[1]>bestScore[1])){
+        bestScore=sc; bestMask=m;
+      }
+    }
+    // 应用最优子集
+    for(let k=0;k<nC;k++){
+      const c=cascade[k];
+      const kept=(bestMask>>k)&1;
+      merged.nets[c.candIdx]=kept?c.viaState:c.saved;
+      if(kept){ cascadeKept++;
+        notes.push({net:c.netName,ok:true,cascade:true,kept:true,
+          conn:'+'+c.dConn, geo:'+'+c.dGeo+'（级联子集裁决净收益）'});
+      } else { cascadeRolled++;
+        notes.push({net:c.netName,cascade:true,kept:false,
+          reason:'级联子集裁决：保留子集不含此网（含互相违规的组合裁剪）'});
+      }
+    }
+  }
   // 4) 统计重算（beautify 已被栅格基线做过；形状补线是正交折线，无需再美化）
   const tc=merged.nets.reduce((a,n)=>a+(n.connected||0),0);
   const tt=merged.nets.reduce((a,n)=>a+(n.total||0),0);
@@ -4146,7 +4204,7 @@ function routeBoardShape(design, opts={}){
   onProgress({text:'完成',frac:1});
   log('形状补线：'+applied+'/'+target.length+' 网接受');
   return {result:merged, shape:{applied:true,attempted:target.length,accepted:applied,
-    repaired:repairFixed, repairTried, notes, window:winMargin}};
+    repaired:repairFixed, repairTried, cascadeKept, cascadeRolled, notes, window:winMargin}};
 }
 function pathLenOf(paths){
   let s=0;
@@ -8334,7 +8392,10 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft){
         const c=j*Nx+i;
         const g=shpPointGap(o,xs[i],ys[j]);
         if(g>=lim-1e-9) continue;
-        if(soft){ const depth=lim-g; if(depth>penVia[c]) penVia[c]=depth; }
+        // soft 模式的红线：g<=0 是真重叠（短路），任何模式都必须硬拒——
+        // 协商允许的是"间距不足的擦边借道"，不是"打穿异网铜"
+        //（fable-01 实测：借道过孔打在异网焊盘中心，boardScore 计 5 个 DRC）
+        if(soft && g>1e-9){ const depth=lim-g; if(depth>penVia[c]) penVia[c]=depth; }
         else viaOk[c]=0;
       }
     }
