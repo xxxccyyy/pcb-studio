@@ -281,15 +281,15 @@ function advise(design, result) {
       const demand = edgeSet.size;
       if (perGap === 0) {
         push(0, 'FANOUT', `${comp} 阵列 ${nx}×${ny} 节距 ${pitch.toFixed(2)}mm 球径 ${ballW.toFixed(2)}mm：缝宽 ${gap.toFixed(2)}mm < 走线需求 ${need.toFixed(2)}mm——**物理上无法从缝中引出任何线**`,
-          `减小线宽/间距（如 线 0.1/距 0.08 ⇒ 需求 0.18）或用盘中孔/盲埋孔扇出；否则该阵列只能靠内层平面连接`, 'deterministic');
+          `减小线宽/间距（如 线 0.1/距 0.08 ⇒ 需求 0.18）或用盘中孔/盲埋孔扇出；否则该阵列只能靠内层平面连接；也可先试 route --fanout-first inner（内圈球先占逃逸缝）`, 'deterministic');
       } else if (demand > capacity) {
         // 真正容量不足：内圈独立网数超过外圈缝容量（几何上不可能全引出）
         push(0, 'FANOUT', `${comp} 阵列 ${nx}×${ny} 节距 ${pitch.toFixed(2)}mm：外圈 ${edgeBalls} 条缝 × 每缝 ${perGap} 条 = 容量 ${capacity}，但内圈有 ${demand} 个网需逃逸——**物理容量不足**`,
-          `加层（内层可直接逃逸，实测 BGA-64 同板 2→4 层 DRC 138→108）或改用盘中孔/盲埋孔扇出；也可把电源/地并到平面减少内圈独立网数`, 'deterministic');
+          `加层（内层可直接逃逸，实测 BGA-64 同板 2→4 层 DRC 138→108）或改用盘中孔/盲埋孔扇出，或先试 route --fanout-first inner；也可把电源/地并到平面减少内圈独立网数`, 'deterministic');
       } else if (design.layers < 4 && demand > capacity * 0.5) {
         // 容量够但占用过半：几何可行、分配难度高，2 层板协商易在此卡住
         push(2, 'FANOUT_TIGHT', `${comp} 阵列 ${nx}×${ny}：逃逸容量 ${capacity}，内圈需 ${demand} 个网（占用 ${Math.round(100 * demand / capacity)}%）——容量够但占用过半，${design.layers} 层板协商易在此停滞`,
-          `可加层让内层分流（实测 BGA-64 2→4 层 DRC 138→108）；或减小线宽/间距提高每缝容量`, 'deterministic');
+          `可加层让内层分流（实测 BGA-64 2→4 层 DRC 138→108）、减小线宽/间距提高每缝容量，或先试 route --fanout-first inner（0.13.20 扇出优先）`, 'deterministic');
       }
     }
   }
@@ -819,13 +819,17 @@ switch (cmd) {
     const nbRipup = !argFlag(rest, '--no-nb-ripup', '');
     // #15b 相邻层盲埋孔（opt-in）：开启后布线器换层自动记相邻层 span
     const blindVias = !!argFlag(rest, '--blind-vias', '');
+    // 扇出优先（0.13.20 F1）：--fanout-first [auto|inner|outer]，缺省不带 = off
+    const ffRaw = argFlag(rest, '--fanout-first', '');
+    const fanoutFirst = ffRaw === '' ? undefined
+      : ({ auto: 'auto', inner: 'inner_first', outer: 'outer_first' }[ffRaw] || ffRaw);
     let result, via;
     if (iterWorkers > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
       const shard = parseInt(argFlag(rest, '--shard', '0'));
-      const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard,
+      const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard, blindVias, fanoutFirst,
         engineUrl, neighbourhoodRipup: nbRipup });
-      result = par.result; via = { mode: 'iter-parallel', blind: blindVias || undefined, workers: par.workers,
+      result = par.result; via = { mode: 'iter-parallel', blind: blindVias || undefined, fanout: fanoutFirst, workers: par.workers,
         iterations: par.iterations, waves: iterWaves ?? 2, shard: shard || 0 };
       if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
       out({ ok: true, status: result.status, stats: result.stats, overuse: result.overuse.length,
@@ -834,10 +838,10 @@ switch (cmd) {
     }
     if (parallel > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
-      const par = await core.routeBoardParallel(d, { viaCost, maxIter, parallel, engineUrl, neighbourhoodRipup: nbRipup });
-      result = par.result; via = { mode: 'parallel', blind: blindVias || undefined, from: par.from, workers: parallel };
+      const par = await core.routeBoardParallel(d, { viaCost, maxIter, parallel, engineUrl, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst });
+      result = par.result; via = { mode: 'parallel', blind: blindVias || undefined, fanout: fanoutFirst, from: par.from, workers: parallel };
     } else {
-      result = core.routeBoard(d, { viaCost, maxIter, neighbourhoodRipup: nbRipup, blindVias }).result;
+      result = core.routeBoard(d, { viaCost, maxIter, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst }).result;
       via = { mode: 'serial' };
     }
     if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));

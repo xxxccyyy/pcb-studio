@@ -214,6 +214,68 @@ function viaSpanOverlap(a, b, layers){
   const [a0,a1]=viaSpan(a,layers), [b0,b1]=viaSpan(b,layers);
   return a0<=b1 && b0<=a1;
 }
+/* ---------- BGA 阵列判定 + 环深（0.13.20 扇出优先 F1）----------
+   Freerouting BallFields/BallEscapeOrder/TwoLayerBga 语义移植（源码实证，
+   见 docs/Freerouting源码研读.md 与 0.13.20 记录）：
+   - 判定：≥16 球、单层同层、行列（pitch/4 容差聚类）≥3×3、填充 ≥50%、
+     圆焊盘 ≥16 且占比 ≥75%（排除 QFN/QFP 周边焊盘与 LGA 矩形焊盘）
+   - 环深 ring = round(球心到包围盒四边最小距离 / pitch)，0=最外圈
+   - 组件 = pad id 的 '-' 前缀（与 advise 的 FANOUT 检测同口径，ai/pcb.mjs）
+   返回 { ringByNetId:Map(netId→最内圈 ring), comps:[comp 名] }；非阵列板
+   返回空 Map。pitch 用排序去重坐标的相邻最小差（规则网格与 O(n²) 等价；
+   错排阵列记边界）。 */
+function detectBallArrays(design){
+  const ringByNetId=new Map(), comps=[];
+  const byComp=new Map();
+  for(const p of design.pads||[]){
+    const c=p.id.split('-')[0];
+    if(!byComp.has(c)) byComp.set(c,[]);
+    byComp.get(c).push(p);
+  }
+  for(const [comp,ps] of byComp){
+    if(ps.length<16) continue;                              // MIN_BALLS（Freerouting 同款，"no QFN"）
+    const layer=ps[0].layer;
+    if(ps.some(p=>p.layer!==layer)) continue;               // 单层同层——排除通孔件
+    const xs=[...new Set(ps.map(p=>+p.x.toFixed(3)))].sort((a,b)=>a-b);
+    const ys=[...new Set(ps.map(p=>+p.y.toFixed(3)))].sort((a,b)=>a-b);
+    if(xs.length<4||ys.length<4) continue;                  // 行列 ≥4（16 球下 3×3 已被球数挡住）
+    const pitch=Math.min(minAdjDiff(xs),minAdjDiff(ys));
+    if(!Number.isFinite(pitch)||pitch<=0) continue;
+    if(xs.length<3||ys.length<3||ps.length*2<xs.length*ys.length) continue;   // 填充 ≥50%（QFP 周边约 1/5）
+    let round=0;
+    for(const p of ps) if(p.shape==='circle') round++;
+    if(round<16||round*4<ps.length*3) continue;             // 圆焊盘 ≥16 且 ≥75%（排除 LGA/连接器）
+    // 环深：球心到阵列包围盒四边的最小距离 ÷ pitch
+    const x0=xs[0],x1=xs[xs.length-1],y0=ys[0],y1=ys[ys.length-1];
+    for(const p of ps){
+      if(p.netId==null) continue;
+      const edge=Math.min(p.x-x0,x1-p.x,p.y-y0,y1-p.y);
+      const ring=Math.round(edge/pitch);
+      const prev=ringByNetId.get(p.netId);
+      ringByNetId.set(p.netId, prev==null?ring:Math.max(prev,ring));   // 网的最内圈球
+    }
+    comps.push(comp);
+  }
+  return {ringByNetId, comps};
+}
+function minAdjDiff(sorted){
+  let m=Infinity;
+  for(let i=1;i<sorted.length;i++){
+    const d=sorted[i]-sorted[i-1];
+    if(d>1e-9&&d<m) m=d;
+  }
+  return m;
+}
+// Freerouting BallEscapeOrder.moveToFront：阵列网提到队首（inner_first=环深降序，
+// outer_first=升序；同环稳定按 net.i），非阵列网保持原序在后。纯函数可测。
+function fanoutMoveToFront(queue, mode){
+  const ballNets=queue.filter(n=>n.fanoutRing!=null);
+  if(!ballNets.length) return queue;
+  ballNets.sort((a,b)=>(mode==='inner_first'?b.fanoutRing-a.fanoutRing
+                                           :a.fanoutRing-b.fanoutRing)||a.i-b.i);
+  const ballSet=new Set(ballNets.map(n=>n.i));
+  return [...ballNets,...queue.filter(n=>!ballSet.has(n.i))];
+}
 function manualRouteEntries(design){
   return (design.manual||[]).map(m=>({netId:m.netId,name:'手动',manual:true,connected:1,total:1,
     paths:[m.pts.map(p=>({...p}))],cells:[],
@@ -538,6 +600,14 @@ function createSession(design, opts){
   // 缺省关——过孔仍记全层 span（输出无 layers 字段，位级不变）
   const blindVias=opts.blindVias!=null?opts.blindVias===true:!!(design.hdi&&design.hdi.blindVias);
   const allLayers=Array.from({length:L},(_,q)=>q);   // 通孔 span（避免逐孔分配）
+  // 扇出优先（0.13.20 F1，Freerouting BallEscapeOrder 语义）：auto→2 层 inner_first
+  //（出路最少的球先拿走自己的出路），其它层数 off；缺省 off 位级不变
+  const fanoutRaw=opts.fanoutFirst!=null?String(opts.fanoutFirst)
+    :(design.hdi&&design.hdi.fanoutFirst!=null?String(design.hdi.fanoutFirst):'off');
+  if(!['off','auto','inner_first','outer_first'].includes(fanoutRaw))
+    throw new Error('fanoutFirst must be off|auto|inner_first|outer_first');
+  const fanoutEff=fanoutRaw==='auto'?(L===2?'inner_first':'off'):fanoutRaw;
+  const fanoutRing=fanoutEff==='off'?new Map():detectBallArrays(design).ringByNetId;
   let presFac = 2;               // 协商阶段占用代价系数（每轮翻倍）
 
   const usage=new Int16Array(TS);        // 每单元当前被几个网络占用
@@ -622,7 +692,8 @@ function createSession(design, opts){
   const nets=(design.nets||[]).map((n,i)=>({
     i, id:n.id, name:n.name, cls:((design.rules&&design.rules.netClass||{})[n.name])||null,
     cells:new Set(), viaSet:new Map(), paths:[],
-    failed:0, connected:0, total:0, prio:0, failedLast:0, conflicted:false
+    failed:0, connected:0, total:0, prio:0, failedLast:0, conflicted:false,
+    fanoutRing:fanoutRing.get(n.id)!=null?fanoutRing.get(n.id):null   // 阵列网的最内圈环深（0.13.20 F1）
   }));
 
   // 3W 偏置的环带偏移预计算（切比雪夫距离恰为 2 的 12 格）——热循环不再逐格算 max/abs
@@ -1268,7 +1339,12 @@ function createSession(design, opts){
     bestMetric:Infinity, bestSnap:null   // 历史最优协商状态（第五轮教训：迭代扰动会劣化）
   };
   function startQueue(failedFirst){
-    S.queue=sortNets(failedFirst);
+    let q=sortNets(failedFirst);
+    // 扇出优先（0.13.20 F1）：仅 pass-1 首队列——阵列网按环深提到队首
+    //（Freerouting BallEscapeOrder.moveToFront：内圈球在空板独占 claim 逃逸缝，
+    // 外圈球总有自己的边缘出路；协商轮队列不动）
+    if(!failedFirst&&fanoutEff!=='off') q=fanoutMoveToFront(q,fanoutEff);
+    S.queue=q;
     S.processed=0; S.totalNets=S.queue.length;
   }
   /* 空间分片（阶段三 #13b）：把队列按"网的 bbox 落在哪个分片"分组。
@@ -8770,4 +8846,4 @@ const EXAMPLES=[
 
 
 
-export { designDefaults, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };
+export { designDefaults, detectBallArrays, fanoutMoveToFront, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };

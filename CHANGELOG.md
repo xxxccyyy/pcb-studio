@@ -1,5 +1,44 @@
 # 更新日志
 
+## 0.13.20（2026-11-14）—— F1：扇出优先排序（BGA-64 2 层残留 33→20）
+
+### 交付（Freerouting BallEscapeOrder/BallFields 语义移植，源码实证）
+- **detectBallArrays**：BGA 阵列判定——≥16 球、单层同层、行列（pitch/4 容差
+  聚类）≥3×3、填充 ≥50%、圆焊盘 ≥16 且 ≥75%（BallFields.java:18,61,116-118
+  + TwoLayerBga.java:53-59 阈值原样）；组件 = pad id `-` 前缀（与 advise
+  FANOUT 检测同口径）。pitch 用排序去重坐标相邻最小差（规则网格与 Freerouting
+  的 O(n²) 等价；错排阵列记边界）。
+- **环深**：ring = round(球心到阵列包围盒四边最小距离/pitch)，
+  BallEscapeOrder.java:128-129 公式原样；网取最内圈球。
+- **pass-1 inner-first 排序**（fanoutMoveToFront）：阵列网按环深提到首队列
+  最前（inner_first=降序 / outer_first=升序，同环稳定按 net.i），非阵列网
+  保序殿后。**仅动 pass-1 首队列**（startQueue(false) 唯一调用点），协商轮
+  队列不动——这是与已撤销 A2c（改 sortNets 影响每一轮、方向存疑）的本质
+  差别。
+- **开关**：opts.fanoutFirst / design.hdi.fanoutFirst / CLI
+  `--fanout-first [auto|inner|outer]`；'auto' → 2 层 inner_first、其它层数
+  off（Freerouting 同款）。缺省 off **位级不变**。
+- advise 的 FANOUT/FANOUT_TIGHT 补救文本追加 `--fanout-first` 提示。
+
+### 实测（BGA-64，A1 口径 round6/n71-bga64 maxIter 20）
+| 模式 | 连通 | DRC | 过孔 | overuse |
+|---|---|---|---|---|
+| 2L off（基线） | 98/98 | 33 | 80 | 23 |
+| 2L inner_first | 98/98 | **22** | 81 | **13** |
+| 2L outer_first | 98/98 | **20** | **61** | **13** |
+| 4L off / inner_first | 98/98 | 2 / 4 | 68 / 73 | 4L 建议 auto（=off） |
+
+**首个真正撼动 2 层残留的机制**（自 A1 后 33 三轮未动）。意外发现：
+outer_first（20/61 孔）优于 Freerouting 默认的 inner_first（22/81 孔）——
+我方独占硬阶段+每轮全拆重布的动力学与 Freerouting pass 制不同，两种模式
+都保留供用户按板取优。overuse 23→13 未清零：pass-1 的独占分配被协商轮
+部分冲掉——F2（稳定阵列网协商冻结）的立项依据。
+
+### 验证
+228 node:test + 全量套件 0 失败（含新增 tests/fanout-first.test.mjs 9 项：
+判定阈值矩阵/环深/队列 moveToFront/非法值报错/BGA-64 行为门/无阵列板
+ON=OFF 位级）；search-baseline 16/16 原样；index.html 已重建。
+
 ## 0.13.19（2026-11-14）—— C：BGA 终态矩阵 + 门图定案（留档不立项）+ 文档同步
 
 ### BGA-64 终态矩阵（A1 口径：projects/round6/n71-bga64，maxIter 20）
