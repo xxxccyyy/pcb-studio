@@ -7963,8 +7963,32 @@ function shpCollectObstacles(design, extraNets, skipNet){
     holes.push({x:v.x,y:v.y,r:drillR});
   }
   for(const k of design.keepouts||[])
-    keepouts.push({x:k.x,y:k.y,w:k.w,h:k.h,scope:k.scope||null});
+    keepouts.push({x:k.x,y:k.y,w:k.w,h:k.h,scope:k.scope||null,
+      // 区域通道属主（0.13.12）：only=['网名'...] ⇒ 该区域**只允许**这些网
+      // 穿行，其余网视作硬障碍。用途：BGA 阵列这类逃逸瓶颈区，把通道留给
+      // 需要逃逸的信号网，禁止大网（GND/V33）在阵列内穿行抢通道。
+      // 与 scope（class keepout：对异类阻挡、本类自由）语义不同，故独立字段。
+      only:Array.isArray(k.only)?k.only.slice():null});
   return {copper,holes,keepouts,L,viaR,drillR};
+}
+
+/* keepout 对某网是否构成障碍（统一口径，0.13.12）：
+   · scope（class keepout）：异类网是障碍、本类网自由
+   · only（区域通道属主）：不在白名单的网是障碍、白名单内自由
+   两者可并存（先 scope 再 only），任一判定为障碍即阻挡。 */
+const _netNameMaps=new WeakMap();
+function netNameOf(design, netId){
+  let m=_netNameMaps.get(design);
+  if(!m){ m=new Map(); for(const n of design.nets||[]) m.set(n.id,n.name); _netNameMaps.set(design,m); }
+  return m.has(netId)?m.get(netId):null;
+}
+function shpKeepoutBlocks(k, cls, netName){
+  if(k.scope && cls && k.scope===cls) return false;       // 本类自由
+  if(k.only && k.only.length){
+    if(netName==null) return true;                        // 无网名 ⇒ 保守阻挡
+    return k.only.indexOf(netName)<0;
+  }
+  return false;
 }
 
 // 线段到障碍铜的边距（负=相交）；口径同 DRC trace-pad / trace-trace
@@ -7990,7 +8014,7 @@ function shpObsBox(o){
    中心线位置，也保证轴在障碍附近被细化（这是下面的完备性论证依赖的不变式）。
    再补障碍中心与本网焊盘中心（源/汇可达），最后按需插入相邻中点（走廊正中）。
    分级降级直到节点数进预算。 */
-function shpBuildAxes(design, netPads, wHalf, win, OBS, cls){
+function shpBuildAxes(design, netPads, wHalf, win, OBS, cls, netId){
   const R=design.clearance+wHalf;
   const eps=SHP_EPS_U/SHP_SCALE;
   const ux0=shpU(win.x0), ux1=shpU(win.x1), uy0=shpU(win.y0), uy1=shpU(win.y1);
@@ -8015,7 +8039,7 @@ function shpBuildAxes(design, netPads, wHalf, win, OBS, cls){
     addX(xsC,(b.x0+b.x1)/2); addY(ysC,(b.y0+b.y1)/2);
   }
   for(const k of OBS.keepouts){
-    if(k.scope && cls && k.scope===cls) continue;          // class keepout 本类自由
+    if(!shpKeepoutBlocks(k,cls,netNameOf(design,netId))) continue;
     const b=shpObsBox(k);
     if(b.x1+wHalf<win.x0||b.x0-wHalf>win.x1||b.y1+wHalf<win.y0||b.y0-wHalf>win.y1) continue;
     addX(xsB,b.x0-wHalf-eps); addX(xsB,b.x1+wHalf+eps);
@@ -8042,10 +8066,12 @@ function shpBuildAxes(design, netPads, wHalf, win, OBS, cls){
   ];
   for(const t of cands){
     if(!t.xs.length||!t.ys.length) continue;
+    if(t.xs.length*t.ys.length*OBS.L<=SHP_NODE_CAP) return t;
   }
   for(const t of cands){
     const tx=thin(t.xs), ty=thin(t.ys);
     if(!tx.length||!ty.length) continue;
+    if(tx.length*ty.length*OBS.L<=SHP_NODE_CAP) return {xs:tx,ys:ty};
   }
   // 仍超预算：只保留本网焊盘所在行列 + 窗口四边（最短路径只需这些的并集时才会
   // 成功；失败也是诚实结果，不伪造）
@@ -8069,7 +8095,7 @@ function shpBuildAxes(design, netPads, wHalf, win, OBS, cls){
    禁布区与板边在 soft 模式仍为**硬墙**（工艺边界不可协商）。 */
 function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft){
   const L=OBS.L, R=design.clearance+wHalf;
-  const axes=shpBuildAxes(design,netPads,wHalf,win,OBS,cls);
+  const axes=shpBuildAxes(design,netPads,wHalf,win,OBS,cls,netId);
   if(!axes) return null;
   const xs=axes.xs.map(shpMm), ys=axes.ys.map(shpMm);
   const Nx=xs.length, Ny=ys.length, NN=Nx*Ny, LNN=NN*L;
@@ -8131,7 +8157,7 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft){
     killEdges((a,c)=>shpSegGap(o,a,c), b.x0-R,b.x1+R,b.y0-R,b.y1+R, o.layers);
   }
   for(const k of OBS.keepouts){
-    if(k.scope && cls && k.scope===cls) continue;
+    if(!shpKeepoutBlocks(k,cls,netNameOf(design,netId))) continue;
     // soft 模式：禁布区仍硬墙（先跑 killEdges 的软逻辑再强行清零）
     killEdges((a,c)=>segmentRectDistance(a,c,k),
       k.x-k.w/2-wHalf,k.x+k.w/2+wHalf,k.y-k.h/2-wHalf,k.y+k.h/2+wHalf,
@@ -8144,6 +8170,10 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft){
         for(const j of rows) for(const i of colsIn(k.x-k.w/2-wHalf,k.x+k.w/2+wHalf)) vok[off+j*Nx+i]=0;
       }
     }
+    // only（区域通道属主，0.13.12）：白名单外的网**不得进入该区域**
+    // ——区域是纯逃逸瓶颈（如 BGA 阵列），通道留给需要逃逸的信号网。
+    // 注："允许访问自己焊盘但不穿行"的更细语义在压缩图上需要额外的
+    // 焊盘内连通构造，实测收益不抵复杂度（0.13.12 留档），v1 只做整区禁入。
   }
   // 过孔合法性：全层贯穿 ⇒ 任一层异网铜都挡（圆盘口径）；禁布区同样阻挡（保守）。
   // soft 模式：异网铜的 via 侵权记惩罚（penVia=违规深度），仍可放；禁布区/板边/孔边距硬墙。
@@ -8164,8 +8194,8 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft){
       }
     }
     for(const k of OBS.keepouts){
-      if(k.scope && cls && k.scope===cls) continue;
-      const cs=colsIn(k.x-k.w/2-vR,k.x+k.w/2+vR), rs=rowsIn(k.y-k.h/2-vR,k.y+k.h/2+vR);
+      if(!shpKeepoutBlocks(k,cls,netNameOf(design,netId))) continue;
+const cs=colsIn(k.x-k.w/2-vR,k.x+k.w/2+vR), rs=rowsIn(k.y-k.h/2-vR,k.y+k.h/2+vR);
       for(const j of rs)for(const i of cs){
         const c=j*Nx+i;
         if(distToRect(xs[i],ys[j],k.x,k.y,k.w,k.h)<vR-1e-9) viaOk[c]=0;

@@ -409,3 +409,61 @@ test('外层循环：防抖——连续回滚的网被剔除（不无限振荡�
   const e1=core.checkDRC(d,sp.result,{dfm:false}).filter(i=>i.sev==='error').length;
   assert.ok(e1<=e0,'DRC 劣化');
 });
+
+// ---- 坐标轴降级阶梯（0.13.12：修复 return 缺失导致轴退化为窗口四边）----
+test('坐标轴降级阶梯：轴必须含障碍细化坐标（不得退化为窗口四边）',()=>{
+  const d=core.designDefaults();
+  d.width=20; d.height=10; d.grid=0.5; d.layers=2;
+  d.trackW=0.25; d.clearance=0.2;
+  d.nets=[{id:'n1',name:'A'}];
+  d.pads=[{id:'U1-1',netId:'n1',x:5,y:5,w:0.6,h:0.6,shape:'rect',layer:'top'},
+          {id:'U1-2',netId:'n1',x:15,y:5,w:0.6,h:0.6,shape:'rect',layer:'top'}];
+  // 中间放一个障碍，轴必须在它边界 ±R 处细化
+  d.pads.push({id:'U2-1',netId:null,x:10,y:5,w:1,h:1,shape:'rect',layer:'top'});
+  const OBS=core.shpCollectObstacles(d,[],'n1');
+  const G=core.shpBuildGraph(d,d.pads.filter(p=>p.netId==='n1'),'n1',0.125,
+    {x0:0,x1:20,y0:0,y1:10},OBS,null,false);
+  assert.ok(G,'图应构建成功');
+  // 窗口四边只有 2×2；有障碍细化必然 > 2
+  assert.ok(G.Nx>2 && G.Ny>2,'轴退化为窗口四边（Nx='+G.Nx+' Ny='+G.Ny+'）');
+  // 障碍**边界 ±R** 附近必须有轴坐标（降级阶梯存在的意义：让通道贴着
+  // 间距极限走）。障碍 (10,5) 1×1 ⇒ 边界 9.5/10.5，±R(0.325) ⇒ 9.175/10.825。
+  // 本网焊盘在 x=5/15，不含这些值——若阶梯退化到"只有焊盘+窗口"，必然失败。
+  const hasLo=G.xs.some(v=>Math.abs(v-9.175)<0.05);
+  const hasHi=G.xs.some(v=>Math.abs(v-10.825)<0.05);
+  assert.ok(hasLo&&hasHi,'轴缺障碍边界±R的细化坐标（阶梯退化）：'+G.xs.map(v=>+v.toFixed(2)));
+});
+
+// ---- 区域通道属主 only（0.13.12）----
+test('only：白名单网可穿区域，非白名单网绕行',()=>{
+  const d=core.designDefaults();
+  d.width=20; d.height=10; d.grid=0.5; d.layers=2;
+  d.trackW=0.25; d.clearance=0.2;
+  d.nets=[{id:'n1',name:'A'},{id:'n2',name:'B'}];
+  d.pads=[{id:'U1-1',netId:'n1',x:2,y:5,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U1-2',netId:'n1',x:18,y:5,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U2-1',netId:'n2',x:2,y:7,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U2-2',netId:'n2',x:18,y:7,w:0.5,h:0.5,shape:'rect',layer:'top'}];
+  d.keepouts=[{x:10,y:5,w:6,h:3,only:['A']}];
+  const rA=core.shpRouteNet(d,d.nets[0],core.shpCollectObstacles(d,[],'n1'),
+    {x0:0,x1:20,y0:0,y1:10},{});
+  const rB=core.shpRouteNet(d,d.nets[1],core.shpCollectObstacles(d,[],'n2'),
+    {x0:0,x1:20,y0:0,y1:10},{});
+  assert.equal(rA.connected,2,'白名单网应能穿过区域');
+  assert.equal(rB.connected,2,'非白名单网应能绕行');
+  // B 的路径不得进入区域
+  for(const path of rB.paths) for(let k=1;k<path.length;k++){
+    const a=path[k-1], b=path[k];
+    if(a.l!==b.l) continue;
+    const g=core.segmentRectDistance(a,b,{x:10,y:5,w:6,h:3});
+    assert.ok(g>=0.1,'非白名单网进入了 only 区域（gap='+g.toFixed(3)+'）');
+  }
+});
+
+test('only：keepout 对象正确携带 only 字段（不被 collect 丢弃）',()=>{
+  const d=core.designDefaults();
+  d.nets=[{id:'n1',name:'A'}];
+  d.keepouts=[{x:5,y:5,w:2,h:2,only:['A','B']}];
+  const OBS=core.shpCollectObstacles(d,[],null);
+  assert.deepEqual(OBS.keepouts[0].only,['A','B']);
+});
