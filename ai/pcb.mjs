@@ -244,6 +244,55 @@ function advise(design, result) {
         `按对照表设置：${row}（注意全板不得有任何网 w 超过该线宽）`, 'deterministic');
     }
   }
+  // 5.6 阵列扇出容量（0.13.13，BGA-64 实测驱动）
+  // 几何算术：外圈相邻球之间的"缝"是内圈球唯一的逃逸通道。
+  //   缝宽 = 球距 − 球径；每条缝可穿 ⌊缝宽 / (线宽+间距)⌋ 条线
+  //   内圈需要逃逸的网数 ≤ 总缝容量，否则物理上不可能全布通
+  // 2 层板尤其危险：没有内层可借用（4 层实测同板 DRC 138→108）。
+  {
+    const byComp = new Map();
+    for (const p of design.pads) {
+      const c = p.id.split('-')[0];
+      if (!byComp.has(c)) byComp.set(c, []);
+      byComp.get(c).push(p);
+    }
+    for (const [comp, ps] of byComp) {
+      if (ps.length < 16) continue;                    // 小封装不算阵列
+      const xs = [...new Set(ps.map(p => +p.x.toFixed(3)))].sort((a, b) => a - b);
+      const ys = [...new Set(ps.map(p => +p.y.toFixed(3)))].sort((a, b) => a - b);
+      if (xs.length < 4 || ys.length < 4) continue;    // 需至少 4×4 阵列
+      const pitchX = xs.length > 1 ? xs[1] - xs[0] : 0;
+      const pitchY = ys.length > 1 ? ys[1] - ys[0] : 0;
+      const pitch = Math.min(pitchX || Infinity, pitchY || Infinity);
+      if (!Number.isFinite(pitch) || pitch <= 0) continue;
+      const ballW = ps[0].shape === 'circle' ? ps[0].w : Math.min(ps[0].w, ps[0].h);
+      const gap = pitch - ballW;                       // 球边到球边
+      const need = tw + design.clearance;              // 一条线占的宽度
+      const perGap = gap > 0 ? Math.floor(gap / need + 1e-9) : 0;
+      // 外圈球数 ≈ 2*(nx+ny) − 4
+      const nx = xs.length, ny = ys.length;
+      const edgeBalls = 2 * (nx + ny) - 4;
+      const capacity = edgeBalls * perGap;
+      // 内圈需要逃逸的"独立网"数（外圈球之外的网各需一条通道）
+      const edgeSet = new Set();
+      const isEdge = p => Math.abs(p.x - xs[0]) < 1e-3 || Math.abs(p.x - xs[nx - 1]) < 1e-3 ||
+                          Math.abs(p.y - ys[0]) < 1e-3 || Math.abs(p.y - ys[ny - 1]) < 1e-3;
+      for (const p of ps) if (!isEdge(p) && p.netId != null) edgeSet.add(p.netId);
+      const demand = edgeSet.size;
+      if (perGap === 0) {
+        push(0, 'FANOUT', `${comp} 阵列 ${nx}×${ny} 节距 ${pitch.toFixed(2)}mm 球径 ${ballW.toFixed(2)}mm：缝宽 ${gap.toFixed(2)}mm < 走线需求 ${need.toFixed(2)}mm——**物理上无法从缝中引出任何线**`,
+          `减小线宽/间距（如 线 0.1/距 0.08 ⇒ 需求 0.18）或用盘中孔/盲埋孔扇出；否则该阵列只能靠内层平面连接`, 'deterministic');
+      } else if (demand > capacity) {
+        // 真正容量不足：内圈独立网数超过外圈缝容量（几何上不可能全引出）
+        push(0, 'FANOUT', `${comp} 阵列 ${nx}×${ny} 节距 ${pitch.toFixed(2)}mm：外圈 ${edgeBalls} 条缝 × 每缝 ${perGap} 条 = 容量 ${capacity}，但内圈有 ${demand} 个网需逃逸——**物理容量不足**`,
+          `加层（内层可直接逃逸，实测 BGA-64 同板 2→4 层 DRC 138→108）或改用盘中孔/盲埋孔扇出；也可把电源/地并到平面减少内圈独立网数`, 'deterministic');
+      } else if (design.layers < 4 && demand > capacity * 0.5) {
+        // 容量够但占用过半：几何可行、分配难度高，2 层板协商易在此卡住
+        push(2, 'FANOUT_TIGHT', `${comp} 阵列 ${nx}×${ny}：逃逸容量 ${capacity}，内圈需 ${demand} 个网（占用 ${Math.round(100 * demand / capacity)}%）——容量够但占用过半，${design.layers} 层板协商易在此停滞`,
+          `可加层让内层分流（实测 BGA-64 2→4 层 DRC 138→108）；或减小线宽/间距提高每缝容量`, 'deterministic');
+      }
+    }
+  }
   // 6. 结果相关
   if (result) {
     const fails = result.stats.total - result.stats.connected;
