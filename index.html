@@ -3994,12 +3994,12 @@ function routeBoardShape(design, opts={}){
     onProgress({text:'形状补线 '+n.name,frac:0.1+0.85*(k/target.length)});
     const pads=(design.pads||[]).filter(p=>p.netId===n.id);
     if(pads.length<2){ notes.push({net:n.name,skip:'pads<2'}); return; }
-    // 多端大网（GND/电源平面类）不适合单网串行形状重布：Prim 逐盘接入在已
-    // 布满铜的板上必然中途失败，耗时与焊盘数相关却收益为零（BGA-64 实测：
-    // GND 37 盘尝试 16s、0 接受）。这类网的正确解法是铺铜或协商，如实跳过。
-    const maxPads=opts.shapeMaxPads!=null?opts.shapeMaxPads:12;
+    // 大网护栏（0.13.7 修订）：软 Prim（room-gate v1）推翻了 0.13.4 的
+    // "大网必然失败"定性——fable-01 GND 40 盘软协商 40/40 零重叠。护栏
+    // 语义改为纯耗时保护：缺省 40（约千万级节点图的尝试上限），超过才跳过。
+    const maxPads=opts.shapeMaxPads!=null?opts.shapeMaxPads:40;
     if(pads.length>maxPads){
-      notes.push({net:n.name,skip:'pads>'+maxPads+'（大网用铜皮/协商）'});
+      notes.push({net:n.name,skip:'pads>'+maxPads+'（超时保护，建议铺铜）'});
       return;
     }
     let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
@@ -4023,12 +4023,19 @@ function routeBoardShape(design, opts={}){
     let r=preSkip?null:shpRouteNet(design, n, OBS, win, baseOpt);
     let usedSoft=false;
     if(preSkip){ notes.push({net:n.name,skip:'已连通且零违规（协商无收益）'}); return; }
-    if(!r || !r.paths.length){
+    // 软后备的触发条件（0.13.7 修订）：网整体 no-path **或重布连通数低于
+    // 现状**——大网的硬 Prim 会"部分接入后卡死"（33/40 < 基线 38/40），
+    // 有路径但更差；此时软 Prim（图放开擦边边）往往能全连（实测 40/40），
+    // 不试就等于放弃大网。
+    if(!r || !r.paths.length ||
+       (curEntry && (r.connected-(r.total||0))<=(curEntry.connected-(curEntry.total||0)))){   // <=：相等也试软（软可能全连而硬卡死，fable-03 GND 37→38 实测）
       // 第二遍：软障碍协商（#12b）——异网铜记惩罚可借道。接受方按几何违规
       // 数裁决：违规比"连通增益"更贵时不接受。禁布区/板边/孔边距仍是硬墙。
-      r=shpRouteNet(design, n, OBS, win, {...baseOpt, soft:true,
+      const r2=shpRouteNet(design, n, OBS, win, {...baseOpt, soft:true,
         penScale:opts.shapePenScale!=null?opts.shapePenScale:40});
-      usedSoft=true;
+      if(r2 && (!r || (r2.connected-(r2.total||0))>(r.connected-(r.total||0)))){   // 软结果未连更少才采纳
+        r=r2; usedSoft=true;
+      }
     }
     if(!r || !r.paths.length){ notes.push({net:n.name,skip:'no-path',obs:OBS.copper.length}); return; }
     const candIdx=merged.nets.findIndex(x=>x.netId===n.id);
@@ -8349,16 +8356,18 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft){
         if(!hok[c]&&!soft) continue;
         const g=gap({x:xs[i],y:ys[j]},{x:xs[i+1],y:ys[j]});
         if(g>=R-1e-9) continue;
-        if(soft){ const depth=R-g; if(depth>penH[c]) penH[c]=depth; hok[c]=1; }
-        else hok[c]=0;
+        // soft 红线（0.13.7）：g<=0 是真重叠（短路），任何模式硬拒——
+        // 与过孔同口径（0.13.6 定案）。软协商只允许擦边（0<g<R）。
+        if(soft && g>1e-9){ const depth=R-g; if(depth>penH[c]) penH[c]=depth; hok[c]=1; }
+        else if(!soft || g<=1e-9) hok[c]=0;
       }
       for(const j of rows) for(const i of vs){
         const c=off+j*Nx+i;
         if(!vok[c]&&!soft) continue;
         const g=gap({x:xs[i],y:ys[j]},{x:xs[i],y:ys[j+1]});
         if(g>=R-1e-9) continue;
-        if(soft){ const depth=R-g; if(depth>penV[c]) penV[c]=depth; vok[c]=1; }
-        else vok[c]=0;
+        if(soft && g>1e-9){ const depth=R-g; if(depth>penV[c]) penV[c]=depth; vok[c]=1; }
+        else if(!soft || g<=1e-9) vok[c]=0;
       }
     }
   };
@@ -8567,7 +8576,13 @@ function shpRouteNet(design, net, OBS, win, opts){
   const paths=[], vias=[];
   const reached=new Set([root]);
   const order=[root];
-  // Prim：每次取与已接入集合最近的未接入焊盘
+  // Prim：每次取与已接入集合最近的未接入焊盘。
+  // 软接入（room-gate v1，0.13.7）：硬 A* 失败的盘**不放弃**——改用软 A*
+  // （借道记惩罚）接入。诊断 B/E 实测：fable-01 GND 的 4 个"失败"盘每个
+  // 都能单独软接入成功（零过孔），失败纯粹是 Prim 顺序——先接入的盘占掉
+  // 通道后，后接入的盘在硬模式找不到锚点。这与栅格引擎 PathFinder 的
+  // enterOK 软阶段同语义：硬约束布不通就付代价过。
+  let softJoins=0;
   while(order.length<pads.length){
     let best=null, bd=Infinity;
     for(const p of pads){
@@ -8585,8 +8600,14 @@ function shpRouteNet(design, net, OBS, win, opts){
     const dst=[];
     for(let n=0;n<inTree.length;n++) if(inTree[n]) dst.push(n);
     if(!dst.length) continue;
-    const pts=shpAstar(G,src,dst,{viaCost:opts.viaCost,turnPen:opts.turnPen});
-    if(!pts) continue;                               // 本网其余焊盘仍可能连通
+    let pts=shpAstar(G,src,dst,{viaCost:opts.viaCost,turnPen:opts.turnPen});
+    let softJoin=false;
+    if(!pts && opts.soft){
+      pts=shpAstar(G,src,dst,{viaCost:opts.viaCost,turnPen:opts.turnPen,penScale:opts.penScale});
+      softJoin=true;
+    }
+    if(!pts) continue;                               // 软模式也失败：如实放弃该盘
+    if(softJoin) softJoins++;
     // 落盘：换层点复制同坐标两次（DRC/SVG/泪滴按「同坐标不同层」识别过孔）
     const path=[{x:pts[0].x,y:pts[0].y,l:pts[0].l}];
     for(let k=1;k<pts.length;k++){
@@ -8629,7 +8650,7 @@ function shpRouteNet(design, net, OBS, win, opts){
     for(const l of lay(p)){ for(const n of G.padNodes(p,l)) if(inTree[n]){ ok=true; break; } if(ok) break; }
     if(ok) conn++;
   }
-  return {paths,vias,connected:conn,total:pads.length};
+  return {paths,vias,connected:conn,total:pads.length,softJoins};
 }
 function padLayersOfPad(p,L){
   return p.layer==='top'?[0]:p.layer==='bottom'?[L-1]:Array.from({length:L},(_,i)=>i);

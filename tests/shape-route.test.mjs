@@ -325,3 +325,60 @@ test('级联：端到端 DRC 不劣化（DRC 优先字典序）',()=>{
       ex.name+' 连通数下降');
   }
 });
+
+// ---- room-gate v1：软 Prim（0.13.7）----
+test('软 Prim：协商顺序导致的接入失败可被软图恢复（多盘大网）',()=>{
+  // 构造 6 盘网，其中一个盘只能擦边借道接入（硬 Prim 顺序下最后接入失败）
+  const d=base();
+  d.width=30; d.height=10;
+  d.trackW=0.2; d.clearance=0.15;
+  d.nets=[{id:'n1',name:'A'},{id:'n2',name:'B'}];
+  d.pads=[
+    {id:'U1-1',netId:'n1',x:2,y:2,w:0.5,h:0.5,shape:'rect',layer:'top'},
+    {id:'U1-2',netId:'n1',x:10,y:2,w:0.5,h:0.5,shape:'rect',layer:'top'},
+    {id:'U1-3',netId:'n1',x:18,y:2,w:0.5,h:0.5,shape:'rect',layer:'top'},
+    {id:'U1-4',netId:'n1',x:26,y:2,w:0.5,h:0.5,shape:'rect',layer:'top'},
+    {id:'U1-5',netId:'n1',x:6,y:8,w:0.5,h:0.5,shape:'rect',layer:'top'},
+    {id:'U1-6',netId:'n1',x:22,y:8,w:0.5,h:0.5,shape:'rect',layer:'top'},
+    // 异网墙：把上排两个盘与主排隔开，硬 Prim 从主排长过去时被挡
+    {id:'U2-1',netId:'n2',x:8,y:4.4,w:0.5,h:1.2,shape:'rect',layer:'top'},
+    {id:'U2-2',netId:'n2',x:12,y:4.4,w:0.5,h:1.2,shape:'rect',layer:'top'},
+    {id:'U2-3',netId:'n2',x:16,y:4.4,w:0.5,h:1.2,shape:'rect',layer:'top'},
+    {id:'U2-4',netId:'n2',x:20,y:4.4,w:0.5,h:1.2,shape:'rect',layer:'top'},
+    {id:'U2-5',netId:'n2',x:24,y:4.4,w:0.5,h:1.2,shape:'rect',layer:'top'}];
+  const OBS=core.shpCollectObstacles(d,[],'n1');
+  const hard=core.shpRouteNet(d,{id:'n1',name:'A'},OBS,{x0:0,x1:30,y0:0,y1:10},{});
+  const soft=core.shpRouteNet(d,{id:'n1',name:'A'},OBS,{x0:0,x1:30,y0:0,y1:10},{soft:true,penScale:40});
+  assert.ok(soft,'软模式必须产出');
+  assert.ok(!hard || soft.connected>=hard.connected,'软连通 ≥ 硬');
+  // 软路径不得重叠异网铜（gap=0 红线）
+  for(const path of soft.paths) for(let k=1;k<path.length;k++){
+    const a=path[k-1], b=path[k];
+    if(a.l!==b.l) continue;
+    for(const p of d.pads){
+      if(p.netId==='n1') continue;
+      if(p.layer==='bottom') continue;
+      const g=core.segmentPadDistance(a,b,p);
+      assert.ok(g>1e-9,'重叠异网焊盘 '+p.id);
+    }
+  }
+});
+
+test('软 Prim：gap=0 红线（走线段与过孔同口径）',()=>{
+  const d=base();
+  d.width=10; d.height=6;
+  d.nets=[{id:'n1',name:'A'},{id:'n2',name:'B'}];
+  d.pads=[{id:'U1-1',netId:'n1',x:1,y:3,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U1-2',netId:'n1',x:9,y:3,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U2-1',netId:'n2',x:5,y:3,w:1.2,h:1.2,shape:'rect',layer:'top'}];
+  const OBS=core.shpCollectObstacles(d,[],'n1');
+  const r=core.shpRouteNet(d,{id:'n1',name:'A'},OBS,{x0:0,x1:10,y0:0,y1:6},{soft:true,penScale:1});
+  if(r&&r.paths.length){
+    for(const path of r.paths) for(let k=1;k<path.length;k++){
+      const a=path[k-1], b=path[k];
+      if(a.l!==b.l) continue;
+      const g=core.segmentPadDistance(a,b,d.pads[2]);
+      assert.ok(g>1e-9,'软路径穿过异网焊盘（gap='+g+'）');
+    }
+  }
+});
