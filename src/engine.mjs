@@ -3643,6 +3643,9 @@ function routeBoardShape(design, opts={}){
   const cls=netClsMap(design);
   const notes=[];
   const cascade=[];   // 级联候选：借道已落盘、待修复轮后全板裁决
+  // 协商历史（room-gate v3）：软借道落盘后的争议点计数，跨轮保留、跨网共享
+  // key = 层|0.25mm 量化格，value = 该格的争议次数
+  const crossHist=new Map();
   // geo 口径（0.13.4 修正三，对称三查）：该网与全板的交互违规数
   // = 段-段 + 段-异网焊盘 + 过孔间距（对异网焊盘/走线/过孔）。
   // 三个盲区都是 Fable/BGA 实测抓出的：①单网传 auditGeometry 恒 0；
@@ -3768,7 +3771,8 @@ function routeBoardShape(design, opts={}){
                y0:Math.max(0,y0-winMargin), y1:Math.min(design.height,y1+winMargin)};
     // 障碍集：其它所有网的铜（本网被剔除，重布时旧铜不算障碍）
     const OBS=shpCollectObstacles(design, merged.nets, n.id);
-    const baseOpt={viaCost:opts.viaCost,turnPen:opts.turnPen,cls:cls.get(n.id)||null};
+    const baseOpt={viaCost:opts.viaCost,turnPen:opts.turnPen,cls:cls.get(n.id)||null,
+      crossHist, histScale:opts.shapeHistScale!=null?opts.shapeHistScale:8};
     // 预检（BGA-64 实测省 19s/22s）：已全连通且自身零违规的网，协商唯一可能
     // 的产出是"减过孔/线长但引入新违规"——对称准则必拒，直接跳过。
     const curEntry=merged.nets.find(x=>x.netId===n.id);
@@ -3832,8 +3836,30 @@ function routeBoardShape(design, opts={}){
         geo:before.geo+'→'+after.geo,wait:'待级联修复后全板裁决'});
       return;
     }
-    if(better){ applied++; notes.push({net:n.name,ok:true,soft:usedSoft,conn:after.conn+'/'+after.total,
-      geo:before.geo+'→'+after.geo,vias:before.vias+'→'+after.vias,len:+(after.len-before.len).toFixed(2)}); }
+    if(better){
+      applied++;
+      // 软借道落盘后记录争议点（room-gate v3）：该网新路径与异网铜的每个
+      // 违规段中点计入 crossHist——后续网在同点位借道时代价递增，迫使
+      // 网摊开到未被争夺的缝隙（PathFinder history cost 语义）。
+      if(usedSoft){
+        const hwX=netW(design,n.id)/2;
+        for(const path of r.paths) for(let k=1;k<path.length;k++){
+          const a=path[k-1], b=path[k];
+          if(a.l!==b.l) continue;
+          for(const o of OBS.copper){
+            if(o.net===n.id || o.layers.indexOf(a.l)<0) continue;
+            const g=shpSegGap(o,a,b);
+            if(g < design.clearance + hwX - 1e-9){
+              const key=a.l+'|'+Math.round(((a.x+b.x)/2)*4)+'|'+Math.round(((a.y+b.y)/2)*4);
+              crossHist.set(key,(crossHist.get(key)||0)+1);
+              break;
+            }
+          }
+        }
+      }
+      notes.push({net:n.name,ok:true,soft:usedSoft,conn:after.conn+'/'+after.total,
+      geo:before.geo+'→'+after.geo,vias:before.vias+'→'+after.vias,len:+(after.len-before.len).toFixed(2)});
+    }
     else{
       merged.nets[candIdx]=saved;
       notes.push({net:n.name,skip:'worse',soft:usedSoft,conn:after.conn+'/'+after.total,geo:after.geo,vias:after.vias});
@@ -8119,7 +8145,7 @@ function shpBuildAxes(design, netPads, wHalf, win, OBS, cls, netId){
    硬阶段禁入，软阶段付代价可过。接受方（routeBoardShape）用 auditGeometry
    数真实违规，字典序里违规增加即拒绝——绝不把净违规写进结果。
    禁布区与板边在 soft 模式仍为**硬墙**（工艺边界不可协商）。 */
-function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft){
+function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft, crossHist, histScale){
   const L=OBS.L, R=design.clearance+wHalf;
   const axes=shpBuildAxes(design,netPads,wHalf,win,OBS,cls,netId);
   if(!axes) return null;
@@ -8248,6 +8274,34 @@ const cs=colsIn(k.x-k.w/2-vR,k.x+k.w/2+vR), rs=rowsIn(k.y-k.h/2-vR,k.y+k.h/2+vR)
       if(pointPadDistance(xs[i],ys[j],p)<=1e-9) out.push(off+j*Nx+i);
     return out;
   };
+  // 协商历史代价（room-gate v3，0.13.15）：把**已落盘的软借道争议点**折算为
+  // 额外深度惩罚——后续网在同点位借道时代价递增，迫使网摊开到未被争夺的
+  // 缝隙（PathFinder history cost 的连续空间对应物）。
+  // 只对 pen>0 的边加（软边），量级 = 争议次数 × histScale（mm 深度口径）。
+  const HS=histScale!=null?histScale:8;   // 每次争议的额外深度（mm 口径）
+  if(soft && crossHist && crossHist.size){
+    const histAt=(x,y,l)=>{
+      let sum=0;
+      const xi=Math.round(x*4), yi=Math.round(y*4);   // 0.25mm 量化格
+      for(const [key,cnt] of crossHist){
+        const parts=key.split('|');
+        if(+parts[0]!==l) continue;
+        if(Math.abs(+parts[1]-xi)<=2 && Math.abs(+parts[2]-yi)<=2) sum+=cnt;
+      }
+      return sum;
+    };
+    for(let l=0;l<L;l++){ const off=l*NN;
+      for(let j=0;j<Ny;j++) for(let i=0;i<Nx;i++){
+        const c=off+j*Nx+i;
+        if(penH[c]>0) penH[c]+=HS*histAt(xs[i],ys[j],l);
+        if(penV[c]>0) penV[c]+=HS*histAt(xs[i],ys[j],l);
+      }
+    }
+    for(let j=0;j<Ny;j++) for(let i=0;i<Nx;i++){
+      const c=j*Nx+i;
+      if(penVia[c]>0) penVia[c]+=HS*histAt(xs[i],ys[j],0);
+    }
+  }
   return {Nx,Ny,L,NN,xs,ys,hok,vok,viaOk,penH,penV,penVia,padNodes,wHalf,netId,soft:!!soft};
 }
 
@@ -8393,7 +8447,7 @@ function shpRouteNet(design, net, OBS, win, opts){
   const L=OBS.L, hw=netW(design,net.id)/2;
   const pads=(design.pads||[]).filter(p=>p.netId===net.id);
   if(pads.length<2) return {paths:[],vias:[],connected:pads.length,total:pads.length};
-  const G=shpBuildGraph(design,pads,net.id,hw,win,OBS,opts.cls||null,!!opts.soft);
+  const G=shpBuildGraph(design,pads,net.id,hw,win,OBS,opts.cls||null,!!opts.soft,opts.crossHist,opts.histScale);
   if(!G) return null;
   const lay=p=>padLayersOfPad(p,L);
   const inTree=new Uint8Array(L*G.NN);
