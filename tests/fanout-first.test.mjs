@@ -91,6 +91,16 @@ test('非法 fanoutFirst 值干净报错', () => {
   assert.throws(() => core.routeBoard(d, { fanoutFirst: 'bogus', maxIter: 2 }), /fanoutFirst/);
 });
 
+test('fanoutBorrowPen 校验：负值/NaN/Infinity 干净报错（负权会破坏 A* 不变量）', () => {
+  const d0 = ballDesign();
+  for (let k = 1; k <= 16; k++)
+    d0.pads.push({ id: 'T-' + k, x: 8, y: 1 + k * 0.5, w: 0.4, h: 0.4, shape: 'circle', layer: 'bottom', netId: 'n' + k });
+  const d = core.normalizeDesign(d0);
+  for (const bad of [-1, NaN, Infinity])
+    assert.throws(() => core.routeBoard(d, { fanoutFirst: 'inner_first', fanoutBorrowPen: bad, maxIter: 2 }),
+      /fanoutBorrowPen/, 'pen=' + bad + ' 应报错');
+});
+
 test('BGA-64 行为门：inner_first 连通 98/98 且 DRC ≤ 33（不劣于基线）', { timeout: 900000 }, async () => {
   const { readFileSync } = await import('node:fs');
   const d0 = JSON.parse(readFileSync('projects/round6/n71-bga64/design.json', 'utf8'));

@@ -608,8 +608,12 @@ function createSession(design, opts){
     throw new Error('fanoutFirst must be off|auto|inner_first|outer_first');
   const fanoutEff=fanoutRaw==='auto'?(L===2?'inner_first':'off'):fanoutRaw;
   const fanoutRing=fanoutEff==='off'?new Map():detectBallArrays(design).ringByNetId;
-  // 借道阵列网铜的每格附加罚（0.13.22 F3，仅 fanoutFirst 开启时消费）
+  // 借道阵列网铜的每格附加罚（0.13.22 F3，仅 fanoutFirst 开启时消费）。
+  // 必须非负有限——负值会使 A* 边权为负破坏 Dijkstra 不变量，NaN 毒化代价
+  //（0.13.24 深检修复；F3b 精确计数器实验更差 13→30/14→17，如实撤销）
   const fanoutBorrowPen=opts.fanoutBorrowPen!=null?opts.fanoutBorrowPen:10;
+  if(!Number.isFinite(fanoutBorrowPen)||fanoutBorrowPen<0)
+    throw new Error('fanoutBorrowPen must be a nonnegative finite number');
   let presFac = 2;               // 协商阶段占用代价系数（每轮翻倍）
 
   const usage=new Int16Array(TS);        // 每单元当前被几个网络占用
