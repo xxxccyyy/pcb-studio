@@ -535,8 +535,13 @@ function createSession(design, opts){
   const cellOwner=new Int32Array(TS);    // 每单元首个占用者（net.i+1，0=无）——差分对豁免/回流配对用
   const hist=new Float32Array(TS);       // 历史拥塞代价
   const viaCore=new Int16Array(NC);      // 过孔所在单元：0 无 / k>0 网络 k-1
-  const viaInf=new Int16Array(NC);       // 过孔影响区（含安全间距）：0 无 / -2 多网络 / k>0 网络 k-1
+  // 过孔影响区双口径（0.13.16）：viaInf=走线口径（挡异网走线），viaInfV=过孔口径（挡异网过孔落点）。
+  // 旧实现单半径取 max(两者)——对走线在 (via-trace, via-via) 带内过度保守
+  //（BGA-64 的 0.38-0.53mm 带正是内圈球的逃逸通道，封死它 = 138 个 DRC 的主因）。
+  const viaInf=new Int16Array(NC);        // 走线口径（挡异网走线）：0 无 / -2 多网络 / k>0 网络 k-1
+  const viaInfV=new Int16Array(NC);       // 过孔口径（挡异网过孔落点）：同上
   const tmpOwner=new Int16Array(NC), tmpMulti=new Uint8Array(NC);
+  const tmpOwnerV=new Int16Array(NC), tmpMultiV=new Uint8Array(NC);
   // 邻近罚逐格缓存（gen 戳）：TS ≤4M 状态才启用（内存 8B/状态；大板回退直算）
   const nearPenCache=TS<=4_000_000?new Float32Array(TS):null;
   const nearPenStamp=nearPenCache?new Int32Array(TS):null;
@@ -571,6 +576,12 @@ function createSession(design, opts){
        cy-design.viaOuter/2<-1e-9 || cy+design.viaOuter/2>design.height+1e-9) return false;
     const owner=model.viaPadOwner[c];
     if(owner!==0&&owner!==net.i+1) return false;
+    // 过孔口径影响区（0.13.16 拆分）：异网过孔的 via-via DRC 盘内不得落新孔
+    // ——旧实现靠单半径影响区在 passable 里顺带挡住；拆分后走线口径放开
+    // (via-trace, via-via) 带，此检查必须补上（n150 实测：单半径 0.425 时
+    // +3 过孔间距）。
+    const vOwner=viaInfV[c];
+    if(vOwner!==0&&vOwner!==net.i+1) return false;
     if(model.viaHoleBlocked&&model.viaHoleBlocked[c]) return false;   // 同网 THT 孔边距（DRC 同口径）
     if(keepoutViaBlocked===null){
       keepoutViaBlocked=new Uint8Array(NC);
@@ -706,21 +717,39 @@ function createSession(design, opts){
     // No vias is common on small boards. Clear once when the last via disappears,
     // including after rip-up or snapshot restoration; skip repeated full-grid work.
     if(!nets.some(net=>net.viaSet.size)){
-      if(!viaInfEmpty) viaInf.fill(0);
+      if(!viaInfEmpty){ viaInf.fill(0); viaInfV.fill(0); }
       viaInfEmpty=true;
       return;
     }
     viaInfEmpty=false;
     // viaInf is overwritten for every cell below; only the accumulation buffers need clearing.
     tmpOwner.fill(0); tmpMulti.fill(0);
-    const radius=design.viaOuter/2+design.clearance+Math.max(maxTrackW(design)/2,design.viaOuter/2);
+    tmpOwnerV.fill(0); tmpMultiV.fill(0);
+    // 双口径（0.13.16），各与自己 DRC 距离同尺并含拐角切割余量——
+    //   走线口径 radiusT = sqrt(D_trace² + grid²/2)，其中
+    //     D_trace = viaOuter/2+clearance+W/2（DRC via-trace，:5592）
+    //     余量项 = 相邻格连线对 DRC 盘的最大弦矢差（格心距 ≥ radiusT 的
+    //     相邻格连线，最近点距过孔心 ≥ D_trace——无此余量时对角相邻格的
+    //     连线可切入 DRC 盘 0.02~0.12mm，n142 实测 +2 间距冲突）。
+    //   过孔口径 radiusV = viaOuter+clearance（DRC via-via，:5563）——点对点
+    //     无弦矢差，精确值即可。
+    // 旧实现单半径取 max(两者)：过孔口径正确，走线口径在 (via-trace, via-via)
+    // 带内过度封锁（BGA-64 的 0.42-0.53mm 带是内圈球的逃逸通道，封死它
+    // = 138 个 DRC 主因）。
+    const dT=design.viaOuter/2+design.clearance+maxTrackW(design)/2;
+    const radiusT=Math.sqrt(dT*dT+grid*grid/2);
+    const radiusV=design.viaOuter+design.clearance;
     for(const net of nets){
       const o=net.i+1;
       for(const [c] of net.viaSet){
-        markViaInfluence(model,c,radius,o,tmpOwner,tmpMulti);
+        markViaInfluence(model,c,radiusT,o,tmpOwner,tmpMulti);
+        markViaInfluence(model,c,radiusV,o,tmpOwnerV,tmpMultiV);
       }
     }
-    for(let t=0;t<NC;t++) viaInf[t]=tmpMulti[t]? -2 : tmpOwner[t];
+    for(let t=0;t<NC;t++){
+      viaInf[t]=tmpMulti[t]? -2 : tmpOwner[t];
+      viaInfV[t]=tmpMultiV[t]? -2 : tmpOwnerV[t];
+    }
   }
 
   // ---- 单元通行判断 ----
@@ -736,7 +765,7 @@ function createSession(design, opts){
     if(fixed!==0&&fixed!==net.i+1) return false;
     const po=padOwner[s];
     if(po!==0 && po!==net.i+1) return false;
-    const vi=viaInf[s%NC];
+    const vi=viaInf[s%NC];   // 走线口径（0.13.16 拆分后仅挡异网走线）
     if(vi!==0 && vi!==net.i+1) return false;
     return true;
   }
@@ -1468,7 +1497,7 @@ function createSession(design, opts){
   // export/adopt 走类型化数组直传（transferable 语义），worker 持久镜像会话。
   function exportShared(){
     return { usage:usage.slice(), hist:hist.slice(), cellOwner:cellOwner.slice(),
-      viaCore:viaCore.slice(), viaInf:viaInf.slice(),
+      viaCore:viaCore.slice(), viaInf:viaInf.slice(), viaInfV:viaInfV.slice(),
       pbVal:pairBonusTyped?pairBonusTyped.val.slice():null,
       pbSrc:pairBonusTyped?pairBonusTyped.src.slice():null,
       netMeta:nets.map(n=>({i:n.i, failed:n.failed, connected:n.connected,

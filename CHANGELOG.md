@@ -1,5 +1,50 @@
 # 更新日志
 
+## 0.13.16（2026-11-14）—— A1：过孔影响半径修正（BGA DRC 138→33）
+
+### 根因（探索+实测双确认）
+`rebuildViaInf` 的过孔影响半径 = `viaOuter/2+clearance+max(maxTrackW/2, viaOuter/2)`
+= **max(DRC via-trace, DRC via-via)**。这个 max 对**过孔落点**是必要的（via-via
+间距），但对**异网走线**在 (via-trace, via-via) 带内过度封锁——BGA-64 的
+0.38~0.53mm 带正是内圈球的逃逸通道，封死它 = 138 个 DRC 的主因。
+（0.8mm 球距点阵上 0.53 圆盘几乎盖满平面。）
+
+### 实现：影响区拆成双口径
+- **viaInf（走线口径）**：`sqrt(D_trace² + grid²/2)`，其中
+  `D_trace = viaOuter/2+clearance+maxTrackW/2`。余量项 = 相邻格连线对 DRC 盘的
+  最大弦矢差——格心距 ≥ radiusT 的相邻格连线，最近点距过孔心 ≥ D_trace
+  （无此余量时对角相邻格的连线可切入 DRC 盘 0.02~0.12mm，n142 实测 +2）。
+  `passable` 消费——挡异网走线。
+- **viaInfV（过孔口径）**：`viaOuter+clearance`（DRC via-via，点对点精确值）。
+  `viaLegal` 消费——挡异网过孔落点（拆分后必须补上，n150 单半径实测 +3 过孔间距）。
+- 并行镜像（exportShared/adoptShared）同步双图。
+
+### 位级守门的有意打破（阶段三以来首次）
+本提交**有意改变默认布线行为**：search-baseline 重定 15 fixtures（原因：影响
+半径修正改变协商可达性）、A/B 位级对拍不适用。替代质量门：
+- **批量前后对比**（`.scratch/batch-quality.mjs save/compare`，70 项目
+  routeBoard 全新布线，maxIter 20）：DRC 总变化 **-22**、连通总变化 0、
+  **零退化**（n142/n150 的单半径退化已消失）
+- 全板几何审计零重叠（51858 段-焊盘对）
+- Fable 三板不退步：+4/+6/+4，DRC 9→7 / 7→6 / 8→5
+
+### 实测
+| 场景 | 旧公式 | 双口径 |
+|---|---|---|
+| BGA-64 (n71, 2 层) | DRC 138, over 86 | **DRC 33, over 23**（-77%） |
+| n142-rot16 (viaOuter 0.8) | DRC 3 | DRC 3（拆分后单半径曾 +2，弦矢余量修复） |
+| n150-4layer-hs (viaOuter 0.5) | DRC 0 | DRC 0（单半径曾 +3 过孔间距） |
+
+BGA 分项：间距冲突 23 + 走线间距 10，**无过孔间距**——viaInfV 守卫生效。
+
+### 验证
+228 node:test + 全量套件 0 失败；search-regression 16/16（重定后）；
+全板几何审计零重叠；Fable 三板不退步；批量零退化。
+
+### 注意
+`optimize()` 的"消孔优先"排序与 viaCost=15 未动——盘内孔策略包（折扣/
+口袋触发/排序/保护）在下一提交（A2-A6）。
+
 ## 0.13.15（2026-11-13）—— room-gate v3：协商历史代价（crossHist）+ BGA 边界定案
 
 ### 实现：PathFinder history cost 的连续空间对应物
