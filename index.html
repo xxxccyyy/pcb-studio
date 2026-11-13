@@ -1815,11 +1815,13 @@ function createSession(design, opts){
         const prev=byNet.get(res.i);
         if(!prev){ byNet.set(res.i,res); continue; }
         const score=r=>{
+          // routeList 产物没有 overuse 字段（占用冲突由 usage 决定，提交后才存在）——
+          // 字典序键用 [failed, viaSet, len]；failed 是硬冲突口径（连通数=total-failed）。
           const paths=r.paths||[];
           let len=0;
           for(const p of paths) for(let k=1;k<p.length;k++)
             if(p[k].l===p[k-1].l) len+=Math.hypot(p[k].x-p[k-1].x,p[k].y-p[k-1].y);
-          return [r.failed||0, (r.overuse||0), (r.viaSet||[]).length, Math.round(len*10)];
+          return [r.failed||0, (r.viaSet||[]).length, Math.round(len*10)];
         };
         const a=score(prev), b=score(res);
         let better=false;
@@ -4134,10 +4136,14 @@ async function routeBoardIterParallel(design, opts={}){
     // 广播 adopt。任一 worker 未确认即视为该 worker 不可用——**必须剔除**，
     // 否则它会带着上一轮快照继续 route，产出对陈旧拥塞状态的结果（静默质量污染）。
     // adopt 失败不重试：60s 超时通常意味着 worker 已挂；剔除后由主线程补跑其份额。
-    const verdicts=await Promise.all(pool.map(p=>send(p.w, {cmd:'adopt', shared}, 'ok', 60000)));
-    for(let i=0;i<pool.length;i++) if(!verdicts[i]&&pool[i].alive!==false){
-      pool[i].alive=false;
-      pool[i].lastError='adopt 未确认（剔除该 worker，其份额由主线程确定性补跑）';
+    // **已剔除的 worker 不再发 adopt**：exit 事件不可靠（unref 计时器下进程可能
+    // 先于事件退出），若仍对死 worker 等超时，每轮迭代都会白等 60s
+    //（0.13.3 深度检查抓出的延迟 bug——死亡只发生一次，开销不能逐轮重复）。
+    const liveNow=pool.filter(p=>p.alive!==false);
+    const verdicts=await Promise.all(liveNow.map(p=>send(p.w, {cmd:'adopt', shared}, 'ok', 60000)));
+    for(let i=0;i<liveNow.length;i++) if(!verdicts[i]&&liveNow[i].alive!==false){
+      liveNow[i].alive=false;
+      liveNow[i].lastError='adopt 未确认（剔除该 worker，其份额由主线程确定性补跑）';
     }
   };
   // 波次批处理（Jacobi→部分 Gauss-Seidel）：全网只见迭代起始快照时，协商收敛
@@ -5228,9 +5234,11 @@ function renderBoardPixels(design, result, opts){
     const hr=p.layer==='both'?(p.holeR!=null?p.holeR:design.viaDrill/2):0;
     if(hr>0) disc(p.x,p.y,hr,C_HOLE);
   }
+  // 俯视合成图：所有过孔都画（含盲埋孔——AI 目检需要看到全部物理孔；
+  // 分层视图的 span 语义由 buildSVG/Gerber 承担）。孔径用逐孔 outer/drill。
   for(const n of (result&&result.nets)||[]) for(const v of n.vias){
-    disc(v.x,v.y,design.viaOuter/2,C_PAD);
-    disc(v.x,v.y,design.viaDrill/2,C_HOLE);
+    disc(v.x,v.y,(v.outer!=null?v.outer:design.viaOuter)/2,C_PAD);
+    disc(v.x,v.y,(v.drill!=null?v.drill:design.viaDrill)/2,C_HOLE);
   }
   for(const sv of design.stitching||[]){
     disc(sv.x,sv.y,design.viaOuter/2,C_PAD);
@@ -6066,9 +6074,13 @@ function buildSVG(design, result, extras){
         if(curL!==null) emit(curL,pts);
       }
       for(const v of n.vias){
-        const c='<circle cx="'+v.x.toFixed(3)+'" cy="'+v.y.toFixed(3)+'" r="'+(design.viaOuter/2)+'" fill="'+SVG_COLORS.via+'"/>'+
-                '<circle cx="'+v.x.toFixed(3)+'" cy="'+v.y.toFixed(3)+'" r="'+(design.viaDrill/2)+'" fill="'+SVG_COLORS.board+'"/>\n';
-        topG+=c; botG+=c;
+        // #15：盲埋孔只画在其 span 覆盖的层组——SVG 只有顶层/底层组（内层无组），
+        // span 不含 0/L-1 的孔在两视图都不出现（图纸不再出现不存在的孔）。
+        // 通孔（无 span）照旧两视图都画。孔径用逐孔 outer/drill（支持微孔）。
+        const c='<circle cx="'+v.x.toFixed(3)+'" cy="'+v.y.toFixed(3)+'" r="'+((v.outer!=null?v.outer:design.viaOuter)/2)+'" fill="'+SVG_COLORS.via+'"/>'+
+                '<circle cx="'+v.x.toFixed(3)+'" cy="'+v.y.toFixed(3)+'" r="'+((v.drill!=null?v.drill:design.viaDrill)/2)+'" fill="'+SVG_COLORS.board+'"/>\n';
+        if(viaOnLayer(v,0,design.layers)) topG+=c;
+        if(viaOnLayer(v,design.layers-1,design.layers)) botG+=c;
       }
     }
   }
@@ -7208,8 +7220,13 @@ function computePour(design, result, opts){
       else _pourFillStadium(foreign, WF, HF, cell, a.x, a.y, b.x, b.y, w/2+T);
     }
     for(const v of n.vias||[]){
-      if(own) seedDisc(v.x, v.y, design.viaOuter/2);
-      else _pourFillDisc(foreign, WF, HF, cell, v.x, v.y, design.viaOuter/2+T);
+      // #15：过孔按层跨度参与铜皮——span 不含本层的过孔在本层无铜，
+      // 既不 seed（本网）也不挖空（异网），否则会产生"跨度外假避让"
+      //（挖空本层铜皮却没有孔）或"跨度内假连接"。
+      if(!viaOnLayer(v, layer, L)) continue;
+      const vr=(v.outer!=null?v.outer/2:design.viaOuter/2);
+      if(own) seedDisc(v.x, v.y, vr);
+      else _pourFillDisc(foreign, WF, HF, cell, v.x, v.y, vr+T);
     }
   }
   for(const p of ownPads){

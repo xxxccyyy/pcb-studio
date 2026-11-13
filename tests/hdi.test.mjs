@@ -190,3 +190,85 @@ test('HDI 微孔：钻孔小于工艺口径给 warn',()=>{
   const issues=core.checkDRC(d,microResult([{x:10,y:10,layers:[0,1],drill:0.08,outer:0.25}]));
   assert.ok(issues.some(i=>i.type==='HDI 激光孔孔径'&&i.sev==='warn'));
 });
+
+// ---- 覆铜 span 语义（0.13.3 深度检查补）----
+function pourBoard(){
+  const d=core.designDefaults();
+  d.width=40; d.height=30; d.grid=0.5; d.layers=4;
+  d.trackW=0.25; d.clearance=0.2; d.viaOuter=0.6; d.viaDrill=0.3;
+  d.nets=[{id:'n1',name:'A'},{id:'n2',name:'B'}];
+  d.pads=[{id:'U1-1',netId:'n1',x:2,y:15,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U1-2',netId:'n1',x:38,y:15,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U2-1',netId:'n2',x:2,y:25,w:0.5,h:0.5,shape:'rect',layer:'bottom'},
+          {id:'U2-2',netId:'n2',x:38,y:25,w:0.5,h:0.5,shape:'rect',layer:'bottom'}];
+  return d;
+}
+function pourResult(via){
+  return {status:'complete',nets:[
+    {netId:'n1',name:'A',paths:[[{x:2,y:15,l:1},{x:38,y:15,l:1}]],vias:via?[via]:[],connected:2,total:2},
+    {netId:'n2',name:'B',paths:[[{x:2,y:25,l:3},{x:38,y:25,l:3}]],vias:[],connected:2,total:2}],overuse:[],
+    stats:{connected:2,total:2,trackTop:0,trackBot:0,vias:via?1:0,trackLen:72,trackLayers:[0,36,0,36],trackInner:36}};
+}
+
+test('pour：本网埋孔在其 span 层参与种子（连接铜），span 外层无铜',()=>{
+  const d=pourBoard();
+  const r=pourResult({x:20,y:15,layers:[1,2]});
+  assert.equal(core.pourContains(core.computePour(d,r,{netId:'n1',layer:1}),20,15),true,
+    'span 内层应被 seed');
+  assert.equal(core.pourContains(core.computePour(d,r,{netId:'n1',layer:3}),20,15),false,
+    'span 外层不应有铜');
+});
+
+test('pour：异网埋孔在其 span 层被挖空，span 外层不避让',()=>{
+  const d=pourBoard();
+  const r=pourResult({x:20,y:15,layers:[1,2]});
+  assert.equal(core.pourContains(core.computePour(d,r,{netId:'n2',layer:1}),20,15),false,
+    'span 内层应避让');
+  assert.equal(core.pourContains(core.computePour(d,r,{netId:'n2',layer:3}),20,15),true,
+    'span 外层不应避让');
+});
+
+test('pour：通孔（无 span）在所有层照旧 seed/避让（向后兼容）',()=>{
+  const d=pourBoard();
+  const r=pourResult({x:20,y:15});
+  assert.equal(core.pourContains(core.computePour(d,r,{netId:'n1',layer:0}),20,15),true);
+  assert.equal(core.pourContains(core.computePour(d,r,{netId:'n1',layer:3}),20,15),true);
+  assert.equal(core.pourContains(core.computePour(d,r,{netId:'n2',layer:0}),20,15),false);
+  assert.equal(core.pourContains(core.computePour(d,r,{netId:'n2',layer:3}),20,15),false);
+});
+
+// ---- SVG span 语义（0.13.3 深度检查补）----
+function svgBoard(){
+  const d=core.designDefaults();
+  d.width=40; d.height=30; d.grid=0.5; d.layers=4;
+  d.trackW=0.25; d.clearance=0.2; d.viaOuter=0.6; d.viaDrill=0.3;
+  d.nets=[{id:'n1',name:'A'}];
+  d.pads=[{id:'U1-1',netId:'n1',x:2,y:15,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U1-2',netId:'n1',x:38,y:15,w:0.5,h:0.5,shape:'rect',layer:'top'}];
+  return d;
+}
+function svgResult(via){
+  return {status:'complete',nets:[{netId:'n1',name:'A',
+    paths:[[{x:2,y:15,l:1},{x:18,y:15,l:1}],[{x:18,y:15,l:2},{x:38,y:15,l:2}]],
+    vias:[via],connected:2,total:2}],
+    overuse:[],stats:{connected:2,total:2,trackTop:0,trackBot:0,vias:1,trackLen:72,
+    trackLayers:[0,36,36,0],trackInner:36}};
+}
+test('SVG：埋孔不出现在顶层/底层视图（图纸不画不存在的孔）',()=>{
+  const d=svgBoard();
+  const n=svg=>(svg.match(/<circle/g)||[]).length;
+  assert.equal(n(core.buildSVG(d,svgResult({x:18,y:15,layers:[1,2]}),{})),0);
+});
+test('SVG：盲孔只出现在其 span 触及的外层组',()=>{
+  const d=svgBoard();
+  const n=svg=>(svg.match(/<circle/g)||[]).length;
+  assert.equal(n(core.buildSVG(d,svgResult({x:18,y:15,layers:[0,1]}),{})),2,'顶层组应有');
+  assert.equal(n(core.buildSVG(d,svgResult({x:18,y:15,layers:[2,3]}),{})),2,'底层组应有');
+});
+test('SVG：通孔照旧两视图都画 + 逐孔 outer/drill 生效',()=>{
+  const d=svgBoard();
+  const svg=core.buildSVG(d,svgResult({x:18,y:15,drill:0.1,outer:0.25}),{});
+  const n=(svg.match(/<circle/g)||[]).length;
+  assert.equal(n,4);
+  assert.ok(svg.includes('r="0.125"'),'外径 0.25/2 应出现在光圈');
+});

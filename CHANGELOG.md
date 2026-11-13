@@ -1,5 +1,47 @@
 # 更新日志
 
+## 0.13.3（2026-11-13）—— 深度检查轮：三修复 + 六回归（全部由审计驱动）
+
+### 修复（每个都有独立复现脚本）
+
+1. **broadcastAdopt 对死 worker 白等 60s（延迟 bug，0.13.2 引入）**：worker 被剔除后
+   仍每轮向它发 adopt 并等满超时——exit 事件不可靠（unref 计时器下进程可能先于
+   事件退出），一旦有 worker 死亡，后续每轮迭代都多等 60s。修复：已剔除的
+   worker 不再发 adopt。
+2. **mergePolicy='better' 的失效字典序键**：routeList 产物没有 overuse 字段，
+   `(r.overuse||0)` 恒 0，第二键失效。修正为 [failed, viaSet, len]（failed 是
+   硬冲突口径，与 routeScore 的连通数=total-failed 对齐）。
+3. **computePour 的过孔 span 盲区**：过孔不按层跨度参与铜皮——异网埋孔在
+   span 外的层也被挖空（假避让），本网埋孔在 span 内的层未 seed。修复：
+   span 不含本层的过孔既不 seed 也不挖空；通孔照旧。
+4. **buildSVG 把埋孔画进顶层/底层视图**：span [1,2] 的孔出现在两个外层组
+   （图纸出现不存在的孔）。修复：只画 span 触及的外层组；孔径用逐孔
+   outer/drill（微孔渲染保真）。
+
+### 明确不动的（语义核对后确认正确）
+- renderBoardPixels 画全部过孔（俯视合成图，AI 目检需看到全部物理孔；分层
+  语义由 SVG/Gerber 承担）——已加注释
+- teardropPolys 按走线段层归属（实测泪滴正确挂在 span 内的 1/2 层）
+- IPC-356 VIA 记录 PA00（通孔口径，0.13.1 已如实声明为格式限制）
+
+### 新增回归（hdi.test.mjs 17→23，iter-parallel 7）
+- pour span 四方向：本网 seed@span 内 / span 外无铜 / 异网避让@span 内 /
+  span 外不避让 / 通孔向后兼容
+- SVG span 三向：埋孔不出现 / 盲孔只出现在触及的外层组 / 通孔+逐孔孔径
+
+### 复核（防假绿）
+- **Fable 三板增益在最终引擎上成立**：+4/+6/+4，补线冲突 0；
+  fable-03 DRC 实为 8→7（USB_DP/DM 各再通 2 盘 + 自身违规消除），
+  报告 8→8 系引用旧口径，已更正
+- CLI 三旗端到端：--shape-patch / --iter-waves 3 --shard 4 全通；
+  畸形值（--shape-window abc / --shard 99 / --iter-waves 0）干净拒绝
+- manual 走线的过孔 DRC 审计正常（过孔-焊盘间距报出）
+
+### 验证
+- 全量回归 **197 node:test** + 80 核心 + 48 书籍 + 17 CLI + 39 模糊
+  + 7 深度校验 + 22 优化锁定，**0 失败**
+- A/B 位级 35/35；独立几何审计 6/6；一致性审计 14/14；内联脚本 vm 解析通过
+
 ## 0.13.2（2026-11-13）—— 阶段三 #13 多核协商分片 + #14 推挤式交互（UI 层）
 
 ### #13：空间分片 + 确定性合并
