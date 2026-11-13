@@ -336,6 +336,78 @@
   {
    "id": "n165",
    "name": "Nn165"
+  },
+  {
+   "id": "Cfill1",
+   "name": "Cfill1"
+  },
+  {
+   "id": "Cfill2",
+   "name": "Cfill2"
+  },
+  {
+   "id": "Cfill3",
+   "name": "Cfill3"
+  },
+  {
+   "id": "Cfill4",
+   "name": "Cfill4"
+  },
+  {
+   "id": "Cfill5",
+   "name": "Cfill5"
+  },
+  {
+   "id": "Cfill6",
+   "name": "Cfill6"
+  },
+  {
+   "id": "Cfill7",
+   "name": "Cfill7"
+  },
+  {
+   "id": "Cfill8",
+   "name": "Cfill8"
+  },
+  {
+   "id": "Cfill9",
+   "name": "Cfill9"
+  },
+  {
+   "id": "Cfill10",
+   "name": "Cfill10"
+  },
+  {
+   "id": "Cfill11",
+   "name": "Cfill11"
+  },
+  {
+   "id": "Cfill12",
+   "name": "Cfill12"
+  },
+  {
+   "id": "Cfill13",
+   "name": "Cfill13"
+  },
+  {
+   "id": "Cfill14",
+   "name": "Cfill14"
+  },
+  {
+   "id": "Cfill15",
+   "name": "Cfill15"
+  },
+  {
+   "id": "Cfill16",
+   "name": "Cfill16"
+  },
+  {
+   "id": "Cfill17",
+   "name": "Cfill17"
+  },
+  {
+   "id": "Cfill18",
+   "name": "Cfill18"
   }
  ],
  "pads": [
@@ -2078,6 +2150,366 @@
    "y": 40.445,
    "w": 0.6,
    "h": 1.07
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF1-1",
+   "netId": "Cfill1",
+   "x": 1.5,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF1-2",
+   "netId": "Cfill1",
+   "x": 3.5,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF2-1",
+   "netId": "Cfill2",
+   "x": 6.7,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF2-2",
+   "netId": "Cfill2",
+   "x": 8.7,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF3-1",
+   "netId": "Cfill3",
+   "x": 11.9,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF3-2",
+   "netId": "Cfill3",
+   "x": 13.9,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF4-1",
+   "netId": "Cfill4",
+   "x": 17.1,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF4-2",
+   "netId": "Cfill4",
+   "x": 19.1,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF5-1",
+   "netId": "Cfill5",
+   "x": 22.3,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF5-2",
+   "netId": "Cfill5",
+   "x": 24.3,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF6-1",
+   "netId": "Cfill6",
+   "x": 27.5,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF6-2",
+   "netId": "Cfill6",
+   "x": 29.5,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF7-1",
+   "netId": "Cfill7",
+   "x": 32.7,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF7-2",
+   "netId": "Cfill7",
+   "x": 34.7,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF8-1",
+   "netId": "Cfill8",
+   "x": 37.9,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF8-2",
+   "netId": "Cfill8",
+   "x": 39.9,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF9-1",
+   "netId": "Cfill9",
+   "x": 43.1,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF9-2",
+   "netId": "Cfill9",
+   "x": 45.1,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF10-1",
+   "netId": "Cfill10",
+   "x": 48.3,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF10-2",
+   "netId": "Cfill10",
+   "x": 50.3,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF11-1",
+   "netId": "Cfill11",
+   "x": 53.5,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF11-2",
+   "netId": "Cfill11",
+   "x": 55.5,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF12-1",
+   "netId": "Cfill12",
+   "x": 58.7,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF12-2",
+   "netId": "Cfill12",
+   "x": 60.7,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF13-1",
+   "netId": "Cfill13",
+   "x": 63.9,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF13-2",
+   "netId": "Cfill13",
+   "x": 65.9,
+   "y": 2.5,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF14-1",
+   "netId": "Cfill14",
+   "x": 1.5,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF14-2",
+   "netId": "Cfill14",
+   "x": 3.5,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF15-1",
+   "netId": "Cfill15",
+   "x": 9.3,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF15-2",
+   "netId": "Cfill15",
+   "x": 11.3,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF16-1",
+   "netId": "Cfill16",
+   "x": 19.7,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF16-2",
+   "netId": "Cfill16",
+   "x": 21.7,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF17-1",
+   "netId": "Cfill17",
+   "x": 30.1,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF17-2",
+   "netId": "Cfill17",
+   "x": 32.1,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF18-1",
+   "netId": "Cfill18",
+   "x": 40.5,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
+  },
+  {
+   "shape": "rect",
+   "layer": "top",
+   "id": "CF18-2",
+   "netId": "Cfill18",
+   "x": 42.5,
+   "y": 5.1,
+   "w": 0.8,
+   "h": 0.8
   }
  ],
  "keepouts": [],

@@ -1,7 +1,7 @@
 {
  "status": "complete",
  "iterations": 0,
- "timeMs": 245,
+ "timeMs": 271,
  "nets": [
   {
    "netId": "n3",
@@ -2498,18 +2498,128 @@
    ],
    "connected": 2,
    "total": 2
+  },
+  {
+   "netId": "Cfill1",
+   "name": "Cfill1",
+   "paths": [
+    [
+     {
+      "x": 11.25,
+      "y": 2.25,
+      "l": 0
+     },
+     {
+      "x": 9.25,
+      "y": 2.25,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    502,
+    501,
+    500,
+    499,
+    498
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "Cfill2",
+   "name": "Cfill2",
+   "paths": [
+    [
+     {
+      "x": 21.75,
+      "y": 2.25,
+      "l": 0
+     },
+     {
+      "x": 19.75,
+      "y": 2.25,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    523,
+    522,
+    521,
+    520,
+    519
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "Cfill3",
+   "name": "Cfill3",
+   "paths": [
+    [
+     {
+      "x": 31.75,
+      "y": 2.25,
+      "l": 0
+     },
+     {
+      "x": 30.25,
+      "y": 2.25,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    543,
+    542,
+    541,
+    540
+   ],
+   "connected": 2,
+   "total": 2
+  },
+  {
+   "netId": "Cfill4",
+   "name": "Cfill4",
+   "paths": [
+    [
+     {
+      "x": 42.25,
+      "y": 2.25,
+      "l": 0
+     },
+     {
+      "x": 40.75,
+      "y": 2.25,
+      "l": 0
+     }
+    ]
+   ],
+   "vias": [],
+   "cells": [
+    564,
+    563,
+    562,
+    561
+   ],
+   "connected": 2,
+   "total": 2
   }
  ],
  "overuse": [],
  "stats": {
-  "connected": 192,
-  "total": 192,
-  "trackTop": 96,
+  "connected": 200,
+  "total": 200,
+  "trackTop": 103,
   "trackBot": 0,
   "vias": 0,
-  "trackLen": 96,
+  "trackLen": 103,
   "trackLayers": [
-   96,
+   103,
    0,
    0,
    0

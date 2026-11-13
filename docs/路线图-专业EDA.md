@@ -51,6 +51,6 @@
 
 ## 里程碑度量（全部可机器验证）
 
-- M1（阶段一末）：`projects/` 新增 20 个 4 层 200-pad 级项目全绿——**未达标（如实盘点 0.13.23：全库 ≥200 焊盘仅 3 项、4 层仅 1 项 ext-oshwhub-01）**；批量生成 4 层 200-pad 板并全绿是遗留项
+- M1（阶段一末）：`projects/` 新增 20 个 4 层 200-pad 级项目全绿——**✓（0.13.25 补齐：projects/m1-4layer/ 20 板全部 ≥200 焊盘 × 4 层 × complete + DRC 0，0.13.24 引擎实测；生成器 .scratch/gen-m1.mjs 含 0603 填充器与占用检查，tests/m1-batch.test.mjs 抽样永久门）**
 - M2（阶段二末）：KiCad 插件 + 1 个外部真实案例文档——**✓（kicad-plugin/ + 案例 iCEBreaker、开源广场两篇）**
 - M3（阶段三末）：形状布线引擎在 0.4mm QFN 密集板 DRC 全绿——**✓（0.13.23 验收：QFN-44@0.4mm 现实 breakout 与压力环两口径均 88/88 连通 + DRC 0，tests/m3-qfn.test.mjs 永久门；更贴边的早期变体实测 grid 6→shape 2，扩边距后收敛）**
