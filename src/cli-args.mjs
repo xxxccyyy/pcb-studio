@@ -8,6 +8,7 @@ const flagCommands={
   '--pair':['tune'],'--group':['tune'],'--serp-gap':['tune'],'--tol':['tune'],
   '--target':['tune'],'--max-amp':['tune'],
   '--parallel':['route','autopcb'],'--no-nb-ripup':['route'],'--iter-workers':['route','autopcb'],
+  '--iter-waves':['route','autopcb'],'--shard':['route','autopcb'],
   '--shape-patch':['route','autopcb'],'--shape-window':['route','autopcb'],'--shape-nets':['route','autopcb'],
   '--pair':['tune','diffz'],'--z':['diffz'],
   '--islands':['pour'],'--min-island-area':['pour'],'--fill':['pour'],'--grid-w':['pour'],'--grid-gap':['pour'],
@@ -28,6 +29,7 @@ const numericFlags={'--via-cost':[0,100000,false],'--max-iter':[1,1000,true],
   '--serp-gap':[0,50,false],'--tol':[0.001,100,false],
   '--target':[0,5000,false],'--max-amp':[0,100,false],
   '--z':[1,500,false],'--parallel':[0,64,true],'--iter-workers':[0,64,true],
+  '--iter-waves':[1,8,true],'--shard':[0,32,true],
   '--shape-window':[0,100,false]};
 export function parseArguments(command,argv){
   const args=[],options=new Map();

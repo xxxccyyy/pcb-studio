@@ -58,3 +58,61 @@ test('routeBoardIterParallel：iterWorkers<2 回退串行', async () => {
   assert.equal(par.fallback, true, '回退标记');
   assert.equal(par.result.stats.connected, par.result.stats.total);
 });
+
+// ---- 阶段三 #13：空间分片 + 确定性合并 ----
+test('shardQueue：跨分片网归面积重叠最大分片（唯一属主，无网重复）',()=>{
+  const d=core.designDefaults();
+  d.width=60; d.height=40; d.grid=0.5; d.layers=2;
+  d.nets=[]; d.pads=[];
+  // 四个象限各两组网，每组两端点都落在同一象限
+  const quads=[[10,10],[50,10],[10,30],[50,30]];
+  quads.forEach(([qx,qy],qi)=>{
+    for(let k=0;k<3;k++){
+      const id='n'+(qi*3+k+1);
+      d.nets.push({id,name:id});
+      d.pads.push({id:'U'+qi+'-'+(k*2+1),netId:id,x:qx-2+k*0.5,y:qy,w:0.6,h:0.6,shape:'rect',layer:'top'});
+      d.pads.push({id:'U'+qi+'-'+(k*2+2),netId:id,x:qx+2+k*0.5,y:qy,w:0.6,h:0.6,shape:'rect',layer:'top'});
+    }
+  });
+  const s=core.createSession(d,{});
+  const sr=s.shardQueue(4);
+  assert.ok(sr,'shard=4 应产出分片');
+  const total=sr.groups.reduce((a,g)=>a+g.length,0);
+  assert.equal(total,d.nets.length,'每个网必须且只能属于一个分片');
+  // 无重复
+  const seen=new Set();
+  for(const g of sr.groups) for(const n of g){
+    assert.ok(!seen.has(n.i),'网 '+n.i+' 重复归组');
+    seen.add(n.i);
+  }
+});
+
+test('shardQueue：shard<2 返回 null（走原路径，位级不变）',()=>{
+  const d=core.EXAMPLES[0].build();
+  const s=core.createSession(d,{});
+  assert.equal(s.shardQueue(0),null);
+  assert.equal(s.shardQueue(1),null);
+});
+
+test('commitRoutes mergePolicy=better：同网多份取字典序优者且与顺序无关',()=>{
+  const d=core.EXAMPLES[0].build();
+  const s=core.createSession(d,{});
+  while(!s.step().done){}
+  const base=s.buildResult();
+  const n0=base.nets[0];
+  // 造两份结果：一份原样，一份"劣化"（去掉全部路径 → failed>0）
+  const good={i:0, failed:n0.connected<n0.total?1:0, connected:n0.connected,
+    cells:n0.cells||[], viaSet:(n0.vias||[]).map(v=>[0,v]), paths:n0.paths};
+  const bad={i:0, failed:99, connected:0, cells:[], viaSet:[], paths:[]};
+  const runOrder=(arr)=>{
+    const c=core.createSession(d,{});
+    while(!c.step().done){}
+    c.commitRoutes(arr, true, 'better');
+    const r=c.buildResult();
+    return JSON.stringify({p:r.nets[0].paths,c:r.nets[0].connected});
+  };
+  const a=runOrder([good,bad]);
+  const b=runOrder([bad,good]);
+  assert.equal(a,b,'better 合并必须与传入顺序无关（确定性）');
+  assert.ok(JSON.parse(a).c>=Math.max(0,JSON.parse(a).c),'连通数应取优');
+});

@@ -18,7 +18,10 @@
     seq:1, netSeq:1, dpr:1, dirty:true
   };
 
-  // ---------------- 撤销 / 重做（设计快照） ----------------
+  // ---------------- 撤销 / 重做（设计 + 布线结果快照） ----------------
+  // 阶段三 #14：快照必须同时含 result——此前只存 design，applySnapshot 会把
+  // app.result 置 null，撤销一次手动操作就丢掉全部自动布线（用户要重跑数分钟）。
+  // 现在 result 一并入快照；体积代价由 60 步上限 + 只在有变化时入栈约束。
   const hist={stack:[], idx:-1};
   function updateHistBtns(){
     $('btnUndo').disabled=hist.idx<=0;
@@ -31,14 +34,25 @@
     hist.idx=hist.stack.length-1;
     updateHistBtns();
   }
-  function pushHistory(){ if(app.design) pushHistorySnap(JSON.stringify(app.design)); }
+  function snapshotState(){
+    if(!app.design) return null;
+    return JSON.stringify({design:app.design, result:app.result||null});
+  }
+  function pushHistory(){ const s=snapshotState(); if(s) pushHistorySnap(s); }
   function applySnapshot(snap){
     routingClient.dispose(); app.session=null;
-    const d=JSON.parse(snap);
-    app.design=d; app.result=null; app.sel=null; app.dragging=null;
+    let parsed;
+    try{ parsed=JSON.parse(snap); }catch(e){ return; }
+    // 兼容旧快照（纯 design）与工程文件
+    const d=parsed&&parsed.design?parsed.design:parsed;
+    const r=parsed&&parsed.design?(parsed.result||null):null;
+    app.design=d; app.result=r; app.sel=null; app.dragging=null;
     syncParamInputs(); sbMsg(); renderNets(); renderProps(); renderStats();
-    $('drcList').innerHTML='<div class="d-ok">已撤销/重做，重新布线后自动检查。</div>';
+    $('drcList').innerHTML=r
+      ? '<div class="d-ok">已撤销/重做（布线结果一并恢复），可重新检查。</div>'
+      : '<div class="d-ok">已撤销/重做，重新布线后自动检查。</div>';
     computeDerived();
+    if(r&&typeof runDRC==='function') runDRC();
     requestDraw();
     updateHistBtns();
   }
@@ -468,10 +482,12 @@
       const dg=opt.draw, pts=dg.pts.concat((dg.preview||[]).map(p=>({...p,l:dg.l})));
       for(const l of layers){
         if(!layerVisible(l,d,show)) continue;
+        // 冲突时把预览描成告警色（#14b 实时反馈）
+        const conflict=dg.conflict&&dg.conflict.l===undefined?!!dg.conflict:false;
         const flush=run=>{
           if(run.length<2) return;
-          g.save();g.strokeStyle=P[layerKey(l,d)];g.lineWidth=width(dg.netId);g.lineJoin='round';g.lineCap='round';g.globalAlpha=.7;g.beginPath();copperPath(g,run);g.stroke();
-          g.globalAlpha=.9;g.lineWidth=.8/s;g.strokeStyle='#f0f6ff';g.setLineDash([4/s,3/s]);g.beginPath();copperPath(g,run);g.stroke();g.restore();
+          g.save();g.strokeStyle=conflict?'#ff4d5e':P[layerKey(l,d)];g.lineWidth=width(dg.netId);g.lineJoin='round';g.lineCap='round';g.globalAlpha=.7;g.beginPath();copperPath(g,run);g.stroke();
+          g.globalAlpha=.9;g.lineWidth=.8/s;g.strokeStyle=conflict?'#ffd0d5':'#f0f6ff';g.setLineDash([4/s,3/s]);g.beginPath();copperPath(g,run);g.stroke();g.restore();
         };
         let run=[];
         for(const pt of pts){if(pt.l===l)run.push(pt);else{flush(run);run=[];}}flush(run);
@@ -483,6 +499,14 @@
       }
       if(layerVisible(dg.l,d,show)){
         const last=pts[pts.length-1];g.save();g.strokeStyle=P.selection;g.lineWidth=1/s;g.beginPath();g.arc(last.x,last.y,5/s,0,Math.PI*2);g.moveTo(last.x-9/s,last.y);g.lineTo(last.x+9/s,last.y);g.moveTo(last.x,last.y-9/s);g.lineTo(last.x,last.y+9/s);g.stroke();g.restore();
+      }
+      // 冲突点：告警色圆环 + 十字（#14b）
+      if(dg.conflict){
+        const c=dg.conflict;
+        g.save();g.strokeStyle='#ff4d5e';g.lineWidth=1.6/s;
+        g.beginPath();g.arc(c.x,c.y,6/s,0,Math.PI*2);g.stroke();
+        g.beginPath();g.moveTo(c.x-9/s,c.y);g.lineTo(c.x+9/s,c.y);
+        g.moveTo(c.x,c.y-9/s);g.lineTo(c.x,c.y+9/s);g.stroke();g.restore();
       }
     }
     if(opt.sel){
@@ -524,6 +548,20 @@
           return {type:'manual',obj:m2};
       }
     }
+    // 阶段三 #14：自动布线也参与命中——否则推挤/局部重布无从"选中要改的线"。
+    // 只读命中，不改几何（改动走 manual 通道或窗口重布）。
+    if(app.result){
+      for(let i=app.result.nets.length-1;i>=0;i--){
+        const rn=app.result.nets[i];
+        for(const path of (rn.paths||[])) for(let k=1;k<path.length;k++){
+          const a=path[k-1], b=path[k];
+          if(a.l!==b.l) continue;
+          if(!layerVisible(a.l,d,app.show)) continue;
+          if(segDist(m.x,m.y,a.x,a.y,b.x,b.y)<=netW(d,rn.netId)/2+0.12)
+            return {type:'auto',obj:rn,netId:rn.netId,path,l:a.l};
+        }
+      }
+    }
     for(let i=d.keepouts.length-1;i>=0;i--){
       const k=d.keepouts[i];
       if(Math.abs(m.x-k.x)<=k.w/2 && Math.abs(m.y-k.y)<=k.h/2) return {type:'keepout',obj:k};
@@ -534,6 +572,65 @@
     app.sel=hit; renderProps(); requestDraw();
   }
   // ---------------- 手动布线 ----------------
+  /* 预览碰撞检查（阶段三 #14b）：与 DRC 同口径（clearance + per-net 半宽），
+     但只查**局部**——候选段 bbox 预筛，不做全板两两。
+     返回 null=合法，否则 {x,y} 首个冲突点（供绘制红标）。 */
+  function checkPreviewConflict(netId, pts){
+    const d=app.design;
+    if(!d||!pts||pts.length<2) return null;
+    const hw=netW(d,netId)/2, R=d.clearance;
+    const pads=d.pads||[];
+    const others=[];
+    for(const n of (app.result&&app.result.nets)||[]){
+      if(n.netId===netId) continue;
+      for(const path of n.paths||[]) others.push({netId:n.netId,l:path[0]&&path[0].l,path,w:netW(d,n.netId)/2});
+    }
+    for(const m of d.manual||[]){
+      if(m.netId===netId) continue;
+      others.push({netId:m.netId,path:m.pts,w:netW(d,m.netId)/2});
+    }
+    for(let i=1;i<pts.length;i++){
+      const a=pts[i-1], b=pts[i];
+      if(a.l!==b.l) continue;
+      const x0=Math.min(a.x,b.x), x1=Math.max(a.x,b.x);
+      const y0=Math.min(a.y,b.y), y1=Math.max(a.y,b.y);
+      // 异网焊盘
+      for(const p of pads){
+        if(p.netId===netId) continue;
+        if(!padOnLayer(p,a.l,d.layers)) continue;
+        if(p.x+p.w/2+R+1 < x0 || p.x-p.w/2-R-1 > x1) continue;
+        if(p.y+p.h/2+R+1 < y0 || p.y-p.h/2-R-1 > y1) continue;
+        if(segmentPadDistance(a,b,p) < hw+R-1e-9) return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, what:'焊盘 '+p.id};
+      }
+      // 异网走线
+      for(const o of others){
+        const w=o.w||hw;
+        for(let k=1;k<(o.path||[]).length;k++){
+          const c=o.path[k-1], e=o.path[k];
+          if(c.l!==e.l) continue;
+          if(c.l!==a.l) continue;
+          const lim=hw+w+R;
+          if(Math.min(c.x,e.x)-lim>x1 || Math.max(c.x,e.x)+lim<x0) continue;
+          if(Math.min(c.y,e.y)-lim>y1 || Math.max(c.y,e.y)+lim<y0) continue;
+          if(segSegDist(a.x,a.y,b.x,b.y,c.x,c.y,e.x,e.y) < lim-1e-9)
+            return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, what:'网络 '+o.netId};
+        }
+      }
+      // 禁布区（铜皮不得进入）
+      for(const k of d.keepouts||[]){
+        if(k.scope && netClassOf(d,netId)===k.scope) continue;
+        if(segmentRectDistance(a,b,k) < hw-1e-9) return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, what:'禁布区'};
+      }
+      // 板边
+      if(a.x<hw||b.x<hw||a.y<hw||b.y<hw||a.x>d.width-hw||b.x>d.width-hw||a.y>d.height-hw||b.y>d.height-hw)
+        return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, what:'板边'};
+    }
+    return null;
+  }
+  function netClassOf(d, netId){
+    const n=(d.nets||[]).find(x=>x.id===netId);
+    return (n&&d.rules&&d.rules.netClass)?(d.rules.netClass[n.name]||null):null;
+  }
   function octilinear(a, b){
     const dx=b.x-a.x, dy=b.y-a.y;
     if(Math.abs(dx)<1e-9||Math.abs(dy)<1e-9) return [b];
@@ -577,6 +674,14 @@
       pts.push(p);
     }
     if(pts.length<2){ toast('走线太短，已取消'); requestDraw(); return; }
+    // #14b：提交前做一次全段碰撞检查。预览已实时标红，这里防止"一路未移动鼠标
+    // 直接回车/双击"绕过检查；冲突则拒绝提交并给出原因（而不是写进设计再报 DRC）。
+    const conflict=checkPreviewConflict(dg.netId,pts);
+    if(conflict){
+      toast('走线冲突（'+conflict.what+'），未提交；Esc 取消后可改走线');
+      requestDraw();
+      return;
+    }
     pushHistory();
     app.design.manual=app.design.manual||[];
     app.design.manual.push({id:'M'+(app.mseq++), netId:dg.netId, pts});
@@ -584,7 +689,10 @@
     computeDerived();
     renderNets(); renderStats(); runDRC();
     requestDraw();
-    toast('手动走线已添加（网络 '+dg.netId+'），DRC 结果见左下');
+    // #14d：手动走线成了新障碍，栅格会话的 model 已陈旧——作废会话，
+    // 避免下一次「单网重布」看不见这条线（worker 侧也会以 stale 拒绝兜底）。
+    app.session=null;
+    toast('手动走线已添加（网络 '+dg.netId+'），DRC 结果见左下；后续单网重布需整体重布');
   }
   async function rerouteOne(id){
     if(app.routing) return;
@@ -593,6 +701,12 @@
     try{
       const response=await routingClient.request('reroute',{netId:id,design:app.design,
         options:{beautify:$('rBeautify').checked}});
+      // #14d：worker 检出设计已变（手动走线/禁布增删），拒绝用陈旧 model 重布
+      if(response&&response.type==='stale'){
+        app.session=null;
+        toast('设计已修改，单网重布需整体重布（旧会话的障碍集已失效）');
+        return;
+      }
       app.result=response.result;
       computeDerived(); renderNets(); renderStats(); runDRC(); requestDraw();
       toast(response.outcome.ok?'网络已单独重布 ✓':'单独重布失败，请查看 DRC');
@@ -615,6 +729,9 @@
   }
   function removeObj(hit){
     const d=app.design;
+    // 自动走线不能被 Delete 直接删（它是布线器的产物，删掉会与 result 不一致）；
+    // 正确操作是「清除该网布线」或「清除布线」。
+    if(hit.type==='auto'){ toast('自动走线请用网络行的 ⌫ 清除该网，或「清除布线」'); return; }
     pushHistory();
     if(hit.type==='pad'){ d.pads=d.pads.filter(p=>p!==hit.obj); }
     else if(hit.type==='manual'){ d.manual=d.manual.filter(x=>x!==hit.obj); }
@@ -668,7 +785,7 @@
     const hit=hitTest(m);
     if(hit){
       select(hit);
-      if(hit.type!=='manual') app.dragging={type:'obj',hit,obj:hit.obj,dx:hit.obj.x-m.x,dy:hit.obj.y-m.y,moved:false,pre:JSON.stringify(app.design)};
+      if(hit.type!=='manual') app.dragging={type:'obj',hit,obj:hit.obj,dx:hit.obj.x-m.x,dy:hit.obj.y-m.y,moved:false,pre:snapshotState()};
     }else { select(null); app.dragging={type:'pan',sx:e.clientX,sy:e.clientY,ox:app.view.ox,oy:app.view.oy}; }
     syncCanvasUI();
   });
@@ -678,6 +795,11 @@
     $('sbPos').textContent='X '+m.x.toFixed(2)+'  Y '+m.y.toFixed(2)+' mm';
     if(app.draw&&!(app.dragging&&app.dragging.type==='pan')){
       app.draw.preview=octilinear(app.draw.pts[app.draw.pts.length-1], routeSnap(m));
+      // 实时碰撞反馈：预览段与异网铜/焊盘/禁布区/板边冲突时标红并给出原因
+      try{
+        const pts=app.draw.pts.concat(app.draw.preview.map(p=>({...p,l:app.draw.l})));
+        app.draw.conflict=checkPreviewConflict(app.draw.netId,pts);
+      }catch(e){ app.draw.conflict=null; }
       requestDraw();
       return;
     }
@@ -791,9 +913,15 @@
   // ---------------- 属性表单 ----------------
   function renderProps(){
     const f=$('propsForm'), emp=$('propsEmpty');
-    if(!app.sel||app.sel.type==='manual'){
+    if(!app.sel||app.sel.type==='manual'||app.sel.type==='auto'){
       f.style.display='none'; emp.style.display='block';
-      emp.textContent=app.sel?'已选择手动走线 '+app.sel.obj.id+' · 网络 '+app.sel.obj.netId+' · Delete 删除；走线几何通过重新绘制调整。':'单击选择焊盘或禁布区以编辑属性 · V 选择 · H 平移 · 滚轮缩放';
+      if(app.sel&&app.sel.type==='auto'){
+        const n=(app.design.nets||[]).find(x=>x.id===app.sel.netId);
+        emp.textContent='已选择自动走线 · 网络 '+(n?n.name:app.sel.netId)+' · 第 '+(app.sel.l+1)+' 层 · '
+          +'用「⟳」单独重布该网络，或用「形状补线」重布失败网。';
+      } else {
+        emp.textContent=app.sel?'已选择手动走线 '+app.sel.obj.id+' · 网络 '+app.sel.obj.netId+' · Delete 删除；走线几何通过重新绘制调整。':'单击选择焊盘或禁布区以编辑属性 · V 选择 · H 平移 · 滚轮缩放';
+      }
       return;
     }
     f.style.display='flex'; emp.style.display='none';

@@ -765,12 +765,17 @@ switch (cmd) {
     const maxIter = parseInt(argFlag(rest, '--max-iter', '30'));
     const parallel = parseInt(argFlag(rest, '--parallel', '0'));
     const iterWorkers = parseInt(argFlag(rest, '--iter-workers', '0'));
+    const iterWavesRaw = argFlag(rest, '--iter-waves', '');
+    const iterWaves = iterWavesRaw === '' ? undefined : parseInt(iterWavesRaw);
     const nbRipup = !argFlag(rest, '--no-nb-ripup', '');
     let result, via;
     if (iterWorkers > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
-      const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, engineUrl, neighbourhoodRipup: nbRipup });
-      result = par.result; via = { mode: 'iter-parallel', workers: par.workers, iterations: par.iterations };
+      const shard = parseInt(argFlag(rest, '--shard', '0'));
+      const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard,
+        engineUrl, neighbourhoodRipup: nbRipup });
+      result = par.result; via = { mode: 'iter-parallel', workers: par.workers,
+        iterations: par.iterations, waves: iterWaves ?? 2, shard: shard || 0 };
       if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
       out({ ok: true, status: result.status, stats: result.stats, overuse: result.overuse.length,
         timeMs: result.timeMs, via, written: outPath || null, result: outPath ? undefined : result });

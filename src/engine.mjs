@@ -1175,6 +1175,58 @@ function createSession(design, opts){
     S.queue=sortNets(failedFirst);
     S.processed=0; S.totalNets=S.queue.length;
   }
+  /* 空间分片（阶段三 #13b）：把队列按"网的 bbox 落在哪个分片"分组。
+     跨分片的网归**面积重叠最大**的分片（唯一属主）——这是与"时间维切批"
+     的本质差别：同一分片内的网空间相邻，冲突才会在同一 worker 内串行可见。
+     shards=0/1 时返回 null（调用方走原路径，位级不变）。
+     分片是**软亲和**：只改变批内顺序，不改变 A* 与接受准则。 */
+  function shardQueue(shards){
+    const k=Math.max(0, shards|0);
+    if(k<2 || S.queue.length<k) return null;
+    const bbox=n=>{
+      const ps=padsByNet.get(n.i)||[];
+      if(!ps.length) return null;
+      let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+      for(const p of ps){
+        const hw=p.w/2, hh=(p.shape==='circle'?p.w:p.h)/2;
+        x0=Math.min(x0,p.x-hw); x1=Math.max(x1,p.x+hw);
+        y0=Math.min(y0,p.y-hh); y1=Math.max(y1,p.y+hh);
+      }
+      return {x0,x1,y0,y1};
+    };
+    // 分片网格：按板幅切成 ⌈√k⌉×⌈√k⌉（纵横比接近板幅，避免细长分片）
+    const cols=Math.ceil(Math.sqrt(k)), rows=Math.ceil(k/cols);
+    const sw=design.width/cols, sh=design.height/rows;
+    const bucket=new Map();
+    for(const n of S.queue){
+      const b=bbox(n);
+      let bi=0,bj=0;
+      if(b){
+        // 面积重叠最大：枚举所有分片，取交集面积最大者（确定性的 tie → 先小 index）
+        let bestA=-1;
+        for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+          const ix0=Math.max(b.x0, i*sw), ix1=Math.min(b.x1,(i+1)*sw);
+          const iy0=Math.max(b.y0, j*sh), iy1=Math.min(b.y1,(j+1)*sh);
+          const a=Math.max(0,ix1-ix0)*Math.max(0,iy1-iy0);
+          if(a>bestA+1e-12){ bestA=a; bi=i; bj=j; }
+        }
+      }
+      const key=bj*cols+bi;
+      if(!bucket.has(key)) bucket.set(key,[]);
+      bucket.get(key).push(n);
+    }
+    // 相邻分片合并成 k 组（列优先蛇形），保证每组网数尽量均衡
+    const keys=[...bucket.keys()].sort((a,b)=>a-b);
+    const groups=Array.from({length:k},()=>[]);
+    keys.sort((a,b)=>bucket.get(b).length-bucket.get(a).length);
+    for(const key of keys){
+      let mi=0;
+      for(let i=1;i<k;i++) if(groups[i].length<groups[mi].length) mi=i;
+      groups[mi].push(...bucket.get(key));
+    }
+    const expanded=groups.filter(g=>g.length);
+    return {groups:expanded, cols, rows, sw, sh};
+  }
   function checkGeoSpacing(){
     // 几何间距审查：采样走线段，查不同网走线实际间距 < trackW + clearance
     const allSegs=[];
@@ -1446,8 +1498,37 @@ function createSession(design, opts){
     }
     return out;
   }
-  function commitRoutes(results, clearQueue){
-    for(const res of results){
+  /* 串行提交（并行驱动的唯一合并点）。
+     mergePolicy（#13c）：
+       'last'（默认）  按传入顺序覆写——现行语义，位级不变。
+       'better'        同一网出现多份结果时按字典序（连通→冲突→过孔→线长）
+                       取优，再按传入顺序提交。用于分片模式下同一网被多个
+                       分片覆盖（理论上不应发生，但作为防御性口径）或 worker
+                       重试产生多份结果的场景。两份比较**只依赖几何**，与
+                       worker 完成次序无关 ⇒ 确定性。 */
+  function commitRoutes(results, clearQueue, mergePolicy){
+    let list=results;
+    if(mergePolicy==='better'){
+      const byNet=new Map();
+      for(const res of results){
+        const prev=byNet.get(res.i);
+        if(!prev){ byNet.set(res.i,res); continue; }
+        const score=r=>{
+          const paths=r.paths||[];
+          let len=0;
+          for(const p of paths) for(let k=1;k<p.length;k++)
+            if(p[k].l===p[k-1].l) len+=Math.hypot(p[k].x-p[k-1].x,p[k].y-p[k-1].y);
+          return [r.failed||0, (r.overuse||0), (r.viaSet||[]).length, Math.round(len*10)];
+        };
+        const a=score(prev), b=score(res);
+        let better=false;
+        for(let k=0;k<a.length;k++){ if(a[k]!==b[k]){ better=b[k]<a[k]; break; } }
+        if(better) byNet.set(res.i,res);
+      }
+      // 按 net.i 升序提交——确定性，不依赖 results 的到达顺序
+      list=[...byNet.values()].sort((x,y)=>x.i-y.i);
+    }
+    for(const res of list){
       const net=nets[res.i];
       ripNet(net);
       net.cells=new Set(res.cells);
@@ -1541,7 +1622,7 @@ function createSession(design, opts){
   startQueue(false);
   return {step, buildResult, rerouteSingle, optimize, snapshot, restore, session:S,
     beginIteration, exportShared, adoptShared, routeList, commitRoutes,
-    startQueue, detShuffle};
+    startQueue, detShuffle, shardQueue};
 }
 
 /* ---------- KiCad .kicad_pcb 导入 ----------
@@ -3749,7 +3830,14 @@ async function routeBoardIterParallel(design, opts={}){
   const broadcastAdopt=async shared=>{
     // postMessage 的 structured clone 自身可拷贝类型化数组（可加 transfer list 归零拷贝）
     // ——严禁 JSON 往返（5M 元素×6 数组×K worker×每迭代 = 挂死，实测教训）
-    await Promise.all(pool.map(p=>send(p.w, {cmd:'adopt', shared}, 'ok', 60000)));
+    // 广播 adopt。任一 worker 未确认即视为该 worker 不可用——**必须剔除**，
+    // 否则它会带着上一轮快照继续 route，产出对陈旧拥塞状态的结果（静默质量污染）。
+    // adopt 失败不重试：60s 超时通常意味着 worker 已挂；剔除后由主线程补跑其份额。
+    const verdicts=await Promise.all(pool.map(p=>send(p.w, {cmd:'adopt', shared}, 'ok', 60000)));
+    for(let i=0;i<pool.length;i++) if(!verdicts[i]&&pool[i].alive!==false){
+      pool[i].alive=false;
+      pool[i].lastError='adopt 未确认（剔除该 worker，其份额由主线程确定性补跑）';
+    }
   };
   // 波次批处理（Jacobi→部分 Gauss-Seidel）：全网只见迭代起始快照时，协商收敛
   // 慢于串行（同迭代数 DRC 残留更多）——队列按 prio 切 W 个波次，波间提交可见
@@ -3768,24 +3856,56 @@ async function routeBoardIterParallel(design, opts={}){
         await broadcastAdopt(shared);
         // LPT 负载均衡（最长优先）：prio 序=短跨度在前，反转后长网先入各 worker
         // ——修尾部延迟（round-robin 下最后一批拿全是最长网）
+        // 死掉的 worker 不参与分成：其份额直接归主线程（确定性补跑），
+        // 而不是"分给它再超时补跑"（那是时序相关的，digest 会随负载漂移）。
         const order=[...waveIds].reverse();
-        const batches=Array.from({length:K},()=>[]);
-        order.forEach((id,idx)=>batches[idx%K].push(id));
+        const live=pool.filter(p=>p.alive!==false);
+        const batches=new Map(live.map(p=>[p.i,[]]));
+        const dead=[];
+        if(!live.length) dead.push(...order);
+        else {
+          // 空间分片（#13b）：按区域亲和分批，让同一分片内的网在同一 worker 内
+          // 串行可见（冲突立刻暴露），而不是被摊到所有 worker 后靠多轮协商收敛。
+          // shard<2 或分片不可用 → 原 LPT 路径（位级不变）。
+          const sr=mainSession.shardQueue(opts.shard||0);
+          if(sr && sr.groups.length>1 && live.length>1){
+            sr.groups.forEach((g,gi)=>{
+              const ids=g.map(n=>n.i).filter(id=>waveIds.indexOf(id)>=0);
+              if(ids.length) batches.get(live[gi%live.length].i).push(...ids);
+            });
+            const covered=new Set();
+            for(const a of batches.values()) for(const id of a) covered.add(id);
+            const rest=order.filter(id=>!covered.has(id));
+            if(rest.length){
+              let mi=live[0].i, mn=Infinity;
+              for(const p of live){ const n=batches.get(p.i).length; if(n<mn){ mn=n; mi=p.i; } }
+              batches.get(mi).push(...rest);
+            }
+          } else {
+            order.forEach((id,idx)=>{
+              const p=live[idx%live.length];
+              batches.get(p.i).push(id);
+            });
+          }
+        }
         const results=new Map();
-        await Promise.all(pool.map(async (p,pi)=>{
-          const ids=batches[pi];
+        // 死 worker 的份额：主线程按 id 升序确定性补跑（与完成时序无关）
+        if(dead.length) for(const r of mainSession.routeList(dead.sort((a,b)=>a-b))) results.set(r.i,r);
+        await Promise.all(live.map(async p=>{
+          const ids=batches.get(p.i);
           if(!ids||!ids.length) return;
           // 120s 兜底超时：正常远小于此；超时走串行补跑（worker 晚到的结果按 reqId 丢弃）
           const mm=await send(p.w, {cmd:'route', ids}, 'results', 120000);
           if(mm&&mm.results){ for(const r of mm.results) results.set(r.i, r); }
           if(!mm||!mm.results){
-            const rs=mainSession.routeList(ids);   // worker 失败：主线程串行补跑该批
-            for(const r of rs) results.set(r.i, r);
+            // worker 失败：剔除并串行补跑该批（按 id 升序，确定性）
+            p.alive=false;
+            for(const r of mainSession.routeList([...ids].sort((a,b)=>a-b))) results.set(r.i, r);
           }
         }));
         // 串行 commit（按队列 prio 序，tie 语义保持）；末波才清队列
         const ordered=waveIds.map(id=>results.get(id)).filter(Boolean);
-        mainSession.commitRoutes(ordered, wv===nWaves-1);
+        mainSession.commitRoutes(ordered, wv===nWaves-1, 'better');
       }
     }
     // 迭代边界评估（阶段转换/几何修正/历史增量/邻域拆除/完成判定/队列重建）
