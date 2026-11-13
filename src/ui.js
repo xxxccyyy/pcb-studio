@@ -1223,6 +1223,39 @@
     pushHistory();
     await runRoute({place:true});
   });
+  // 形状补线（阶段三 #12）：只对仍有未连通焊盘的网做连续空间重布。
+  // 默认路径不变——没有结果时先提示布线；补线失败不改动既有结果（引擎侧字典序接受）。
+  $('btnShape').addEventListener('click',async()=>{
+    if(app.routing||!app.design) return;
+    if(!app.result){ toast('请先自动布线，再补线失败网'); return; }
+    const fails=app.result.stats.total-app.result.stats.connected;
+    if(fails<=0&&!app.result.overuse.length){ toast('当前已全部连通且无冲突，无需补线'); return; }
+    pushHistory();
+    routingBusy(true);
+    $('progressWrap').style.display='block';
+    $('drcList').textContent='形状补线中……';
+    try{
+      const response=await routingClient.request('shapePatch',{
+        design:app.design,result:app.result,
+        options:{viaCost:Math.max(1,num($('rVia').value,15)),
+                 turnPen:Math.max(0,num($('rTurn').value,0.3))}
+      },update=>{
+        $('progressText').textContent=update.text;
+        $('progressFill').style.width=Math.round((update.frac||0)*100)+'%';
+      });
+      app.result=response.result; app.session=null;   // 几何已变，栅格会话作废
+      computeDerived(); renderNets(); renderStats(); runDRC(); requestDraw();
+      const sh=response.shape||{};
+      toast(sh.applied
+        ? '形状补线：接受 '+sh.accepted+'/'+sh.attempted+' 网（连通 '+app.result.stats.connected+'/'+app.result.stats.total+'）'
+        : '形状补线未改动（'+(sh.reason||'无失败网')+'）');
+    }catch(error){
+      toast('形状补线失败：'+error.message);
+      $('drcList').textContent=error.message;
+    }finally{
+      routingBusy(false); $('progressWrap').style.display='none'; requestDraw();
+    }
+  });
 
   // ---------------- 统计与 DRC ----------------
   function renderStats(){

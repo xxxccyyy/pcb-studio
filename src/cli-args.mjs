@@ -1,4 +1,4 @@
-const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force']);
+const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch']);
 const flagCommands={
   '-o':['place','route','export','device','schem','pour','tune','bom','pos','autopcb','render','import','deliver'],
   '--via-cost':['route','autopcb'],'--max-iter':['route','autopcb'],
@@ -8,6 +8,7 @@ const flagCommands={
   '--pair':['tune'],'--group':['tune'],'--serp-gap':['tune'],'--tol':['tune'],
   '--target':['tune'],'--max-amp':['tune'],
   '--parallel':['route','autopcb'],'--no-nb-ripup':['route'],'--iter-workers':['route','autopcb'],
+  '--shape-patch':['route','autopcb'],'--shape-window':['route','autopcb'],'--shape-nets':['route','autopcb'],
   '--pair':['tune','diffz'],'--z':['diffz'],
   '--islands':['pour'],'--min-island-area':['pour'],'--fill':['pour'],'--grid-w':['pour'],'--grid-gap':['pour'],
   '--clearance':['pour'],'--edge-margin':['pour'],'--min-width':['pour'],
@@ -26,7 +27,8 @@ const numericFlags={'--via-cost':[0,100000,false],'--max-iter':[1,1000,true],
   '--clearance':[0.05,10,false],'--edge-margin':[0,10,false],'--min-width':[0.025,10,false],
   '--serp-gap':[0,50,false],'--tol':[0.001,100,false],
   '--target':[0,5000,false],'--max-amp':[0,100,false],
-  '--z':[1,500,false],'--parallel':[0,64,true],'--iter-workers':[0,64,true]};
+  '--z':[1,500,false],'--parallel':[0,64,true],'--iter-workers':[0,64,true],
+  '--shape-window':[0,100,false]};
 export function parseArguments(command,argv){
   const args=[],options=new Map();
   for(let i=0;i<argv.length;i++){

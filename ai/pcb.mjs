@@ -11,6 +11,12 @@
      place  <design.json> [-o out]   自动布局（模拟退火，改写焊盘坐标）
      route  <design.json> [-o r.json] [--via-cost N] [--max-iter N]
                                      完整布线（协商 + 整板重跑候选 + 逐网优化 + 弦拉直）
+                                     [--shape-patch [--shape-window mm] [--shape-nets a,b]]
+                                     **形状补线（阶段三 #12）**：栅格之后对仍失败的网用
+                                     **压缩坐标**（障碍边界 ± 间距构成非均匀坐标轴，通道宽度
+                                     由真实几何决定而非栅格步长）重布——BGA/0.4mm 密集板的
+                                     量化根因对策。只补失败网、字典序接受（绝不退步），
+                                     默认关闭；输出附 shape{attempted/accepted/notes}
      drc    <design.json> [result.json]      DRC + 嘉立创投板检查表
      advise <design.json> [result.json]      按优先级给出可执行建议（经验层）
      export <easyeda|gerber|dsn|ses|svg|ipc356> <design.json> [result.json] [-o out]
@@ -779,8 +785,19 @@ switch (cmd) {
       via = { mode: 'serial' };
     }
     if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
+    // 形状补线（阶段三 #12，补充式）：只接管栅格仍失败的网；默认关闭，行为位级不变
+    let shape = null;
+    if (argFlag(rest, '--shape-patch', '')) {
+      const window = argFlag(rest, '--shape-window', '');
+      const nets = (argFlag(rest, '--shape-nets', '') || '').split(',').map(s => s.trim()).filter(Boolean);
+      const sp = core.routeBoardShape(d, { base: result, viaCost, maxIter,
+        shapeWindow: window === '' ? undefined : Number(window),
+        shapeNets: nets.length ? nets : undefined });
+      result = sp.result; shape = sp.shape;
+      if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
+    }
     out({ ok: true, status: result.status, stats: result.stats, overuse: result.overuse.length,
-      iterations: result.iterations, timeMs: result.timeMs, via, written: outPath || null,
+      iterations: result.iterations, timeMs: result.timeMs, via, shape, written: outPath || null,
       result: outPath ? undefined : result });
     break;
   }
@@ -1156,12 +1173,22 @@ switch (cmd) {
       viaCost: Number(argFlag(rest, '--via-cost', '15')),
       anchor: (argFlag(rest, '--anchor', '') || '').split(',').filter(Boolean)
     });
+    // 形状补线（阶段三 #12）：对最终布局再做一轮失败网重布；默认关闭
+    let shape = null;
+    if (argFlag(rest, '--shape-patch', '') && r.best) {
+      const window = argFlag(rest, '--shape-window', '');
+      const nets = (argFlag(rest, '--shape-nets', '') || '').split(',').map(s => s.trim()).filter(Boolean);
+      const sp = core.routeBoardShape(d, { base: r.best,
+        shapeWindow: window === '' ? undefined : Number(window),
+        shapeNets: nets.length ? nets : undefined });
+      r.best = sp.result; shape = sp.shape;
+    }
     const designOut = outPath || args[0];
     writeFileSync(designOut, JSON.stringify(d, null, 1));
     const resultOut = argFlag(rest, '--result');
     if (resultOut && r.best) writeFileSync(resultOut, JSON.stringify(r.best, null, 1));
     out({ ok: true, log: r.log, best: r.best ? { status: r.best.status, stats: r.best.stats, overuse: r.best.overuse.length } : null,
-          written: { design: designOut, result: resultOut || null } });
+          shape, written: { design: designOut, result: resultOut || null } });
     break;
   }
   case 'import': {

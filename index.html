@@ -102,6 +102,9 @@ body.canvas-focus main{grid-template-columns:minmax(0,1fr)!important}body.canvas
         <div class="row">
           <button class="grow" id="btnAutopcb" title="布局→试探布线→热点反馈→再布局→再布线，一键收敛">一键布局 + 布线</button>
         </div>
+        <div class="row">
+          <button class="grow" id="btnShape" title="形状补线：对仍失败的网用压缩坐标（不量化到栅格）重布——BGA/0.4mm 密集板适用；只补失败网，已布结果不变">形状补线（失败网）</button>
+        </div>
         <div class="row"><button class="grow" id="btnClear" title="清除全部自动布线（保留手动走线）">清除布线</button></div>
         <details class="route-advanced"><summary>布线策略与高级参数</summary><div class="sec">        <div class="grid2">
           <div class="row"><label>过孔代价</label><input id="rVia" type="number" step="1" min="1" value="15" title="换一层所需的步数成本，越大越少打过孔"></div>
@@ -3523,7 +3526,6 @@ function autoPlace(design, opts){
     }
     if(best<gBest){ gBest=best; gState=bestState; }
   }
-  if(opts&&opts.debug) console.error('DBG gBest=',gBest);
   setState(gState);
   comps.forEach(applyComp);
   // 应用：吸附栅格 + 板边余量 0.3mm（嘉立创 DFM 建议 0.3~0.5）+ 写回有效宽高（旋转）
@@ -3727,6 +3729,178 @@ function routeBoard(design,opts={}){
   onProgress({text:'完成',frac:1});
   return best;
 }
+
+/* ---------- 形状补线：对栅格失败的网做连续空间重布（阶段三 #12） ----------
+   补充式共存（架构定案）：栅格仍是默认路径且位级不变；本驱动只接管 routeBoard
+   之后仍 `connected<total` 的网（BGA/0.4mm 密集/走廊拥塞），结果并回同一
+   result，下游 DRC/Gerber/EasyEDA/SVG/铺铜全部零改动。
+
+   为什么必须独立入口而不在 routeBoard 里加开关：routeBoard 开头会**上抬
+   design.grid 并 snapPadsPreserveGroups 移动焊盘**（line 3383-3384），而形状
+   布线的卖点正是"不受栅格约束"——必须先于该突变定格原始布局。
+
+   接受准则与栅格引擎同一把尺（字典序，绝不退步）：
+   连通数↑ → 几何冲突↓ → 过孔↓ → 线长↓。重布失败则整网回滚。 */
+function auditGeometry(design, result, opts){
+  opts=opts||{};
+  // 脱离栅格的几何冲突审计：产出与 result.overuse 同形的 {x,y,l} 点集。
+  // 栅格 overuse 是"格点被多网占用"，这里给出的是"线段几何真违规"——
+  // 形状布线结果没有栅格占用可言，必须由几何审计替代该口径。
+  const nets=[...((result&&result.nets)||[]), ...manualRouteEntries(design)];
+  const segs=[];
+  for(const n of nets){
+    const hw=netW(design,n.netId)/2;
+    for(const path of n.paths||[]) for(let i=1;i<path.length;i++){
+      const a=path[i-1], b=path[i];
+      if(a.l!==b.l) continue;
+      if(Math.abs(a.x-b.x)<1e-12 && Math.abs(a.y-b.y)<1e-12) continue;
+      segs.push({net:n.netId,l:a.l,hw,a,b,
+        x0:Math.min(a.x,b.x),x1:Math.max(a.x,b.x),
+        y0:Math.min(a.y,b.y),y1:Math.max(a.y,b.y)});
+    }
+  }
+  // 按层 + 左边界排序扫描（与 checkDRC 4945-4975 同法，保序且避免全场两两）
+  const out=[];
+  const byLayer=new Map();
+  for(const s of segs){ let a=byLayer.get(s.l); if(!a){ a=[]; byLayer.set(s.l,a); } a.push(s); }
+  for(const [l,arr] of byLayer){
+    arr.sort((p,q)=>p.x0-q.x0||p.y0-q.y0||p.net-q.net);
+    for(let i=0;i<arr.length;i++){
+      const s=arr[i];
+      for(let j=i+1;j<arr.length;j++){
+        const t=arr[j];
+        if(t.net===s.net) continue;
+        const reach=s.hw+t.hw+design.clearance;
+        if(t.x0>s.x1+reach) break;                       // 左边界已超出可能间距
+        if(t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
+        const d=segSegDist(s.a.x,s.a.y,s.b.x,s.b.y,t.a.x,t.a.y,t.b.x,t.b.y);
+        if(d<reach-1e-9) out.push({x:(s.a.x+s.b.x)/2,y:(s.a.y+s.b.y)/2,l});
+      }
+    }
+  }
+  return out;
+}
+
+function routeBoardShape(design, opts={}){
+  const started=Date.now(), onProgress=opts.onProgress||(()=>{});
+  const log=opts.onLog||(()=>{});
+  // 1) 栅格基线（可选跳过——调用方已有 result 时传 opts.base）
+  let base=opts.base;
+  if(!base){
+    onProgress({text:'栅格基线布线',frac:0.02});
+    base=routeBoard(design,{...opts,onProgress:undefined}).result;
+  }
+  if(opts.shapePatch===false) return {result:base, shape:{applied:false,reason:'disabled'}};
+  const L=Math.max(1,design.layers|0);
+  // 2) 只为"未连通"的网做形状重布。overuse（几何冲突）也在补线范围内：
+  //    栅格残留违规常与失败网同源，重布可能同时消掉。
+  // 目标网两类：① 未连通 ② 卷入 DRC 间距错误的网（栅格残留违规常与布局量化
+  // 同源，重布可能同时消掉）。第二类只在 opts.shapeFixDrc!==false 时启用。
+  const drcNets=new Set();
+  if(opts.shapeFixDrc!==false){
+    const issues=checkDRC(design,base,{dfm:false}).filter(i=>i.sev==='error');
+    const padNetOf=new Map((design.pads||[]).map(p=>[p.id,p.netId]));
+    for(const it of issues){
+      const m=/焊盘 ([^ ]+)/.exec(it.msg||'');
+      if(m && padNetOf.has(m[1])) drcNets.add(padNetOf.get(m[1]));
+    }
+  }
+  const target=(design.nets||[]).filter(n=>{
+    if(opts.shapeNets && opts.shapeNets.length) return opts.shapeNets.indexOf(n.name)>=0||opts.shapeNets.indexOf(n.id)>=0;
+    const rn=(base.nets||[]).find(x=>x.netId===n.id);
+    if(!rn) return false;
+    return rn.connected<rn.total || drcNets.has(n.id);
+  });
+  if(!target.length) return {result:base, shape:{applied:false,reason:'no-failed-nets',checked:0}};
+  // 3) 逐网：窗口 = 本网焊盘 bbox + 余量；重布→审计→字典序接受，否则回滚
+  const merged={...base, nets:base.nets.map(n=>({...n, paths:(n.paths||[]).map(p=>p.slice()),
+    vias:(n.vias||[]).slice(), cells:(n.cells||[]).slice()})), overuse:(base.overuse||[]).slice()};
+  const winMargin=opts.shapeWindow!=null?opts.shapeWindow:Math.max(4,2*design.grid);
+  const cls=netClsMap(design);
+  let applied=0;
+  const notes=[];
+  target.forEach((n,k)=>{
+    onProgress({text:'形状补线 '+n.name,frac:0.1+0.85*(k/target.length)});
+    const pads=(design.pads||[]).filter(p=>p.netId===n.id);
+    if(pads.length<2){ notes.push({net:n.name,skip:'pads<2'}); return; }
+    let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+    for(const p of pads){
+      const hw=p.w/2, hh=(p.shape==='circle'?p.w:p.h)/2;
+      x0=Math.min(x0,p.x-hw); x1=Math.max(x1,p.x+hw);
+      y0=Math.min(y0,p.y-hh); y1=Math.max(y1,p.y+hh);
+    }
+    const win={x0:Math.max(0,x0-winMargin), x1:Math.min(design.width,x1+winMargin),
+               y0:Math.max(0,y0-winMargin), y1:Math.min(design.height,y1+winMargin)};
+    // 障碍集：其它所有网的铜（本网被剔除，重布时旧铜不算障碍）
+    const OBS=shpCollectObstacles(design, merged.nets, n.id);
+    const r=shpRouteNet(design, n, OBS, win, {viaCost:opts.viaCost,turnPen:opts.turnPen,cls:cls.get(n.id)||null});
+    if(!r || !r.paths.length){ notes.push({net:n.name,skip:'no-path',obs:OBS.copper.length}); return; }
+    const candIdx=merged.nets.findIndex(x=>x.netId===n.id);
+    const saved=JSON.parse(JSON.stringify(merged.nets[candIdx]));
+    merged.nets[candIdx].paths=r.paths;
+    merged.nets[candIdx].vias=r.vias;
+    merged.nets[candIdx].connected=r.connected;
+    merged.nets[candIdx].total=r.total;
+    merged.nets[candIdx].cells=[];
+    // 字典序：连通优先，其次几何冲突，再次过孔，最后线长
+    const before={conn:saved.connected,total:saved.total,
+      geo:auditGeometry(design,{nets:[saved]}).length,
+      vias:(saved.vias||[]).length,len:pathLenOf(saved.paths||[])};
+    const after={conn:r.connected,total:r.total,
+      geo:auditGeometry(design,{nets:[merged.nets[candIdx]]}).length,
+      vias:r.vias.length,len:pathLenOf(r.paths)};
+    const better = after.conn>before.conn ||
+      (after.conn===before.conn && after.geo<before.geo) ||
+      (after.conn===before.conn && after.geo===before.geo && after.vias<before.vias) ||
+      (after.conn===before.conn && after.geo===before.geo && after.vias===before.vias && after.len<before.len-1e-9);
+    if(better){ applied++; notes.push({net:n.name,ok:true,conn:after.conn+'/'+after.total,
+      geo:before.geo+'→'+after.geo,vias:before.vias+'→'+after.vias,len:+(after.len-before.len).toFixed(2)}); }
+    else{
+      merged.nets[candIdx]=saved;
+      notes.push({net:n.name,skip:'worse',conn:after.conn+'/'+after.total,geo:after.geo,vias:after.vias});
+    }
+  });
+  // 4) 统计重算（beautify 已被栅格基线做过；形状补线是正交折线，无需再美化）
+  const tc=merged.nets.reduce((a,n)=>a+(n.connected||0),0);
+  const tt=merged.nets.reduce((a,n)=>a+(n.total||0),0);
+  const overuse=auditGeometry(design,merged);
+  merged.overuse=overuse.map(o=>({x:+o.x.toFixed(4),y:+o.y.toFixed(4),l:o.l}));
+  recalcStats(merged, L);
+  const drc=checkDRC(design,merged,{dfm:false}).filter(i=>i.sev==='error');
+  merged.drcErrors=drc.length;
+  merged.status=(tt===0||tc===tt)&&!merged.overuse.length?'complete':'partial';
+  merged.timeMs=Date.now()-started;
+  onProgress({text:'完成',frac:1});
+  log('形状补线：'+applied+'/'+target.length+' 网接受');
+  return {result:merged, shape:{applied:true,attempted:target.length,accepted:applied,
+    notes, window:winMargin}};
+}
+function pathLenOf(paths){
+  let s=0;
+  for(const p of paths) for(let k=1;k<p.length;k++)
+    if(p[k].l===p[k-1].l) s+=Math.hypot(p[k].x-p[k-1].x,p[k].y-p[k-1].y);
+  return s;
+}
+// 与 buildResult 同口径重算走线长度/过孔统计
+function recalcStats(r, L){
+  let lt=0, lb=0, viaCount=0;
+  const trackLayers=new Array(L).fill(0);
+  for(const n of r.nets){
+    for(const p of n.paths||[]) for(let k=1;k<p.length;k++){
+      if(p[k].l!==p[k-1].l) continue;
+      const d=Math.hypot(p[k].x-p[k-1].x,p[k].y-p[k-1].y);
+      trackLayers[p[k].l]+=d;
+      if(p[k].l===0) lt+=d; else if(p[k].l===L-1) lb+=d;
+    }
+    viaCount+=(n.vias||[]).length;
+  }
+  r.stats={connected:r.nets.reduce((a,n)=>a+(n.connected||0),0),
+    total:r.nets.reduce((a,n)=>a+(n.total||0),0),
+    trackTop:lt, trackBot:lb, vias:viaCount, trackLen:trackLayers.reduce((a,b)=>a+b,0),
+    trackLayers, trackInner:trackLayers.slice(1,-1).reduce((a,b)=>a+b,0)};
+  return r;
+}
+
 /* ---------- 并行协商布线（roadmap 阶段一 #4 完成增量）----------
    TritonRoute FlexDR per-iteration 模式的架构对应物：
    迭代串行（共享拥塞状态=串行依赖），每迭代的网批量并行——
@@ -7514,6 +7688,478 @@ function inPour(pour, x, y){
 // ==== ROUTER CORE END ====
 
 /* ============================================================
+   形状布线（阶段三 #12）：压缩坐标（非均匀）迷宫布线器
+
+   问题：统一栅格把「障碍 + 间距」量化到格心采样——0.4mm 节距 QFN 在 0.5/0.2mm
+   栅格下通道被压成 0~1 条（第五/六/十一轮实测）。Freerouting 的解法是 room-gate
+   图（凸多边形代数，TileShape+IntBox/IntOctagon ≥1.5k LOC）；本实现主张**量化
+   才是根因**：保持 A* 迷宫范式，只把搜索空间从均匀栅格换成**压缩坐标**——所有
+   障碍边界 ± 需求间距构成非均匀坐标轴，通道宽度由真实几何决定而非栅格步长。
+
+   这是可证伪假设（M3 度量）：0.4mm QFN 经形状补线后 DRC 全绿 ⇒ room-gate 对 M3
+   非必需；不达成 ⇒ 以数据把 room-gate 立为 #12b。结论见
+   docs/深度优化报告-阶段三.md。
+
+   合法性契约：逐边精确几何判定（复用 segmentRectDistance/segmentPadDistance/
+   segSegDist/segDist），口径与 checkDRC 同源（clearance 比较、per-net 线宽、
+   viaOuter/viaDrill/JLC 孔边距/板边）——故「形状布线接受 ⇒ DRC 无间距 error」。
+   同网障碍不阻挡（可与本网铜贴合、进入本网焊盘）。
+   ============================================================ */
+// ==== SHAPE CORE START ====
+/* 内部整数单位 1e-4 mm（0.1µm）——对齐 KiCad 内部单位量级。坐标轴先量化再参与
+   搜索，输出即精确量化值（无浮点往返漂移，resultHash/DRC 可复算）。 */
+const SHP_SCALE=10000;
+const SHP_EPS_U=1;             // 1 unit=0.1µm 安全余量（远低于制造公差，保证「≥间距」严格成立）
+const SHP_NODE_CAP=400000;     // 单图节点上限（Nx×Ny×L）；超出走坐标降级，仍超则放弃
+
+function shpU(mm){ return Math.round(mm*SHP_SCALE); }
+function shpMm(u){ return u/SHP_SCALE; }
+
+/* ---------------- 障碍收集 ----------------
+   只收「铜」与「物理孔」，语义与 checkDRC 逐项对齐：
+   · 焊盘（rect/circle，轴对齐——DRC 同样按 w×h 处理）
+   · 走线段 + 半宽（result.nets 与 design.manual 合并，per-net 线宽）
+   · 过孔/缝合孔：圆盘（阶段三 #15 再扩展 span；当前全层贯穿）
+   · 禁布区（矩形；走线铜皮不得进入 ⇒ 中心线距 ≥ 半宽）
+   物理孔单列：孔边距与网络无关（DRC 4911-4917 同口径，同网不豁免）。
+   `skipNet` 的铜全部不收——同网铜不阻挡自己。 */
+function shpCollectObstacles(design, extraNets, skipNet){
+  const L=Math.max(1,design.layers|0), layersAll=Array.from({length:L},(_,i)=>i);
+  const viaR=design.viaOuter/2, drillR=design.viaDrill/2;
+  const skip=skipNet!=null;
+  const copper=[], holes=[], keepouts=[];
+  for(const p of design.pads||[]){
+    if(skip && p.netId===skipNet) continue;
+    const circle=p.shape==='circle';
+    copper.push({kind:circle?'circle':'rect', x:p.x, y:p.y,
+      w:circle?2*p.w:p.w, h:circle?2*p.w:p.h, net:p.netId,
+      layers:p.layer==='top'?[0]:p.layer==='bottom'?[L-1]:layersAll});
+    if(p.holeR>0) holes.push({x:p.x,y:p.y,r:p.holeR});
+  }
+  const addTraces=list=>{
+    for(const n of list||[]){
+      if(skip && n.netId===skipNet) continue;
+      for(const path of n.paths||[]){
+        const hw=netW(design,n.netId)/2;
+        for(let i=1;i<path.length;i++){
+          const a=path[i-1], b=path[i];
+          if(a.l!==b.l) continue;                       // 换层点不是同层段
+          if(Math.abs(a.x-b.x)<1e-12 && Math.abs(a.y-b.y)<1e-12) continue;
+          copper.push({kind:'seg',ax:a.x,ay:a.y,bx:b.x,by:b.y,hw,net:n.netId,layers:[a.l]});
+        }
+      }
+      for(const v of n.vias||[]){
+        copper.push({kind:'circle',x:v.x,y:v.y,w:2*viaR,h:2*viaR,net:n.netId,layers:layersAll});
+        holes.push({x:v.x,y:v.y,r:drillR});
+      }
+    }
+  };
+  addTraces(extraNets);
+  addTraces(manualRouteEntries(design));
+  for(const v of design.stitching||[]){
+    if(skip && v.netId===skipNet) continue;
+    copper.push({kind:'circle',x:v.x,y:v.y,w:2*viaR,h:2*viaR,net:v.netId,layers:layersAll});
+    holes.push({x:v.x,y:v.y,r:drillR});
+  }
+  for(const k of design.keepouts||[])
+    keepouts.push({x:k.x,y:k.y,w:k.w,h:k.h,scope:k.scope||null});
+  return {copper,holes,keepouts,L,viaR,drillR};
+}
+
+// 线段到障碍铜的边距（负=相交）；口径同 DRC trace-pad / trace-trace
+function shpSegGap(o,a,b){
+  return o.kind==='seg' ? segSegDist(a.x,a.y,b.x,b.y,o.ax,o.ay,o.bx,o.by)-o.hw
+                        : segmentPadDistance(a,b,o);
+}
+// 点到障碍铜的边距；口径同 DRC via-pad / via-trace
+function shpPointGap(o,x,y){
+  return o.kind==='seg' ? segDist(x,y,o.ax,o.ay,o.bx,o.by)-o.hw
+                        : pointPadDistance(x,y,o);
+}
+function shpObsBox(o){
+  if(o.kind==='seg'){
+    return {x0:Math.min(o.ax,o.bx)-o.hw, x1:Math.max(o.ax,o.bx)+o.hw,
+            y0:Math.min(o.ay,o.by)-o.hw, y1:Math.max(o.ay,o.by)+o.hw};
+  }
+  return {x0:o.x-o.w/2, x1:o.x+o.w/2, y0:o.y-o.h/2, y1:o.y+o.h/2};
+}
+
+/* ---------------- 坐标轴 ----------------
+   每个障碍在轴上贡献「包围盒边界 ± (需求半径 + ε)」——这既是"贴着间距极限走"的
+   中心线位置，也保证轴在障碍附近被细化（这是下面的完备性论证依赖的不变式）。
+   再补障碍中心与本网焊盘中心（源/汇可达），最后按需插入相邻中点（走廊正中）。
+   分级降级直到节点数进预算。 */
+function shpBuildAxes(design, netPads, wHalf, win, OBS, cls){
+  const R=design.clearance+wHalf;
+  const eps=SHP_EPS_U/SHP_SCALE;
+  const ux0=shpU(win.x0), ux1=shpU(win.x1), uy0=shpU(win.y0), uy1=shpU(win.y1);
+  const xsB=new Set(), ysB=new Set(), xsC=new Set(), ysC=new Set();
+  const add=(set,mm,lo,hi)=>{ const u=shpU(mm); if(u>=lo&&u<=hi) set.add(u); };
+  const addX=(set,mm)=>add(set,mm,ux0,ux1), addY=(set,mm)=>add(set,mm,uy0,uy1);
+  addX(xsB,win.x0); addX(xsB,win.x1); addY(ysB,win.y0); addY(ysB,win.y1);
+  // 本网焊盘必须在轴上有节点：中心 + 内缩边界（小焊盘只有中心点会因
+  // 相邻坐标中点抽稀而落到铜外，实测 U5-3/U5-4 节点数为 0）。
+  // 取焊盘铜范围的四分点位（保证总有一个真落在铜内，0.25/0.5/0.75）。
+  for(const p of netPads){
+    const hw=p.w/2, hh=(p.shape==='circle'?p.w:p.h)/2;
+    addX(xsC,p.x); addY(ysC,p.y);
+    if(hw>0.05){ addX(xsC,p.x-hw*0.5); addX(xsC,p.x+hw*0.5); }
+    if(hh>0.05){ addY(ysC,p.y-hh*0.5); addY(ysC,p.y+hh*0.5); }
+  }
+  for(const o of OBS.copper){
+    const b=shpObsBox(o);
+    if(b.x1+R<win.x0||b.x0-R>win.x1||b.y1+R<win.y0||b.y0-R>win.y1) continue;
+    addX(xsB,b.x0-R-eps); addX(xsB,b.x1+R+eps);
+    addY(ysB,b.y0-R-eps); addY(ysB,b.y1+R+eps);
+    addX(xsC,(b.x0+b.x1)/2); addY(ysC,(b.y0+b.y1)/2);
+  }
+  for(const k of OBS.keepouts){
+    if(k.scope && cls && k.scope===cls) continue;          // class keepout 本类自由
+    const b=shpObsBox(k);
+    if(b.x1+wHalf<win.x0||b.x0-wHalf>win.x1||b.y1+wHalf<win.y0||b.y0-wHalf>win.y1) continue;
+    addX(xsB,b.x0-wHalf-eps); addX(xsB,b.x1+wHalf+eps);
+    addY(ysB,b.y0-wHalf-eps); addY(ysB,b.y1+wHalf+eps);
+  }
+  const mid=a=>{ const out=new Set(a);
+    for(let i=0;i<a.length-1;i++) out.add(Math.round((a[i]+a[i+1])/2)|0);
+    return [...out].sort((p,q)=>p-q); };
+  const merge=(...as)=>{ const s=new Set(); for(const a of as) for(const v of a) s.add(v);
+    return [...s].sort((p,q)=>p-q); };
+  // 降级阶梯（节点数= Nx·Ny·L 进预算）：
+  //  ① 边界+中心+中点  ② 边界+中心  ③ 仅边界
+  //  ④⑤⑥ 同前三级但 x/y 轴各抽稀一半（跨板长网 bbox 覆盖大半板时的最后手段）
+  // 抽稀只删非本网焊盘所在的坐标，焊盘中心永远保留——否则源/汇节点消失。
+  const Bx=merge(xsB), By=merge(ysB), Cx=merge(xsC), Cy=merge(ysC);
+  const keepSet=new Set([...Cx,...Cy]);   // Cx/Cy 已含本网焊盘全部相关坐标
+  const keepArr=[...new Set([...Cx,...Cy])];
+  const isKeep=v=>keepArr.indexOf(v)>=0;
+  const thin=(arr)=>{ let k=0; return arr.filter(v=>isKeep(v)||((k++%2)===0)); };
+  const cands=[
+    {xs:mid(merge(Bx,Cx)), ys:mid(merge(By,Cy))},
+    {xs:merge(Bx,Cx),      ys:merge(By,Cy)},
+    {xs:Bx,                ys:By}
+  ];
+  for(const t of cands){
+    if(!t.xs.length||!t.ys.length) continue;
+  }
+  for(const t of cands){
+    const tx=thin(t.xs), ty=thin(t.ys);
+    if(!tx.length||!ty.length) continue;
+  }
+  // 仍超预算：只保留本网焊盘所在行列 + 窗口四边（最短路径只需这些的并集时才会
+  // 成功；失败也是诚实结果，不伪造）
+  const xs2=[...new Set([...Cx, shpU(win.x0), shpU(win.x1)])].sort((a,b)=>a-b);
+  const ys2=[...new Set([...Cy, shpU(win.y0), shpU(win.y1)])].sort((a,b)=>a-b);
+  if(xs2.length*ys2.length*OBS.L<=SHP_NODE_CAP) return {xs:xs2,ys:ys2};
+  return null;
+}
+
+/* ---------------- 压缩图 ----------------
+   边 = 相邻坐标间的直线段（跨度可变——压缩网格的"大步"正是优势）；
+   过孔 = 同 (x,y) 的层间边（当前全层贯穿）。
+   合法性用「障碍驱动标记」：轴在障碍边界 ±R 处细化，故任何与膨胀障碍相交的边
+   必有一端落在 bbox±R 内 → 只测该范围内的边即完备（比逐边查询快一个量级）。 */
+function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls){
+  const L=OBS.L, R=design.clearance+wHalf;
+  const axes=shpBuildAxes(design,netPads,wHalf,win,OBS,cls);
+  if(!axes) return null;
+  const xs=axes.xs.map(shpMm), ys=axes.ys.map(shpMm);
+  const Nx=xs.length, Ny=ys.length, NN=Nx*Ny, LNN=NN*L;
+  const hok=new Uint8Array(LNN), vok=new Uint8Array(LNN), viaOk=new Uint8Array(NN);
+  for(let l=0;l<L;l++){ const off=l*NN;
+    for(let j=0;j<Ny;j++)for(let i=0;i<Nx;i++){
+      const c=j*Nx+i;
+      if(i+1<Nx) hok[off+c]=1;
+      if(j+1<Ny) vok[off+c]=1;
+    }
+  }
+  viaOk.fill(1);
+  // 轴区间 → 与之重叠的**边**下标区间（不是坐标下标区间）。
+  // 关键：轴在障碍 bbox±R∓ε 处细化，跨界边的两端都比 [bbox±R] 更外一点——
+  // 若按坐标下标取范围会漏掉这些边，而它们正是穿过膨胀区的那批
+  //（契约「布线合法 ⊆ DRC 合法」的直接破坏点）。故按几何重叠判定。
+  const edgeH=(a,b)=>{ const out=[];
+    for(let i=0;i<Nx-1;i++) if(xs[i]<b-1e-12 && xs[i+1]>a+1e-12) out.push(i);
+    return out; };
+  const edgeV=(a,b)=>{ const out=[];
+    for(let j=0;j<Ny-1;j++) if(ys[j]<b-1e-12 && ys[j+1]>a+1e-12) out.push(j);
+    return out; };
+  const rowsIn=(a,b)=>{ const out=[];
+    for(let j=0;j<Ny;j++) if(ys[j]>=a-1e-9 && ys[j]<=b+1e-9) out.push(j);
+    return out; };
+  const colsIn=(a,b)=>{ const out=[];
+    for(let i=0;i<Nx;i++) if(xs[i]>=a-1e-9 && xs[i]<=b+1e-9) out.push(i);
+    return out; };
+  const killEdges=(gap, ox0,ox1, oy0,oy1, layers)=>{
+    const cols=edgeH(ox0,ox1), rows=edgeV(oy0,oy1);
+    const hs=rowsIn(oy0,oy1), vs=colsIn(ox0,ox1);
+    if(!cols.length&&!rows.length) return;
+    for(const l of layers){
+      const off=l*NN;
+      for(const j of hs) for(const i of cols){
+        const c=off+j*Nx+i;
+        if(hok[c] && gap({x:xs[i],y:ys[j]},{x:xs[i+1],y:ys[j]})<R-1e-9) hok[c]=0;
+      }
+      for(const j of rows) for(const i of vs){
+        const c=off+j*Nx+i;
+        if(vok[c] && gap({x:xs[i],y:ys[j]},{x:xs[i],y:ys[j+1]})<R-1e-9) vok[c]=0;
+      }
+    }
+  };
+  for(const o of OBS.copper){
+    const b=shpObsBox(o);
+    killEdges((a,c)=>shpSegGap(o,a,c), b.x0-R,b.x1+R,b.y0-R,b.y1+R, o.layers);
+  }
+  for(const k of OBS.keepouts){
+    if(k.scope && cls && k.scope===cls) continue;
+    killEdges((a,c)=>segmentRectDistance(a,c,k),
+      k.x-k.w/2-wHalf,k.x+k.w/2+wHalf,k.y-k.h/2-wHalf,k.y+k.h/2+wHalf,
+      Array.from({length:L},(_,i)=>i));
+  }
+  // 过孔合法性：全层贯穿 ⇒ 任一层异网铜都挡（圆盘口径）；禁布区同样阻挡（保守）。
+  {
+    const vR=OBS.viaR, lim=design.clearance+vR;
+    for(const o of OBS.copper){
+      const b=shpObsBox(o);
+      const cs=colsIn(b.x0-lim,b.x1+lim), rs=rowsIn(b.y0-lim,b.y1+lim);
+      for(const j of rs)for(const i of cs){
+        const c=j*Nx+i;
+        if(viaOk[c] && shpPointGap(o,xs[i],ys[j])<lim-1e-9) viaOk[c]=0;
+      }
+    }
+    for(const k of OBS.keepouts){
+      if(k.scope && cls && k.scope===cls) continue;
+      const cs=colsIn(k.x-k.w/2-vR,k.x+k.w/2+vR), rs=rowsIn(k.y-k.h/2-vR,k.y+k.h/2+vR);
+      for(const j of rs)for(const i of cs){
+        const c=j*Nx+i;
+        if(viaOk[c] && distToRect(xs[i],ys[j],k.x,k.y,k.w,k.h)<vR-1e-9) viaOk[c]=0;
+      }
+    }
+    // 孔边距（同网不豁免，DRC 4911-4917 同口径）+ 板边
+    const edgeMin=JLC.boardEdgeMin;
+    for(let j=0;j<Ny;j++)for(let i=0;i<Nx;i++){
+      const c=j*Nx+i;
+      if(!viaOk[c]) continue;
+      const x=xs[i], y=ys[j];
+      if(x-vR<edgeMin-1e-9||x+vR>design.width-edgeMin+1e-9||
+         y-vR<edgeMin-1e-9||y+vR>design.height-edgeMin+1e-9){ viaOk[c]=0; continue; }
+      for(const h of OBS.holes)
+        if(Math.hypot(x-h.x,y-h.y)<h.r+OBS.drillR+JLC.viaEdgeMin-1e-9){ viaOk[c]=0; break; }
+    }
+  }
+  // 焊盘铜内的节点（源/汇）：落在焊盘铜上即属该焊盘所在层
+  const padNodes=(p,l)=>{
+    const hh=(p.shape==='circle'?p.w:p.h)/2, hw=p.w/2;
+    const cs=colsIn(p.x-hw,p.x+hw), rs=rowsIn(p.y-hh,p.y+hh);
+    const off=l*NN, out=[];
+    for(const j of rs)for(const i of cs)
+      if(pointPadDistance(xs[i],ys[j],p)<=1e-9) out.push(off+j*Nx+i);
+    return out;
+  };
+  return {Nx,Ny,L,NN,xs,ys,hok,vok,viaOk,padNodes,wHalf,netId};
+}
+
+/* ---------------- 压缩图 A* ----------------
+   状态 =(节点, 入向)，入向 ∈{左,右,上,下,过孔来}，用于拐弯罚。
+   代价 = 线段长度 + 拐弯罚 + 过孔代价；启发式 = 到目标包围盒的曼哈顿下界
+   （忽略过孔与非负拐弯罚 ⇒ 可采纳，故最优）。 */
+function shpAstar(G, srcNodes, dstNodes, opts){
+  opts=opts||{};
+  const {Nx,Ny,L,NN,xs,ys,hok,vok,viaOk}=G;
+  const viaCost=opts.viaCost!=null?opts.viaCost:15;
+  const turnPen=opts.turnPen!=null?opts.turnPen:0.3;
+  const D=5, SN=L*NN*D;
+  if(srcNodes.length){ let dx0=Infinity,dx1=-Infinity,dy0=Infinity,dy1=-Infinity;
+    for(const n of dstNodes){
+      const x=xs[n%Nx], y=ys[((n%NN)/Nx)|0];
+      if(x<dx0)dx0=x; if(x>dx1)dx1=x; if(y<dy0)dy0=y; if(y>dy1)dy1=y;
+    }
+    if(!(dx0<=dx1)) return null;
+    var NH=n=>{ const x=xs[n%Nx], y=ys[((n%NN)/Nx)|0];
+      return (x<dx0?dx0-x:x>dx1?x-dx1:0)+(y<dy0?dy0-y:y>dy1?y-dy1:0); };
+  } else return null;
+  const gv=new Float64Array(SN).fill(Infinity), par=new Int32Array(SN).fill(-1);
+  const closed=new Uint8Array(SN);
+  // 可增长二叉堆：同一状态可多次入堆（惰性删除），堆深 ≠ 状态数——
+  // 定长数组会静默丢弃越界写入（类型化数组 OOB 写=无操作），进而破坏堆序，
+  // 表现为找到的路径远劣于最优（压缩图单元实测抓出）。
+  let hc=new Float64Array(Math.max(64,SN>>2)), hs=new Int32Array(hc.length), hn=0;
+  const hgrow=()=>{
+    const nc=new Float64Array(hc.length*2), ns2=new Int32Array(hc.length*2);
+    nc.set(hc); ns2.set(hs); hc=nc; hs=ns2;
+  };
+  const push=(cost,st)=>{
+    if(hn>=hc.length) hgrow();
+    let i=hn++;
+    while(i>0){ const p=(i-1)>>1; if(hc[p]<=cost) break; hc[i]=hc[p]; hs[i]=hs[p]; i=p; }
+    hc[i]=cost; hs[i]=st;
+  };
+  const pop=()=>{
+    const top=hs[0], lc=hc[--hn], ls=hs[hn];
+    // 空位下滤：孩子之间比较取小，不能拿已弹出的旧根值当基准
+    //（定长数组 OOB 写与堆序破坏是本模块实测抓出的两个 A* 最优性失效点）
+    if(hn>0){ let i=0;
+      for(;;){ const l=2*i+1, r=l+1;
+        if(l>=hn) break;
+        const m=(r<hn&&hc[r]<hc[l])?r:l;
+        hc[i]=hc[m]; hs[i]=hs[m]; i=m; }
+      hc[i]=lc; hs[i]=ls; }
+    return top;
+  };
+  const dstSet=new Uint8Array(L*NN);
+  for(const n of dstNodes) dstSet[n]=1;
+  for(const n of srcNodes){ const st=n*D+4; if(closed[st]) continue;
+    gv[st]=0; push(NH(n),st); }
+  const DX=[-1,1,0,0], DY=[0,0,-1,1];
+  let found=-1;
+  while(hn>0){
+    const s=pop();
+    if(closed[s]) continue;
+    closed[s]=1;
+    const n=(s/D)|0, dir=s%D;
+    if(dstSet[n]){ found=s; break; }
+    const i=n%Nx, j=((n%NN)/Nx)|0, l=(n/NN)|0, c=n%NN;
+    const x=xs[i], y=ys[j];
+    for(let d=0;d<4;d++){
+      const ni=i+DX[d], nj=j+DY[d];
+      if(ni<0||nj<0||ni>=Nx||nj>=Ny) continue;
+      const legal = d===0 ? (i>0 ? hok[l*NN+j*Nx+i-1] : 0)
+                  : d===1 ? (i+1<Nx ? hok[l*NN+c] : 0)
+                  : d===2 ? (j>0 ? vok[l*NN+(j-1)*Nx+i] : 0)
+                  :         (j+1<Ny ? vok[l*NN+c] : 0);
+      if(!legal) continue;
+      const nn=l*NN+nj*Nx+ni;
+      let ec=Math.abs(xs[ni]-x)+Math.abs(ys[nj]-y);
+      if(dir!==4 && dir!==d) ec+=turnPen;
+      const ns=nn*D+d, ng=gv[s]+ec;
+      if(closed[ns]) continue;
+      if(ng<gv[ns]-1e-12){ gv[ns]=ng; par[ns]=s; push(ng+NH(nn),ns); }
+    }
+    if(viaOk[c]){
+      for(let dl=-1;dl<=1;dl+=2){
+        const nl=l+dl;
+        if(nl<0||nl>=L) continue;
+        const nn=nl*NN+c, ns=nn*D+4, ng=gv[s]+viaCost;
+        if(closed[ns]) continue;
+        if(ng<gv[ns]-1e-12){ gv[ns]=ng; par[ns]=s; push(ng+NH(nn),ns); }
+      }
+    }
+  }
+  if(found<0) return null;
+  const raw=[];
+  for(let s=found;s>=0;s=par[s]){
+    const n=(s/D)|0;
+    raw.push({x:xs[n%Nx], y:ys[((n%NN)/Nx)|0], l:(n/NN)|0});
+  }
+  raw.reverse();
+  // 共线合并：压缩网格一条长直段只留两端
+  const out=[];
+  for(const p of raw){
+    const m=out.length;
+    if(m>=2 && out[m-1].l===p.l && out[m-2].l===p.l){
+      const a=out[m-2], b=out[m-1];
+      if(Math.abs((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x))<1e-9){ out[m-1]=p; continue; }
+    }
+    out.push(p);
+  }
+  return out;
+}
+
+/* ---------------- 单网布线 ----------------
+   Prim 顺序（最近焊盘接入已布铜）——与栅格引擎实测更快的 Prim 主路径同构。
+   接树目标是「已布铜的任一节点」，因此天然产生 T 型分支（斯坦纳语义）。
+   连通判定与栅格引擎同口径：焊盘铜内存在已被铜覆盖的节点 ⇒ 该焊盘连通。 */
+function shpRouteNet(design, net, OBS, win, opts){
+  const L=OBS.L, hw=netW(design,net.id)/2;
+  const pads=(design.pads||[]).filter(p=>p.netId===net.id);
+  if(pads.length<2) return {paths:[],vias:[],connected:pads.length,total:pads.length};
+  const G=shpBuildGraph(design,pads,net.id,hw,win,OBS,opts.cls||null);
+  if(!G) return null;
+  const lay=p=>padLayersOfPad(p,L);
+  const inTree=new Uint8Array(L*G.NN);
+  const markPad=p=>{ for(const l of lay(p)) for(const n of G.padNodes(p,l)) inTree[n]=1; };
+  // 起点：焊盘铜节点最多的焊盘（并列取下标最小 → 确定性）
+  let root=pads[0], rootN=-1;
+  for(const p of pads){
+    let cnt=0; for(const l of lay(p)) cnt+=G.padNodes(p,l).length;
+    if(cnt>rootN){ rootN=cnt; root=p; }
+  }
+  if(rootN<=0) return null;
+  markPad(root);
+  const paths=[], vias=[];
+  const reached=new Set([root]);
+  const order=[root];
+  // Prim：每次取与已接入集合最近的未接入焊盘
+  while(order.length<pads.length){
+    let best=null, bd=Infinity;
+    for(const p of pads){
+      if(reached.has(p)) continue;
+      for(const o of order){
+        const d=(p.x-o.x)**2+(p.y-o.y)**2;
+        if(d<bd){ bd=d; best=p; }
+      }
+    }
+    if(!best) break;
+    const src=[];
+    for(const l of lay(best)) for(const n of G.padNodes(best,l)) src.push(n);
+    reached.add(best); order.push(best);
+    if(!src.length) continue;                        // 零格焊盘：如实不可达
+    const dst=[];
+    for(let n=0;n<inTree.length;n++) if(inTree[n]) dst.push(n);
+    if(!dst.length) continue;
+    const pts=shpAstar(G,src,dst,{viaCost:opts.viaCost,turnPen:opts.turnPen});
+    if(!pts) continue;                               // 本网其余焊盘仍可能连通
+    // 落盘：换层点复制同坐标两次（DRC/SVG/泪滴按「同坐标不同层」识别过孔）
+    const path=[{x:pts[0].x,y:pts[0].y,l:pts[0].l}];
+    for(let k=1;k<pts.length;k++){
+      const pr=pts[k-1], p=pts[k];
+      if(pr.l!==p.l) vias.push({x:p.x,y:p.y});
+      else if(Math.abs(pr.x-p.x)<1e-12 && Math.abs(pr.y-p.y)<1e-12) continue;
+      path.push({x:p.x,y:p.y,l:p.l});
+    }
+    paths.push(path);
+    // 新铜并入树：线段走廊内节点（含端点）+ 该焊盘铜节点 + 过孔全层
+    for(let k=1;k<path.length;k++){
+      const a=path[k-1], b=path[k];
+      if(a.l!==b.l) continue;
+      const l=a.l, off=l*G.NN;
+      const x0=Math.min(a.x,b.x)-hw, x1=Math.max(a.x,b.x)+hw;
+      const y0=Math.min(a.y,b.y)-hw, y1=Math.max(a.y,b.y)+hw;
+      for(let j=0;j<G.Ny;j++){
+        const y=G.ys[j];
+        if(y<y0-1e-9||y>y1+1e-9) continue;
+        for(let i=0;i<G.Nx;i++){
+          const x=G.xs[i];
+          if(x<x0-1e-9||x>x1+1e-9) continue;
+          if(segDist(x,y,a.x,a.y,b.x,b.y)<=hw+1e-9) inTree[off+j*G.Nx+i]=1;
+        }
+      }
+    }
+    markPad(best);
+    for(const v of vias){
+      const i=G.xs.findIndex(x=>Math.abs(x-v.x)<1e-9);
+      const j=G.ys.findIndex(y=>Math.abs(y-v.y)<1e-9);
+      if(i<0||j<0) continue;
+      for(let l=0;l<L;l++) inTree[l*G.NN+j*G.Nx+i]=1;
+    }
+  }
+  // 连通统计：焊盘铜内是否有已覆盖节点（与栅格 countConn 同口径，诚实口径：
+  // 多分量时仅计真正接入铜皮的焊盘）
+  let conn=0;
+  for(const p of pads){
+    let ok=false;
+    for(const l of lay(p)){ for(const n of G.padNodes(p,l)) if(inTree[n]){ ok=true; break; } if(ok) break; }
+    if(ok) conn++;
+  }
+  return {paths,vias,connected:conn,total:pads.length};
+}
+function padLayersOfPad(p,L){
+  return p.layer==='top'?[0]:p.layer==='bottom'?[L-1]:Array.from({length:L},(_,i)=>i);
+}
+// ==== SHAPE CORE END ====
+
+
+/* ============================================================
    示例电路（纯数据构造，全部坐标已对齐 0.5mm 栅格）
    ============================================================ */
 // ==== EXAMPLES START ====
@@ -7609,7 +8255,7 @@ const EXAMPLES=[
 <script id="pcb-worker" type="text/plain">
 let session=null;
 self.onmessage=event=>{
-  const {id,command,design,options={},netId}=event.data;
+  const {id,command,design,options={},netId,result:prevResult}=event.data;
   const progress=update=>self.postMessage({id,type:'progress',...update});
   try{
     if(command==='route'){
@@ -7618,6 +8264,14 @@ self.onmessage=event=>{
       const best=routeBoard(d,{...options,onProgress:progress});
       session=best.session;
       self.postMessage({id,type:'result',result:best.result,design:d});
+    }else if(command==='shapePatch'){
+      // 形状补线（阶段三 #12）：在已有结果上对失败网做连续空间重布。
+      // 会话是栅格模型的，补线后几何已变——作废会话（下次 reroute 需整体重布），
+      // 避免用陈旧 model 做单网重布（这正是 #14 里 worker 陈旧 model 的同源问题）。
+      const d=normalizeDesign(design);
+      const sp=routeBoardShape(d,{base:prevResult,...options,onProgress:progress});
+      session=null;
+      self.postMessage({id,type:'result',result:sp.result,shape:sp.shape,design:d});
     }else if(command==='reroute'){
       if(!session) throw new Error('请先执行自动布线');
       const outcome=session.rerouteSingle(netId),result=session.buildResult();
@@ -8895,6 +9549,39 @@ class RoutingWorkerClient{
     if(!confirm('将自动布局（会移动未锚定元件）并完整布线，继续？')) return;
     pushHistory();
     await runRoute({place:true});
+  });
+  // 形状补线（阶段三 #12）：只对仍有未连通焊盘的网做连续空间重布。
+  // 默认路径不变——没有结果时先提示布线；补线失败不改动既有结果（引擎侧字典序接受）。
+  $('btnShape').addEventListener('click',async()=>{
+    if(app.routing||!app.design) return;
+    if(!app.result){ toast('请先自动布线，再补线失败网'); return; }
+    const fails=app.result.stats.total-app.result.stats.connected;
+    if(fails<=0&&!app.result.overuse.length){ toast('当前已全部连通且无冲突，无需补线'); return; }
+    pushHistory();
+    routingBusy(true);
+    $('progressWrap').style.display='block';
+    $('drcList').textContent='形状补线中……';
+    try{
+      const response=await routingClient.request('shapePatch',{
+        design:app.design,result:app.result,
+        options:{viaCost:Math.max(1,num($('rVia').value,15)),
+                 turnPen:Math.max(0,num($('rTurn').value,0.3))}
+      },update=>{
+        $('progressText').textContent=update.text;
+        $('progressFill').style.width=Math.round((update.frac||0)*100)+'%';
+      });
+      app.result=response.result; app.session=null;   // 几何已变，栅格会话作废
+      computeDerived(); renderNets(); renderStats(); runDRC(); requestDraw();
+      const sh=response.shape||{};
+      toast(sh.applied
+        ? '形状补线：接受 '+sh.accepted+'/'+sh.attempted+' 网（连通 '+app.result.stats.connected+'/'+app.result.stats.total+'）'
+        : '形状补线未改动（'+(sh.reason||'无失败网')+'）');
+    }catch(error){
+      toast('形状补线失败：'+error.message);
+      $('drcList').textContent=error.message;
+    }finally{
+      routingBusy(false); $('progressWrap').style.display='none'; requestDraw();
+    }
   });
 
   // ---------------- 统计与 DRC ----------------

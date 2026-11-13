@@ -102,6 +102,9 @@ body.canvas-focus main{grid-template-columns:minmax(0,1fr)!important}body.canvas
         <div class="row">
           <button class="grow" id="btnAutopcb" title="布局→试探布线→热点反馈→再布局→再布线，一键收敛">一键布局 + 布线</button>
         </div>
+        <div class="row">
+          <button class="grow" id="btnShape" title="形状补线：对仍失败的网用压缩坐标（不量化到栅格）重布——BGA/0.4mm 密集板适用；只补失败网，已布结果不变">形状补线（失败网）</button>
+        </div>
         <div class="row"><button class="grow" id="btnClear" title="清除全部自动布线（保留手动走线）">清除布线</button></div>
         <details class="route-advanced"><summary>布线策略与高级参数</summary><div class="sec">        <div class="grid2">
           <div class="row"><label>过孔代价</label><input id="rVia" type="number" step="1" min="1" value="15" title="换一层所需的步数成本，越大越少打过孔"></div>
