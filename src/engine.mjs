@@ -3692,6 +3692,7 @@ function routeBoardShape(design, opts={}){
   let target=[];                      // 每轮重算
   let attemptedTotal=0, roundsUsed=0, applied=0, repairTried=0, repairFixed=0,
       cascadeKept=0, cascadeRolled=0;
+  let repaired=new Set();   // 单轮内已修复集（每轮清空——板面变化后应允许重试）
   let prevScore=null;
   for(let round=0; round<maxRounds; round++){
     // —— target 重算：基于当前板态 merged（协商/修复/级联改变可达性与违规归属）
@@ -3716,8 +3717,8 @@ function routeBoardShape(design, opts={}){
     }
     if(!target.length) break;
     roundsUsed++; attemptedTotal+=target.length;
-    const roundApplied=applied;
-    cascade.length=0;   // 每轮独立级联集（跨轮保留会让修复轮面对过期的落盘态）
+    cascade.length=0;
+    repaired=new Set();   // 板面已变：允许上轮修复过的网重试   // 每轮独立级联集（跨轮保留会让修复轮面对过期的落盘态）
     // —— 协商（原逐网 forEach 体，改为 for 以便 break 语义保持）
   target.forEach((n,k)=>{
     onProgress({text:'形状补线 '+n.name,frac:0.1+0.85*(k/target.length)});
@@ -3800,7 +3801,7 @@ function routeBoardShape(design, opts={}){
     // 这与 0.13.4 的"直接拒绝"的本质差别：修复轮可能把违规消掉，借道就
     // 从"违规换连通"变成"零违规换连通"——只有试过才知道。
     if(!better && dConn>0 && dGeo>0 && opts.shapeCascade!==false){
-      cascade.push({candIdx, saved, viaState:{...merged.nets[candIdx]}, netName:n.name, dConn, dGeo});
+      cascade.push({candIdx, netId:n.id, saved, viaState:{...merged.nets[candIdx]}, netName:n.name, dConn, dGeo, kept:false});
       notes.push({net:n.name,cascade:true,conn:after.conn+'/'+after.total,
         geo:before.geo+'→'+after.geo,wait:'待级联修复后全板裁决'});
       return;
@@ -3820,7 +3821,6 @@ function routeBoardShape(design, opts={}){
   //     修复的网"从候选集剔除，防止 A/B 网互换违规的无限循环。
   const repairPasses=Math.max(1, opts.shapeRepairPasses!=null?opts.shapeRepairPasses:3);
   let repairFixed=0, repairTried=0;
-  const repaired=new Set();
   for(let pass=0;pass<repairPasses;pass++){
     // 全板违规归属：哪几个网卷入？（对称差——用 netGeoVio 的全板版）
     const allVio=auditGeometry(design,merged);
@@ -3916,6 +3916,7 @@ function routeBoardShape(design, opts={}){
     for(let k=0;k<nC;k++){
       const c=cascade[k];
       const kept=(bestMask>>k)&1;
+      c.kept=kept;
       merged.nets[c.candIdx]=kept?c.viaState:c.saved;
       if(kept){ cascadeKept++;
         notes.push({net:c.netName,ok:true,cascade:true,kept:true,
@@ -3930,26 +3931,26 @@ function routeBoardShape(design, opts={}){
     const roundDrc=checkDRC(design,merged,{dfm:false}).filter(i=>i.sev==='error').length;
     const roundConn=merged.nets.reduce((a,n)=>a+(n.connected||0),0);
     const roundScore=[-roundDrc, roundConn];
-    const roundCascadeRolled=cascade.filter(c=>notes.some(nn=>nn.net===c.netName&&nn.cascade&&nn.kept===false)).length;
-    const roundCascadeKept=cascade.length-roundCascadeRolled;
-    if(roundCascadeKept===0 && roundCascadeRolled>0){
-      // 本轮级联全军覆没：这些网记一次回滚
+    // 本轮 cascade 的 kept 标记直接取（不靠 notes 反查——同网名跨轮会污染）
+    let roundKept=0, roundRolled=0;
+    for(const c of cascade) (c.kept?roundKept++:roundRolled++);
+    if(roundKept===0 && roundRolled>0){
+      // 本轮级联全军覆没：这些网记一次回滚，连续 2 次剔除（防抖）
       for(const c of cascade){
-        const cnt=(cascadeRollCount.get(c.candIdx)||0)+1;
-        cascadeRollCount.set(c.candIdx,cnt);
-        if(cnt>=2){ exhausted.add(design.nets.find(x=>merged.nets[c.candIdx]&&merged.nets[c.candIdx].netId===x.id)?.id); }
+        const cnt=(cascadeRollCount.get(c.netId)||0)+1;
+        cascadeRollCount.set(c.netId,cnt);
+        if(cnt>=2) exhausted.add(c.netId);
       }
     } else {
-      // 有保留 → 重置相关网的计数
-      for(const c of cascade) cascadeRollCount.set(c.candIdx,0);
+      for(const c of cascade) cascadeRollCount.set(c.netId,0);
     }
-    // 熔断：全板 [-drc, conn] 无改进（与上轮比）
-    if(prevScore && roundScore[0]===prevScore[0] && roundScore[1]===prevScore[1]) {
-      log('形状补线：第'+(round+1)+'轮无改进，熔断');
-      break;
+    // 熔断：全板 [-drc, conn] **不优于**上轮即停（相等或更差都停）
+    if(prevScore){
+      const noGain = roundScore[0]<prevScore[0] ||
+        (roundScore[0]===prevScore[0] && roundScore[1]<=prevScore[1]);
+      if(noGain){ log('形状补线：第'+(round+1)+'轮无改进，熔断'); break; }
     }
     prevScore=roundScore;
-    void roundApplied;
   }   // —— 外层 for(round) 结束
   // 4) 统计重算（beautify 已被栅格基线做过；形状补线是正交折线，无需再美化）
   const tc=merged.nets.reduce((a,n)=>a+(n.connected||0),0);
@@ -8310,6 +8311,28 @@ function shpAstar(G, srcNodes, dstNodes, opts){
    Prim 顺序（最近焊盘接入已布铜）——与栅格引擎实测更快的 Prim 主路径同构。
    接树目标是「已布铜的任一节点」，因此天然产生 T 型分支（斯坦纳语义）。
    连通判定与栅格引擎同口径：焊盘铜内存在已被铜覆盖的节点 ⇒ 该焊盘连通。 */
+/* 整条路径的精确几何校验（0.13.9）：落盘前的最终防线。
+   只查"硬冲突"——走线铜与异网铜重叠（gap<=0，短路），不查间距不足
+   （那是软协商允许的擦边，由接受准则裁决）。禁布区/板边同样硬拒。 */
+function shpPathClear(design, path, OBS, netId, hw){
+  void hw;
+  const L=OBS.L;
+  for(let k=1;k<path.length;k++){
+    const a=path[k-1], b=path[k];
+    if(a.l!==b.l) continue;
+    for(const o of OBS.copper){
+      if(o.net===netId) continue;
+      if(o.layers.indexOf(a.l)<0) continue;
+      if(shpSegGap(o,a,b)<=1e-9) return false;
+    }
+    // 禁布区/板边不在此复核：它们在压缩图上已作为硬墙正确表达（killEdges
+    // + viaOk），且不属于"短路"级别。此闸门只拦**铜-铜真重叠**——那是唯一
+    // 会流出假绿（连通数虚高）的形态（fable-01/03 实测：跨轮残留路径的
+    // 段与异网焊盘 gap=0，DRC 按段首命中漏报，连通数虚增）。
+  }
+  return true;
+}
+
 function shpRouteNet(design, net, OBS, win, opts){
   const L=OBS.L, hw=netW(design,net.id)/2;
   const pads=(design.pads||[]).filter(p=>p.netId===net.id);
@@ -8370,6 +8393,12 @@ function shpRouteNet(design, net, OBS, win, opts){
       else if(Math.abs(pr.x-p.x)<1e-12 && Math.abs(pr.y-p.y)<1e-12) continue;
       path.push({x:p.x,y:p.y,l:p.l});
     }
+    // 落盘前的最终几何校验（0.13.9 深度检查）：图边合法 ≠ 整条路径合法。
+    // 多轮协商中 merged 里可能残留**上一轮轴**算出的路径，与本轮障碍集
+    // 不兼容（fable-01 实测：3V3 的段与 U2-14 重叠 gap=0，端点甚至不在
+    // 当前轴上）。这里逐段精确复核：任何 gap≤0 的重叠一律拒绝该段所属
+    // 的整条接入，而不是让重叠流进结果等 DRC 兜底（DRC 按段首命中会漏）。
+    if(!shpPathClear(design,path,OBS,net.id,hw)){ continue; }
     paths.push(path);
     // 新铜并入树：线段走廊内节点（含端点）+ 该焊盘铜节点 + 过孔全层
     for(let k=1;k<path.length;k++){
