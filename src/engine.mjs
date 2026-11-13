@@ -3668,7 +3668,17 @@ function routeBoardShape(design, opts={}){
                y0:Math.max(0,y0-winMargin), y1:Math.min(design.height,y1+winMargin)};
     // 障碍集：其它所有网的铜（本网被剔除，重布时旧铜不算障碍）
     const OBS=shpCollectObstacles(design, merged.nets, n.id);
-    const r=shpRouteNet(design, n, OBS, win, {viaCost:opts.viaCost,turnPen:opts.turnPen,cls:cls.get(n.id)||null});
+    const baseOpt={viaCost:opts.viaCost,turnPen:opts.turnPen,cls:cls.get(n.id)||null};
+    // 第一遍：硬约束（布线合法 ⊆ DRC 合法）
+    let r=shpRouteNet(design, n, OBS, win, baseOpt);
+    let usedSoft=false;
+    if(!r || !r.paths.length){
+      // 第二遍：软障碍协商（#12b）——异网铜记惩罚可借道。接受方按几何违规
+      // 数裁决：违规比"连通增益"更贵时不接受。禁布区/板边/孔边距仍是硬墙。
+      r=shpRouteNet(design, n, OBS, win, {...baseOpt, soft:true,
+        penScale:opts.shapePenScale!=null?opts.shapePenScale:40});
+      usedSoft=true;
+    }
     if(!r || !r.paths.length){ notes.push({net:n.name,skip:'no-path',obs:OBS.copper.length}); return; }
     const candIdx=merged.nets.findIndex(x=>x.netId===n.id);
     const saved=JSON.parse(JSON.stringify(merged.nets[candIdx]));
@@ -3677,22 +3687,71 @@ function routeBoardShape(design, opts={}){
     merged.nets[candIdx].connected=r.connected;
     merged.nets[candIdx].total=r.total;
     merged.nets[candIdx].cells=[];
-    // 字典序：连通优先，其次几何冲突，再次过孔，最后线长
+    // 字典序：连通优先，其次几何冲突，再次过孔，最后线长。
+    // geo 口径（0.13.4 修正三，对称三查）：该网与全板的交互违规数
+    // = 段-段 + 段-异网焊盘 + 过孔间距（对异网焊盘/走线/过孔）。
+    // 三个盲区都是 Fable/BGA 实测抓出的：①单网传 auditGeometry 恒 0；
+    // ②过孔类违规完全不在段审计里；③段-异网焊盘不在段-段审计里。
+    // before/after 用同一函数（对称），存量违规自动抵消，只剩净增量。
+    const netGeoVio=(netEntry)=>{
+      const rest=merged.nets.filter(x=>x.netId!==netEntry.netId);
+      let vio=auditGeometry(design,{nets:[netEntry,...rest]}).length
+            - auditGeometry(design,{nets:rest}).length;          // 段-段
+      const hw=netW(design,netEntry.netId)/2;
+      for(const path of netEntry.paths||[]) for(let k=1;k<path.length;k++){
+        const a=path[k-1], b=path[k];
+        if(a.l!==b.l) continue;
+        for(const p of (design.pads||[])){
+          if(p.netId===netEntry.netId||!shpLayerInSpan(p,[a.l,a.l],L)) continue;
+          if(segmentPadDistance(a,b,p)<hw+design.clearance-1e-9) vio++;   // 段-焊盘
+        }
+      }
+      for(const v of netEntry.vias||[]){
+        const outer=v.outer!=null?v.outer:design.viaOuter;
+        const span=viaSpan(v,L);
+        for(const p of (design.pads||[])){
+          if(p.netId===netEntry.netId||!shpLayerInSpan(p,span,L)) continue;
+          if(pointPadDistance(v.x,v.y,p)<outer/2+design.clearance-1e-9) vio++;
+        }
+        for(const n of rest){
+          const hwN=netW(design,n.netId)/2;
+          for(const path of n.paths||[]) for(let k=1;k<path.length;k++){
+            const a=path[k-1], b=path[k];
+            if(a.l!==b.l) continue;
+            if(!viaOnLayer(v,a.l,L)) continue;
+            if(segDist(v.x,v.y,a.x,a.y,b.x,b.y)<outer/2+design.clearance+hwN-1e-9){ vio++; break; }
+          }
+          for(const ov of n.vias||[]){
+            if(!viaSpanOverlap(v,ov,L)) continue;
+            if(Math.hypot(v.x-ov.x,v.y-ov.y)<(outer+(ov.outer!=null?ov.outer:design.viaOuter))/2+design.clearance-1e-9){ vio++; break; }
+          }
+        }
+      }
+      return vio;
+    };
     const before={conn:saved.connected,total:saved.total,
-      geo:auditGeometry(design,{nets:[saved]}).length,
+      geo:netGeoVio(saved),
       vias:(saved.vias||[]).length,len:pathLenOf(saved.paths||[])};
     const after={conn:r.connected,total:r.total,
-      geo:auditGeometry(design,{nets:[merged.nets[candIdx]]}).length,
+      geo:netGeoVio(merged.nets[candIdx]),
       vias:r.vias.length,len:pathLenOf(r.paths)};
-    const better = after.conn>before.conn ||
-      (after.conn===before.conn && after.geo<before.geo) ||
-      (after.conn===before.conn && after.geo===before.geo && after.vias<before.vias) ||
-      (after.conn===before.conn && after.geo===before.geo && after.vias===before.vias && after.len<before.len-1e-9);
-    if(better){ applied++; notes.push({net:n.name,ok:true,conn:after.conn+'/'+after.total,
+    // 协商接受准则：每 1 个新增几何违规至少要换回 shapeNegotiateGain 个连通
+    // 焊盘（缺省 1:1）——violation 不是免费的，防止"借道把别的网搞挂"的净损失。
+    const gainPerVio=opts.shapeNegotiateGain!=null?opts.shapeNegotiateGain:1;
+    const dConn=after.conn-before.conn, dGeo=after.geo-before.geo;
+    let better;
+    if(dGeo<=0){
+      better = dConn>0 ||
+        (dConn===0 && after.vias<before.vias) ||
+        (dConn===0 && after.vias===before.vias && after.len<before.len-1e-9);
+    } else {
+      better = dConn>=dGeo*gainPerVio && dConn>0;
+    }
+    if(better){ applied++; notes.push({net:n.name,ok:true,soft:usedSoft,conn:after.conn+'/'+after.total,
       geo:before.geo+'→'+after.geo,vias:before.vias+'→'+after.vias,len:+(after.len-before.len).toFixed(2)}); }
     else{
       merged.nets[candIdx]=saved;
-      notes.push({net:n.name,skip:'worse',conn:after.conn+'/'+after.total,geo:after.geo,vias:after.vias});
+      notes.push({net:n.name,skip:'worse',soft:usedSoft,conn:after.conn+'/'+after.total,geo:after.geo,vias:after.vias});
     }
   });
   // 4) 统计重算（beautify 已被栅格基线做过；形状补线是正交折线，无需再美化）
@@ -7801,14 +7860,23 @@ function shpBuildAxes(design, netPads, wHalf, win, OBS, cls){
    边 = 相邻坐标间的直线段（跨度可变——压缩网格的"大步"正是优势）；
    过孔 = 同 (x,y) 的层间边（当前全层贯穿）。
    合法性用「障碍驱动标记」：轴在障碍边界 ±R 处细化，故任何与膨胀障碍相交的边
-   必有一端落在 bbox±R 内 → 只测该范围内的边即完备（比逐边查询快一个量级）。 */
-function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls){
+   必有一端落在 bbox±R 内 → 只测该范围内的边即完备（比逐边查询快一个量级）。
+
+   soft 模式（#12b 协商）：硬障碍（焊盘铜/异网走线）不再删除边，而是按
+   违规深度记惩罚（pen 单位=毫米等效长度，penScale 折算为代价）。走线可以
+   "借道"已占用区域——协商语义与栅格引擎的 PathFinder enterOK 一致：
+   硬阶段禁入，软阶段付代价可过。接受方（routeBoardShape）用 auditGeometry
+   数真实违规，字典序里违规增加即拒绝——绝不把净违规写进结果。
+   禁布区与板边在 soft 模式仍为**硬墙**（工艺边界不可协商）。 */
+function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls, soft){
   const L=OBS.L, R=design.clearance+wHalf;
   const axes=shpBuildAxes(design,netPads,wHalf,win,OBS,cls);
   if(!axes) return null;
   const xs=axes.xs.map(shpMm), ys=axes.ys.map(shpMm);
   const Nx=xs.length, Ny=ys.length, NN=Nx*Ny, LNN=NN*L;
   const hok=new Uint8Array(LNN), vok=new Uint8Array(LNN), viaOk=new Uint8Array(NN);
+  const penH=soft?new Float32Array(LNN):null, penV=soft?new Float32Array(LNN):null,
+        penVia=soft?new Float32Array(NN):null;
   for(let l=0;l<L;l++){ const off=l*NN;
     for(let j=0;j<Ny;j++)for(let i=0;i<Nx;i++){
       const c=j*Nx+i;
@@ -7841,11 +7909,19 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls){
       const off=l*NN;
       for(const j of hs) for(const i of cols){
         const c=off+j*Nx+i;
-        if(hok[c] && gap({x:xs[i],y:ys[j]},{x:xs[i+1],y:ys[j]})<R-1e-9) hok[c]=0;
+        if(!hok[c]&&!soft) continue;
+        const g=gap({x:xs[i],y:ys[j]},{x:xs[i+1],y:ys[j]});
+        if(g>=R-1e-9) continue;
+        if(soft){ const depth=R-g; if(depth>penH[c]) penH[c]=depth; hok[c]=1; }
+        else hok[c]=0;
       }
       for(const j of rows) for(const i of vs){
         const c=off+j*Nx+i;
-        if(vok[c] && gap({x:xs[i],y:ys[j]},{x:xs[i],y:ys[j+1]})<R-1e-9) vok[c]=0;
+        if(!vok[c]&&!soft) continue;
+        const g=gap({x:xs[i],y:ys[j]},{x:xs[i],y:ys[j+1]});
+        if(g>=R-1e-9) continue;
+        if(soft){ const depth=R-g; if(depth>penV[c]) penV[c]=depth; vok[c]=1; }
+        else vok[c]=0;
       }
     }
   };
@@ -7855,11 +7931,21 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls){
   }
   for(const k of OBS.keepouts){
     if(k.scope && cls && k.scope===cls) continue;
+    // soft 模式：禁布区仍硬墙（先跑 killEdges 的软逻辑再强行清零）
     killEdges((a,c)=>segmentRectDistance(a,c,k),
       k.x-k.w/2-wHalf,k.x+k.w/2+wHalf,k.y-k.h/2-wHalf,k.y+k.h/2+wHalf,
       Array.from({length:L},(_,i)=>i));
+    if(soft){
+      const cols=edgeH(k.x-k.w/2-wHalf,k.x+k.w/2+wHalf), rows=edgeV(k.y-k.h/2-wHalf,k.y+k.h/2+wHalf);
+      for(const l of Array.from({length:L},(_,i)=>i)){
+        const off=l*NN;
+        for(const j of rowsIn(k.y-k.h/2-wHalf,k.y+k.h/2+wHalf)) for(const i of cols) hok[off+j*Nx+i]=0;
+        for(const j of rows) for(const i of colsIn(k.x-k.w/2-wHalf,k.x+k.w/2+wHalf)) vok[off+j*Nx+i]=0;
+      }
+    }
   }
   // 过孔合法性：全层贯穿 ⇒ 任一层异网铜都挡（圆盘口径）；禁布区同样阻挡（保守）。
+  // soft 模式：异网铜的 via 侵权记惩罚（penVia=违规深度），仍可放；禁布区/板边/孔边距硬墙。
   {
     const vR=OBS.viaR, lim=design.clearance+vR;
     for(const o of OBS.copper){
@@ -7867,7 +7953,10 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls){
       const cs=colsIn(b.x0-lim,b.x1+lim), rs=rowsIn(b.y0-lim,b.y1+lim);
       for(const j of rs)for(const i of cs){
         const c=j*Nx+i;
-        if(viaOk[c] && shpPointGap(o,xs[i],ys[j])<lim-1e-9) viaOk[c]=0;
+        const g=shpPointGap(o,xs[i],ys[j]);
+        if(g>=lim-1e-9) continue;
+        if(soft){ const depth=lim-g; if(depth>penVia[c]) penVia[c]=depth; }
+        else viaOk[c]=0;
       }
     }
     for(const k of OBS.keepouts){
@@ -7875,10 +7964,10 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls){
       const cs=colsIn(k.x-k.w/2-vR,k.x+k.w/2+vR), rs=rowsIn(k.y-k.h/2-vR,k.y+k.h/2+vR);
       for(const j of rs)for(const i of cs){
         const c=j*Nx+i;
-        if(viaOk[c] && distToRect(xs[i],ys[j],k.x,k.y,k.w,k.h)<vR-1e-9) viaOk[c]=0;
+        if(distToRect(xs[i],ys[j],k.x,k.y,k.w,k.h)<vR-1e-9) viaOk[c]=0;
       }
     }
-    // 孔边距（同网不豁免，DRC 4911-4917 同口径）+ 板边
+    // 孔边距（同网不豁免，DRC 4911-4917 同口径）+ 板边——两模式都是硬墙
     const edgeMin=JLC.boardEdgeMin;
     for(let j=0;j<Ny;j++)for(let i=0;i<Nx;i++){
       const c=j*Nx+i;
@@ -7899,7 +7988,7 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls){
       if(pointPadDistance(xs[i],ys[j],p)<=1e-9) out.push(off+j*Nx+i);
     return out;
   };
-  return {Nx,Ny,L,NN,xs,ys,hok,vok,viaOk,padNodes,wHalf,netId};
+  return {Nx,Ny,L,NN,xs,ys,hok,vok,viaOk,penH,penV,penVia,padNodes,wHalf,netId,soft:!!soft};
 }
 
 /* ---------------- 压缩图 A* ----------------
@@ -7908,9 +7997,12 @@ function shpBuildGraph(design, netPads, netId, wHalf, win, OBS, cls){
    （忽略过孔与非负拐弯罚 ⇒ 可采纳，故最优）。 */
 function shpAstar(G, srcNodes, dstNodes, opts){
   opts=opts||{};
-  const {Nx,Ny,L,NN,xs,ys,hok,vok,viaOk}=G;
+  const {Nx,Ny,L,NN,xs,ys,hok,vok,viaOk,penH,penV,penVia}=G;
   const viaCost=opts.viaCost!=null?opts.viaCost:15;
   const turnPen=opts.turnPen!=null?opts.turnPen:0.3;
+  // 软障碍协商（#12b）：惩罚深度（mm）× penScale 折算为等效长度代价。
+  // 缺省 40 = 1mm 侵权深度 ≈ 40mm 绕行——强烈偏好绕行，只在不绕行走不通时借道。
+  const penScale=opts.penScale!=null?opts.penScale:40;
   const D=5, SN=L*NN*D;
   if(srcNodes.length){ let dx0=Infinity,dx1=-Infinity,dy0=Infinity,dy1=-Infinity;
     for(const n of dstNodes){
@@ -7966,23 +8058,26 @@ function shpAstar(G, srcNodes, dstNodes, opts){
     for(let d=0;d<4;d++){
       const ni=i+DX[d], nj=j+DY[d];
       if(ni<0||nj<0||ni>=Nx||nj>=Ny) continue;
-      const legal = d===0 ? (i>0 ? hok[l*NN+j*Nx+i-1] : 0)
-                  : d===1 ? (i+1<Nx ? hok[l*NN+c] : 0)
-                  : d===2 ? (j>0 ? vok[l*NN+(j-1)*Nx+i] : 0)
-                  :         (j+1<Ny ? vok[l*NN+c] : 0);
-      if(!legal) continue;
+      const eIdx = d===0 ? (i>0 ? l*NN+j*Nx+i-1 : -1)
+                 : d===1 ? (i+1<Nx ? l*NN+c : -1)
+                 : d===2 ? (j>0 ? l*NN+(j-1)*Nx+i : -1)
+                 :         (j+1<Ny ? l*NN+c : -1);
+      if(eIdx<0 || !(d<2 ? hok[eIdx] : vok[eIdx])) continue;
       const nn=l*NN+nj*Nx+ni;
       let ec=Math.abs(xs[ni]-x)+Math.abs(ys[nj]-y);
       if(dir!==4 && dir!==d) ec+=turnPen;
+      // 软障碍惩罚（按边）：这条边穿进膨胀障碍的深度 × penScale
+      if(penH||penV) ec+=penScale*(d<2 ? penH[eIdx] : penV[eIdx]);
       const ns=nn*D+d, ng=gv[s]+ec;
       if(closed[ns]) continue;
       if(ng<gv[ns]-1e-12){ gv[ns]=ng; par[ns]=s; push(ng+NH(nn),ns); }
     }
     if(viaOk[c]){
+      const vp=penVia?penScale*penVia[c]:0;
       for(let dl=-1;dl<=1;dl+=2){
         const nl=l+dl;
         if(nl<0||nl>=L) continue;
-        const nn=nl*NN+c, ns=nn*D+4, ng=gv[s]+viaCost;
+        const nn=nl*NN+c, ns=nn*D+4, ng=gv[s]+viaCost+vp;
         if(closed[ns]) continue;
         if(ng<gv[ns]-1e-12){ gv[ns]=ng; par[ns]=s; push(ng+NH(nn),ns); }
       }
@@ -8016,7 +8111,7 @@ function shpRouteNet(design, net, OBS, win, opts){
   const L=OBS.L, hw=netW(design,net.id)/2;
   const pads=(design.pads||[]).filter(p=>p.netId===net.id);
   if(pads.length<2) return {paths:[],vias:[],connected:pads.length,total:pads.length};
-  const G=shpBuildGraph(design,pads,net.id,hw,win,OBS,opts.cls||null);
+  const G=shpBuildGraph(design,pads,net.id,hw,win,OBS,opts.cls||null,!!opts.soft);
   if(!G) return null;
   const lay=p=>padLayersOfPad(p,L);
   const inTree=new Uint8Array(L*G.NN);

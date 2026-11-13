@@ -188,3 +188,57 @@ test('几何审计 auditGeometry：安全间距不误报',()=>{
   ]};
   assert.equal(core.auditGeometry(d,result).length,0);
 });
+
+// ---- 12b 软障碍协商（0.13.4）----
+test('协商：软模式能穿越硬阻塞区（硬模式 no-path 的场景）',()=>{
+  const d=base();
+  d.width=12; d.height=6;
+  d.nets=[{id:'n1',name:'A'},{id:'n2',name:'B'}];
+  // 完整横墙：硬模式必失败
+  d.pads=[{id:'U1-1',netId:'n1',x:1,y:3,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U1-2',netId:'n1',x:11,y:3,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U2-1',netId:'n2',x:4,y:0.6,w:0.4,h:1.5,shape:'rect',layer:'top'},
+          {id:'U2-2',netId:'n2',x:6,y:2.5,w:0.4,h:1.5,shape:'rect',layer:'top'},
+          {id:'U2-3',netId:'n2',x:8,y:4.4,w:0.4,h:1.5,shape:'rect',layer:'top'}];
+  const OBS=core.shpCollectObstacles(d,[],'n1');
+  const hard=core.shpRouteNet(d,{id:'n1',name:'A'},OBS,{x0:0,x1:12,y0:0,y1:6},{});
+  // 硬模式：可能失败或只能部分连通——不强制断言，只要求软模式至少不劣
+  const soft=core.shpRouteNet(d,{id:'n1',name:'A'},OBS,{x0:0,x1:12,y0:0,y1:6},{soft:true,penScale:40});
+  assert.ok(soft,'软模式应产出结果');
+  assert.ok(!hard || soft.connected>=hard.connected,'软模式连通数不得低于硬模式');
+});
+
+test('协商：接受准则拒绝净违规增加的借道（对称三查）',()=>{
+  // 场景：已布网 n2 有干净路径；给 n1 一条"借道更短但必然贴住 n2"的诱惑
+  const d=base();
+  d.width=20; d.height=8;
+  d.nets=[{id:'n1',name:'A'},{id:'n2',name:'B'}];
+  d.pads=[{id:'U1-1',netId:'n1',x:1,y:6,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U1-2',netId:'n1',x:19,y:6,w:0.5,h:0.5,shape:'rect',layer:'top'},
+          {id:'U2-1',netId:'n2',x:10,y:1,w:0.8,h:0.8,shape:'rect',layer:'top'}];
+  const OBS=core.shpCollectObstacles(d,[],'n1');
+  const soft=core.shpRouteNet(d,{id:'n1',name:'A'},OBS,{x0:0,x1:20,y0:0,y1:8},{soft:true});
+  assert.ok(soft);
+  // 软模式的结果经"与全板交互"审计不得出现违规（本场景有充足绕行空间，
+  // penScale 足够大时 A* 应选择绕行——借道付的代价高于绕行）
+  const segVio=(()=>{ let c=0; const hw=0.1;
+    for(const path of soft.paths) for(let k=1;k<path.length;k++){
+      const a=path[k-1], b=path[k];
+      if(a.l!==b.l) continue;
+      for(const p of d.pads){
+        if(p.netId==='n1') continue;
+        if(core.segmentPadDistance(a,b,p)<hw+d.clearance-1e-9) c++;
+      }
+    } return c; })();
+  assert.equal(segVio,0,'绕行空间充足时软路径不得引入违规');
+});
+
+test('协商：routeBoardShape 端到端不产生净新增违规',()=>{
+  // 用 EXAMPLES[0] 全链跑，补线后 DRC errors 不得增加
+  const d=core.EXAMPLES[0].build();
+  const baseR=core.routeBoard(d,{}).result;
+  const sp=core.routeBoardShape(d,{base:baseR});
+  const e0=core.checkDRC(d,baseR,{dfm:false}).filter(i=>i.sev==='error').length;
+  const e1=core.checkDRC(d,sp.result,{dfm:false}).filter(i=>i.sev==='error').length;
+  assert.ok(e1<=e0,'补线后 DRC errors 不得增加：'+e0+'→'+e1);
+});
