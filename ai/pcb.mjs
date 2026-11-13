@@ -817,13 +817,15 @@ switch (cmd) {
     const iterWavesRaw = argFlag(rest, '--iter-waves', '');
     const iterWaves = iterWavesRaw === '' ? undefined : parseInt(iterWavesRaw);
     const nbRipup = !argFlag(rest, '--no-nb-ripup', '');
+    // #15b 相邻层盲埋孔（opt-in）：开启后布线器换层自动记相邻层 span
+    const blindVias = !!argFlag(rest, '--blind-vias', '');
     let result, via;
     if (iterWorkers > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
       const shard = parseInt(argFlag(rest, '--shard', '0'));
       const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard,
         engineUrl, neighbourhoodRipup: nbRipup });
-      result = par.result; via = { mode: 'iter-parallel', workers: par.workers,
+      result = par.result; via = { mode: 'iter-parallel', blind: blindVias || undefined, workers: par.workers,
         iterations: par.iterations, waves: iterWaves ?? 2, shard: shard || 0 };
       if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
       out({ ok: true, status: result.status, stats: result.stats, overuse: result.overuse.length,
@@ -833,9 +835,9 @@ switch (cmd) {
     if (parallel > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
       const par = await core.routeBoardParallel(d, { viaCost, maxIter, parallel, engineUrl, neighbourhoodRipup: nbRipup });
-      result = par.result; via = { mode: 'parallel', from: par.from, workers: parallel };
+      result = par.result; via = { mode: 'parallel', blind: blindVias || undefined, from: par.from, workers: parallel };
     } else {
-      result = core.routeBoard(d, { viaCost, maxIter, neighbourhoodRipup: nbRipup }).result;
+      result = core.routeBoard(d, { viaCost, maxIter, neighbourhoodRipup: nbRipup, blindVias }).result;
       via = { mode: 'serial' };
     }
     if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));

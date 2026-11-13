@@ -1,5 +1,72 @@
 # 更新日志
 
+## 0.13.18（2026-11-14）—— B：#15b 相邻层盲埋孔生成（opt-in）
+
+### 交付
+- **viaInf 跨度化（B1）**：过孔走线影响区从按列（NC）改按状态（TS）——
+  盲埋孔只在其 span 层标记异网走线阻挡（span 外层走线可自由穿过过孔
+  投影区，物理上无铜相交）。viaInfV（过孔落点 DRC 盘）保持按列保守口径。
+- **addVia span 化（B2）**：签名加 (fromL,toL)，cells/usage 只标 span 层；
+  viaSet 记 `{x,y,layers:[from,to]}`（0.13.1 的 DRC/Gerber/Excellon/IPC
+  消费链直接复用）。同格重入取 span 并集（加宽）；值对象替换式更新——
+  snapshot/restore 共享值对象，原地改会污染快照。
+- **viaLegal 层感知（B3）**：通孔走列位图快路径；盲埋孔查 viaPadOwnerL
+  （新增 TS 层感知焊盘位图）——span 外层的异网焊盘不阻挡。
+- **生成开关（B4）**：`opts.blindVias`（CLI `--blind-vias`，route/autopcb）
+  或 `design.hdi.blindVias`；commitPath 换层时记相邻层 span。缺省关——
+  过孔仍记全层 span、输出无 layers 字段，**位级不变**（search-baseline
+  16/16 原样通过）。
+
+### 深检中修掉的四个 bug
+- **viaLegal 漏查 span 外层焊盘（最重要）**：astar 过孔邻居最初把换层
+  过渡的相邻 span 传给 viaLegal——通孔物理 span 是全层，只查相邻两层
+  漏掉其余层的异网焊盘 → BGA-64 4 层实测 3 颗过孔压焊盘（IO1 过孔压
+  gnd 网 U1-32，点距 0）+ 连通 98→97。修复：通孔分支回退全层检查
+  （`viaLegal(net,cc)`，位级不变），盲孔分支才传相邻 span。修复后 4 层
+  通孔与 0.13.17 HEAD 逐字一致（98/98、59 孔、DRC {3,2}）。
+- **反序 span 毒化加宽**：commitPath 传入未排序 (pl,sl)，[2,1] 条目让
+  min/max 加宽算出非法 [1,1]（单层"过孔"）。修复：addVia 入口防御排序。
+- **Excellon span 缺口**：0.13.1 注释声称"盲埋孔跨度以注释节写明"但代码
+  实际没写——同直径盲孔/通孔混在同一刀路，板厂无法分程序。修复：同直径
+  不同 span 分刀，非通孔刀具在刀表区 `;Tnn span a-b (盲埋孔)` 注释
+  （体区纯坐标，deep-validate 解析器兼容；全通孔板字节级不变）。
+- **rebuildViaInf 括号失衡**（替换事故，syntax check 拦截）。
+
+### 全链深检（合成 4 层 HDI 板：顶层球阵→底层目标）
+- 盲孔 15 颗 vs 通孔 18 颗，**DRC 0 vs 2**（span 免阻挡红利：异层投影
+  区不再误伤）
+- **Gerber 分层闪光逐孔核对**：[0,1]/[1,2]/[2,3]/通孔 各层 flash 与 span
+  严格一致（4 层 × 全部过孔自动断言）
+- **Excellon 分刀**：T01 span 0-1 / T02 span 0-2 / T03 通孔 / T04 span
+  1-2 / T05 span 2-3
+- DRC/normalizeResult/verify 回读全过
+
+### BGA-64 四层对比（round6/out，maxIter 20；通孔列为 viaLegal 修复后）
+| 模式 | 连通 | DRC | 过孔 | DRC 构成 |
+|---|---|---|---|---|
+| 2 层通孔 | 98/98 | 5 | 59 | 间距冲突 3 + 走线间距 2 |
+| 4 层通孔 | 98/98 | 5 | 59 | 同上（与 HEAD 位级一致） |
+| 4 层盲孔 | 98/98 | **25** | 50 | 间距冲突 14 + 走线间距 9 + 过孔-走线 2 |
+
+span 分布：30×[0,1]、6×[0,2]、4×[1,2]、2×[1,3]、1×[2,3]、7 通孔。
+**如实结论**：BGA-64 上盲孔连通持平但 DRC 25>5——span 自由度让网"更细
+地"穿透球阵，协商残局反而增多。盲孔的正战场是**为 HDI 设计的板**
+（合成板 DRC 0 vs 2、过孔 -3）；对既有 2/4 层通孔布局是 opt-in 工具
+而非自动收益。扇出优先路由仍是 BGA 收口的正解。
+
+### 边界（如实）
+- 形状补线路由器（routeBoardShape）不产 span 过孔——B 只覆盖栅格会话。
+- [0,2]/[1,3] 型跨两层 span 来自同格重入加宽——机械钻孔（drill>0.1）
+  可制造；激光微孔（≤0.1）的相邻层限制由既有 DFM 行如实报告。
+- viaInfV（过孔落点）保持按列保守：盲孔-通孔同 XY 堆叠不可落（保守拒绝，
+  无 DRC 风险；堆叠微孔独立大项）。
+
+### 验证
+228 node:test + 全量套件 0 失败（含新增 tests/hdi-route.test.mjs 9 项：
+span 合法性/缺省位级不变/Gerber 闪光/Excellon 分刀/快照语义/回读）；
+search-baseline 16/16 原样通过（位级守门未被打破——B 是 opt-in，且
+viaLegal 漏查 bug 修复后通孔路径与 HEAD 逐字一致）；index.html 已重建。
+
 ## 0.13.17（2026-11-13）—— A2：盘内孔保护 + DFM VIPPO 行（A2a/b/c 如实撤销）
 
 ### 交付

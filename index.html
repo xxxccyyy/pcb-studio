@@ -655,6 +655,7 @@ function buildModel(design){
   const padCells=new Map();             // pad.id -> [stateIdx...]
   const padsByNet=new Map();            // 网络序号 -> [pad...]
   const viaPadOwner=new Int16Array(NC);
+  const viaPadOwnerL=new Int16Array(TS);   // 层感知版（0.13.18 #15b B3）：盲埋孔只查 span 内层的异网焊盘
   const fixedOwner=new Int16Array(TS);
   const halfClr=design.clearance+maxTrackW(design)/2;
 
@@ -708,6 +709,10 @@ function buildModel(design){
       if(pointPadDistance((x+0.5)*grid,(y+0.5)*grid,p)>=vr-1e-9) continue;
       const c=y*GW+x,previous=viaPadOwner[c];
       viaPadOwner[c]=previous===0||previous===owner?owner:-1;
+      for(const l of ls){
+        const sl=l*NC+c, prevL=viaPadOwnerL[sl];
+        viaPadOwnerL[sl]=prevL===0||prevL===owner?owner:-1;
+      }
     }
   }
   // 真铜属主恢复（第十轮 n59 教训）：影响区重叠不得封死焊盘本体——
@@ -791,7 +796,7 @@ function buildModel(design){
       }
     }
   }
-  return {grid,GW,GH,L,NC,TS,blocked,scopedBlocked,netCls,padOwner,padCells,padsByNet,netIdx,viaPadOwner,fixedOwner,viaHoleBlocked,design};
+  return {grid,GW,GH,L,NC,TS,blocked,scopedBlocked,netCls,padOwner,padCells,padsByNet,netIdx,viaPadOwner,viaPadOwnerL,fixedOwner,viaHoleBlocked,design};
 }
 
 // class keepout 查询（roadmap #10）：cls=null 的网受所有作用域禁布约束；
@@ -830,6 +835,10 @@ function createSession(design, opts){
   const diagOn = opts.diag!==false;   // 45° 斜向布线（默认开启）
   let layerDirOn = opts.layerDir!==false;  // 分层首选方向：偶数层横走、奇数层竖走（默认开启；优化器奇偶轮切换）
   const offDir = opts.offDir!=null?opts.offDir:0.35;  // 违背首选方向的每格代价
+  // #15b 相邻层盲埋孔（opt-in）：opts.blindVias 优先，其次 design.hdi.blindVias。
+  // 缺省关——过孔仍记全层 span（输出无 layers 字段，位级不变）
+  const blindVias=opts.blindVias!=null?opts.blindVias===true:!!(design.hdi&&design.hdi.blindVias);
+  const allLayers=Array.from({length:L},(_,q)=>q);   // 通孔 span（避免逐孔分配）
   let presFac = 2;               // 协商阶段占用代价系数（每轮翻倍）
 
   const usage=new Int16Array(TS);        // 每单元当前被几个网络占用
@@ -839,9 +848,9 @@ function createSession(design, opts){
   // 过孔影响区双口径（0.13.16）：viaInf=走线口径（挡异网走线），viaInfV=过孔口径（挡异网过孔落点）。
   // 旧实现单半径取 max(两者)——对走线在 (via-trace, via-via) 带内过度保守
   //（BGA-64 的 0.38-0.53mm 带正是内圈球的逃逸通道，封死它 = 138 个 DRC 的主因）。
-  const viaInf=new Int16Array(NC);        // 走线口径（挡异网走线）：0 无 / -2 多网络 / k>0 网络 k-1
+  const viaInf=new Int16Array(TS);        // 走线口径（挡异网走线）：0 无 / -2 多网络 / k>0 网络 k-1；TS 化（0.13.18 #15b）——盲埋孔只挡 span 内层
   const viaInfV=new Int16Array(NC);       // 过孔口径（挡异网过孔落点）：同上
-  const tmpOwner=new Int16Array(NC), tmpMulti=new Uint8Array(NC);
+  const tmpOwner=new Int16Array(TS), tmpMulti=new Uint8Array(TS);   // 走线口径缓冲（TS 化同步 viaInf）
   const tmpOwnerV=new Int16Array(NC), tmpMultiV=new Uint8Array(NC);
   // 邻近罚逐格缓存（gen 戳）：TS ≤4M 状态才启用（内存 8B/状态；大板回退直算）
   const nearPenCache=TS<=4_000_000?new Float32Array(TS):null;
@@ -871,12 +880,22 @@ function createSession(design, opts){
   // 过孔位置合法性：板边、其它网络焊盘间距（几何硬约束）。
   // keepout 位图会话级懒构建（每过孔尝试一次 distToRect×keepouts → 一次数组读）
   let keepoutViaBlocked=null;
-  function viaLegal(net, c){
+  function viaLegal(net, c, fromL, toL){
     const cx=cxOf(c), cy=cyOf(c);
     if(cx-design.viaOuter/2<-1e-9 || cx+design.viaOuter/2>design.width+1e-9 ||
        cy-design.viaOuter/2<-1e-9 || cy+design.viaOuter/2>design.height+1e-9) return false;
-    const owner=model.viaPadOwner[c];
-    if(owner!==0&&owner!==net.i+1) return false;
+    // 焊盘阻挡按 span 查（0.13.18 #15b B3）：通孔走列位图快路径（位级不变）；
+    // 盲埋孔只查 span 内层——span 外层的异网焊盘无铜相交，不阻挡
+    const sa=fromL!=null?fromL:0, sb=toL!=null?toL:L-1;
+    if(sa===0&&sb===L-1){
+      const owner=model.viaPadOwner[c];
+      if(owner!==0&&owner!==net.i+1) return false;
+    } else {
+      for(let l=sa;l<=sb;l++){
+        const o=model.viaPadOwnerL[l*NC+c];
+        if(o!==0&&o!==net.i+1) return false;
+      }
+    }
     // 过孔口径影响区（0.13.16 拆分）：异网过孔的 via-via DRC 盘内不得落新孔
     // ——旧实现靠单半径影响区在 passable 里顺带挡住；拆分后走线口径放开
     // (via-trace, via-via) 带，此检查必须补上（n150 实测：单半径 0.425 时
@@ -1018,7 +1037,7 @@ function createSession(design, opts){
     // No vias is common on small boards. Clear once when the last via disappears,
     // including after rip-up or snapshot restoration; skip repeated full-grid work.
     if(!nets.some(net=>net.viaSet.size)){
-      if(!viaInfEmpty){ viaInf.fill(0); viaInfV.fill(0); }
+      if(!viaInfEmpty){ viaInf.fill(0); viaInfV.fill(0); }   // viaInf TS fill
       viaInfEmpty=true;
       return;
     }
@@ -1042,15 +1061,28 @@ function createSession(design, opts){
     const radiusV=design.viaOuter+design.clearance;
     for(const net of nets){
       const o=net.i+1;
-      for(const [c] of net.viaSet){
-        markViaInfluence(model,c,radiusT,o,tmpOwner,tmpMulti);
+      for(const [c,via] of net.viaSet){
+        // span 感知（0.13.18 #15b）：盲埋孔只在其跨度层标记走线影响区
+        const layers=via.layers||allLayers;
+        const gx=c%GW, gy=(c-gx)/GW;
+        const rT=radiusT/grid, riT=Math.ceil(rT);
+        const tx0=Math.max(0,gx-riT), tx1=Math.min(GW-1,gx+riT);
+        const ty0=Math.max(0,gy-riT), ty1=Math.min(GH-1,gy+riT);
+        for(const l of layers){
+          const off=l*NC;
+          for(let y=ty0;y<=ty1;y++) for(let x=tx0;x<=tx1;x++){
+            if(Math.hypot(x-gx,y-gy)>=rT) continue;
+            const s=off+y*GW+x;
+            if(tmpOwner[s]===0) tmpOwner[s]=o;
+            else if(tmpOwner[s]!==o) tmpMulti[s]=1;
+          }
+        }
+        // 过孔口径（列索引保守——DRC via-via 盘在 barrel 的最宽点）
         markViaInfluence(model,c,radiusV,o,tmpOwnerV,tmpMultiV);
       }
     }
-    for(let t=0;t<NC;t++){
-      viaInf[t]=tmpMulti[t]? -2 : tmpOwner[t];
-      viaInfV[t]=tmpMultiV[t]? -2 : tmpOwnerV[t];
-    }
+    for(let t=0;t<TS;t++) viaInf[t]=tmpMulti[t]? -2 : tmpOwner[t];
+    for(let t=0;t<NC;t++) viaInfV[t]=tmpMultiV[t]? -2 : tmpOwnerV[t];
   }
 
   // ---- 单元通行判断 ----
@@ -1066,7 +1098,7 @@ function createSession(design, opts){
     if(fixed!==0&&fixed!==net.i+1) return false;
     const po=padOwner[s];
     if(po!==0 && po!==net.i+1) return false;
-    const vi=viaInf[s%NC];   // 走线口径（0.13.16 拆分后仅挡异网走线）
+    const vi=viaInf[s];   // TS 索引（0.13.18 span 化：盲埋孔只挡 span 内层走线）
     if(vi!==0 && vi!==net.i+1) return false;
     return true;
   }
@@ -1188,9 +1220,17 @@ function createSession(design, opts){
           }
         }
         if(kind===1){
-          // 过孔几何合法性 + 间距环占用检查
+          // 过孔几何合法性 + 间距环占用检查（span=相邻层，0.13.18 #15b B3）
           const cc=ns%NC;
-          if(!viaLegal(net, cc)) continue;
+          if(blindVias){
+            // 盲埋孔：过孔物理 span=换层过渡的相邻两层——只查 span 内层焊盘
+            const nsL=l+((ns-cur)/NC);
+            if(!viaLegal(net, cc, Math.min(l,nsL), Math.max(l,nsL))) continue;
+          } else {
+            // 通孔：物理 span=全层——必须查全部层的异网焊盘（传相邻层会漏查
+            // span 外层焊盘，BGA-64 4 层实测 +3 过孔压焊盘）
+            if(!viaLegal(net, cc)) continue;
+          }
           const gx=cc%GW, gy=(cc-gx)/GW;
           let bad=false, rpen=0;
           for(const [dx,dy] of ringOffs){
@@ -1285,11 +1325,32 @@ function createSession(design, opts){
   }
 
   // ---- 路径提交 / 拆除 ----
-  function addVia(net, c, tree){
-    if(net.viaSet.has(c)) return;
-    net.viaSet.set(c,{x:cxOf(c),y:cyOf(c)});
+  function addVia(net, c, tree, fromL, toL){
+    let from=fromL!=null?fromL:0, to=toL!=null?toL:L-1;
+    if(from>to){ const t=from; from=to; to=t; }   // 防御排序——反序 span 会毒化加宽的 min/max（[1,1] 实测）
+    const full=(from===0&&to===L-1);
+    const existing=net.viaSet.get(c);
+    if(existing){
+      // 同格重入：扩展 span（跨轮或同网路径的多段换层共享一颗过孔）。
+      // 替换而非原地改——snapshot/restore 共享值对象，原地改会污染快照。
+      const [ef,et]=existing.layers||[0,L-1];
+      const nf=Math.min(ef,from), nt=Math.max(et,to);
+      const nfull=(nf===0&&nt===L-1);
+      if(nf!==ef||nt!==et)
+        net.viaSet.set(c, nfull?{x:existing.x,y:existing.y}
+                              :{x:existing.x,y:existing.y,layers:[nf,nt]});
+      for(let l=nf;l<=nt;l++){
+        const s=l*NC+c;
+        if(!net.cells.has(s)){ net.cells.add(s); usage[s]++; cellOwner[s]=net.i+1; }
+        tree.add(s);
+      }
+      return;
+    }
+    // layers 字段仅在非全层 span 时落盘（缺省通孔输出与 0.13.17 位级一致）
+    net.viaSet.set(c, full?{x:cxOf(c),y:cyOf(c)}
+                          :{x:cxOf(c),y:cyOf(c),layers:[from,to]});
     viaCore[c]=net.i+1;
-    for(let l=0;l<L;l++){
+    for(let l=from;l<=to;l++){
       const s=l*NC+c;
       if(!net.cells.has(s)){ net.cells.add(s); usage[s]++; cellOwner[s]=net.i+1; }
       tree.add(s);
@@ -1300,7 +1361,12 @@ function createSession(design, opts){
     for(const s of path){
       if(prev>=0){
         const pc=prev%NC, cc=s%NC;
-        if(pc===cc && prev!==s) addVia(net, cc, tree);   // 换层 → 过孔
+        if(pc===cc && prev!==s){
+          if(blindVias){
+            const pl=(prev/NC)|0;
+            addVia(net, cc, tree, pl, (s/NC)|0);   // 换层 → 相邻层盲埋孔（#15b）
+          } else addVia(net, cc, tree);   // 通孔（缺省，输出位级不变）
+        }
         else if(((prev/NC)|0)===((s/NC)|0)){
           // 斜向移动：占用两个正交格作为间距排除区（拆线时随 net.cells 一并释放）
           const g0=prev%NC, l0=(prev/NC)|0;
@@ -1453,13 +1519,14 @@ function createSession(design, opts){
     const set=new Set();
     for(let s=0;s<TS;s++) if(usage[s]>1) set.add(s);
     // 过孔间距环与其它网络走线的冲突（协商阶段“先线后孔”遗留）
-    for(const net of nets)for(const [c] of net.viaSet){
+    for(const net of nets)for(const [c,via] of net.viaSet){
+      const span=via.layers||allLayers;
       const gx=c%GW, gy=(c-gx)/GW;
       for(const [dx,dy] of ringOffs){
         const x=gx+dx, y=gy+dy;
         if(x<0||y<0||x>=GW||y>=GH) continue;
         const c2=y*GW+x;
-        for(let l=0;l<L;l++){
+        for(const l of span){
           const s=l*NC+c2;
           if(usage[s]-(net.cells.has(s)?1:0)>0) set.add(s);
         }
@@ -8098,8 +8165,9 @@ function buildGerber(design, result, pour, teardrops){
   // 钻孔（Excellon）
   // #15：去重必须含层跨度——同一 XY 同直径的通孔与埋孔是两次不同的机械/激光
   // 钻孔（埋孔只钻内层），按坐标+直径去重会把埋孔"吞掉"。同一 span 内的
-  // 共位孔仍合并（共享焊盘/过孔孔）。盲埋孔的层跨度以注释节写明，
-  // 交板厂按 l1-l2 分程序（标准 Excellon 无 span 字段，这是行业通行做法）。
+  // 共位孔仍合并（共享焊盘/过孔孔）。#15b：同直径不同 span 分为不同刀具
+  //（物理上是两次钻孔），非通孔刀具在刀表区以 ;Tnn span a-b 注释行标明
+  //（体区保持纯坐标——板厂按注释分钻带程序；缺省全通孔时输出字节不变）。
   const tools=new Map(),drilled=new Set();
   for(const p of drillPts){
     if(p.d<=0) continue; // Explicit holeR:0 is solid copper, not a zero-diameter tool.
@@ -8107,16 +8175,21 @@ function buildGerber(design, result, pour, teardrops){
     const k=p.d.toFixed(3),location=JSON.stringify([p.x.toFixed(3),p.y.toFixed(3),k,sp[0],sp[1]]);
     if(drilled.has(location)) continue;
     drilled.add(location);
-    if(!tools.has(k)) tools.set(k,[]);
-    tools.get(k).push({...p,span:sp});
+    const tk=k+'#'+sp[0]+'-'+sp[1];
+    if(!tools.has(tk)) tools.set(tk,{d:k,span:sp,hits:[]});
+    tools.get(tk).hits.push({...p,span:sp});
   }
-  const toolList=[...tools.keys()].sort((a,b)=>parseFloat(a)-parseFloat(b));
+  const toolList=[...tools.values()].sort((a,b)=>parseFloat(a.d)-parseFloat(b.d)||a.span[0]-b.span[0]||a.span[1]-b.span[1]);
   let drill=';PCB 自动布线工具 钻孔文件\nM48\nMETRIC,TZ\n';
-  toolList.forEach((t,i)=>{ drill+='T'+String(i+1).padStart(2,'0')+'C'+t+'\n'; });
+  toolList.forEach((t,i)=>{
+    drill+='T'+String(i+1).padStart(2,'0')+'C'+t.d+'\n';
+    if(!(t.span[0]===0&&t.span[1]===Lc-1))
+      drill+=';T'+String(i+1).padStart(2,'0')+' span '+t.span[0]+'-'+t.span[1]+' (盲埋孔)\n';
+  });
   drill+='%\nG90\nG05\n';
   toolList.forEach((t,i)=>{
     drill+='T'+String(i+1).padStart(2,'0')+'\n';
-    for(const p of tools.get(t)) drill+='X'+p.x.toFixed(3)+'Y'+p.y.toFixed(3)+'\n';
+    for(const p of t.hits) drill+='X'+p.x.toFixed(3)+'Y'+p.y.toFixed(3)+'\n';
   });
   drill+='T00\nM30\n';
   return {top, bottom:copperLayer(layerCount-1), outline, drill,
