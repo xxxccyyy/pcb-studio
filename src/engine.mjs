@@ -186,9 +186,41 @@ function assertGridBudget(design){
   if(!Number.isSafeInteger(states)||states>4_000_000) throw new Error('Routing grid exceeds 4000000 states; increase grid spacing or reduce board size');
 }
 
+/* 过孔层跨度归一化（阶段三 #15 HDI）：
+   记录形如 {x,y}（通孔，贯穿全部层——0.13.0 之前的全部数据）或
+   {x,y,layers:[from,to],drill?,outer?}（盲/埋孔，from<to）。
+   无 span 时等价于 [0, L-1]；这是向后兼容的唯一口径，所有消费方都走本函数。 */
+function viaSpan(v, layers){
+  const L=Math.max(1,layers|0);
+  if(v && Array.isArray(v.layers) && v.layers.length===2){
+    let a=v.layers[0]|0, b=v.layers[1]|0;
+    if(a>b){ const t=a; a=b; b=t; }
+    return [Math.max(0,Math.min(L-1,a)), Math.max(0,Math.min(L-1,b))];
+  }
+  return [0, L-1];
+}
+// 过孔是否贯穿（=与全部层相交）——IPC/DSN/EasyEDA 只支持通孔的判据
+function viaThrough(v, layers){ const [a,b]=viaSpan(v,layers); return a===0 && b===(Math.max(1,layers|0)-1); }
+// 过孔与某层是否有铜相交
+function viaOnLayer(v, l, layers){ const [a,b]=viaSpan(v,layers); return l>=a && l<=b; }
+// 焊盘是否与某层跨度相交（焊盘层归属 × span）
+function shpLayerInSpan(p, span, L){
+  if(p.layer==='both') return true;
+  const l=p.layer==='top'?0:L-1;
+  return l>=span[0] && l<=span[1];
+}
+// 两过孔的层跨度是否相交（孔边距/间距判据：不相交的 blind vs buried 可同 XY）
+function viaSpanOverlap(a, b, layers){
+  const [a0,a1]=viaSpan(a,layers), [b0,b1]=viaSpan(b,layers);
+  return a0<=b1 && b0<=a1;
+}
 function manualRouteEntries(design){
   return (design.manual||[]).map(m=>({netId:m.netId,name:'手动',manual:true,connected:1,total:1,
-    paths:[m.pts.map(p=>({...p}))],cells:[],vias:m.pts.filter((p,i)=>i>0&&p.l!==m.pts[i-1].l).map(p=>({x:p.x,y:p.y}))}));
+    paths:[m.pts.map(p=>({...p}))],cells:[],
+    // 换层点：span = 相邻两层（起止层即相邻层的两个端点）
+    vias:m.pts.filter((p,i)=>i>0&&p.l!==m.pts[i-1].l)
+      .map(p=>{ const i=m.pts.indexOf(p); const prev=m.pts[i-1];
+        return {x:p.x,y:p.y,layers:[Math.min(prev.l,p.l),Math.max(prev.l,p.l)]}; })}));
 }
 function normalizeResult(input,design){
   if(!input||typeof input!=='object'||!Array.isArray(input.nets)) throw new Error('Result must contain a nets array');
@@ -198,6 +230,19 @@ function normalizeResult(input,design){
       if(!Array.isArray(path)||path.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)||!Number.isInteger(p.l)||p.l<0||p.l>=design.layers)) throw new Error('Invalid result path');
     }
     if(n.vias.some(v=>!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))) throw new Error('Invalid result via');
+    // 盲埋孔跨度（#15）：可选字段，但一旦给出必须合法（from≤to、在层范围内、
+    // 逐孔钻/盘尺寸正有限）——畸形输入必须干净报错，不能静默降级
+    for(const v of n.vias){
+      if(v.layers!==undefined){
+        if(!Array.isArray(v.layers)||v.layers.length!==2) throw new Error('Invalid via span');
+        const [a,b]=v.layers;
+        if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b>=design.layers||a>b)
+          throw new Error('Invalid via span: '+JSON.stringify(v.layers));
+      }
+      for(const k of ['drill','outer'])
+        if(v[k]!==undefined&&(!Number.isFinite(v[k])||v[k]<=0)) throw new Error('Invalid via '+k);
+      if(v.drill!==undefined&&v.outer!==undefined&&v.drill>v.outer) throw new Error('Via drill must not exceed outer');
+    }
   }
   if(input.overuse!=null&&(!Array.isArray(input.overuse)||input.overuse.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)||!Number.isInteger(p.l)||p.l<0||p.l>=design.layers))) throw new Error('Invalid result conflicts');
   return {...input,overuse:input.overuse||[]};
@@ -3522,6 +3567,14 @@ function routeBoardShape(design, opts={}){
     onProgress({text:'形状补线 '+n.name,frac:0.1+0.85*(k/target.length)});
     const pads=(design.pads||[]).filter(p=>p.netId===n.id);
     if(pads.length<2){ notes.push({net:n.name,skip:'pads<2'}); return; }
+    // 多端大网（GND/电源平面类）不适合单网串行形状重布：Prim 逐盘接入在已
+    // 布满铜的板上必然中途失败，耗时与焊盘数相关却收益为零（BGA-64 实测：
+    // GND 37 盘尝试 16s、0 接受）。这类网的正确解法是铺铜或协商，如实跳过。
+    const maxPads=opts.shapeMaxPads!=null?opts.shapeMaxPads:12;
+    if(pads.length>maxPads){
+      notes.push({net:n.name,skip:'pads>'+maxPads+'（大网用铜皮/协商）'});
+      return;
+    }
     let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
     for(const p of pads){
       const hw=p.w/2, hh=(p.shape==='circle'?p.w:p.h)/2;
@@ -4781,6 +4834,10 @@ const JLC = {
   trackSuggest: { '1': 0.15, '2': 0.20 },       // 建议设计值（1oz/2oz）
   via: { single: { drill: 0.30, outer: 0.50 }, double: { drill: 0.15, outer: 0.25 } },   // 极限
   viaSuggest: { drill: 0.30, outer: 0.60 },     // 建议设计值
+  // 激光微孔（HDI，阶段三 #15）：嘉立创 HDI 工艺口径的安全值——机械钻孔极限
+  // 0.15 不适用于激光孔，但激光孔受**深径比**约束（孔径 : 介质厚 ≤ 1:1，
+  // RTF2 p148-155），且只能跨相邻层（盲孔）或相邻内层组（埋孔）。
+  microvia: { drill: 0.10, outer: 0.25, ringMin: 0.075, aspectMax: 1.0, adjacentOnly: true },
   viaRingMin: 0.10,        // 过孔 外径−内径 极限（推荐 0.15）
   viaEdgeMin: 0.20,        // 孔边到孔边 极限（建议 0.30）
   padToTrackMin: 0.10,     // 焊盘边到线边 极限（BGA 0.09）
@@ -4925,11 +4982,15 @@ function rmstTasks(points){
 // Match the per-pad drill fallback used by manufacturing exports.
 function manufacturingHoles(design,result){
   const holes=[],byDrill=new Map();
+  const L=Math.max(1,design.layers|0);
   const add=h=>{
     // Merge only equivalent drills on a known shared net. Keep every pad for
     // annular-ring checks; unlike coordinates alone, this cannot hide shorts or
     // conflicting concentric drill diameters.
-    const key=h.net!=null?JSON.stringify([h.x,h.y,h.r,h.net]):null;
+    // #15：合并键必须含层跨度——同一 XY 的埋孔与通孔是**两块不同的物理钻**
+    //（埋孔只钻内层，通孔贯穿），合并会丢失其一并伪造孔边距豁免。
+    const span=h.span||[0,L-1];
+    const key=h.net!=null?JSON.stringify([h.x,h.y,h.r,h.net,span[0],span[1]]):null;
     const prev=key!=null?byDrill.get(key):null;
     if(prev){
       if(h.pad){prev.pads.push(h.pad);prev.pad=prev.pad||h.pad;}
@@ -4937,17 +4998,24 @@ function manufacturingHoles(design,result){
       return;
     }
     h.pads=h.pad?[h.pad]:[];
+    h.span=span;
+    h.through=span[0]===0&&span[1]===L-1;
     holes.push(h);
     if(key!=null)byDrill.set(key,h);
   };
   for(const p of design.pads||[]){
     const r=p.holeR!=null?p.holeR:design.viaDrill/2;
-    if(p.layer==='both'&&r>0) add({x:p.x,y:p.y,r,net:p.netId,pad:p,label:'焊盘 '+p.id});
+    // 焊盘孔贯穿（PTH）；span 全层
+    if(p.layer==='both'&&r>0) add({x:p.x,y:p.y,r,net:p.netId,pad:p,label:'焊盘 '+p.id,span:[0,L-1]});
   }
-  for(const n of result?.nets||[]) for(const v of n.vias||[])
-    add({x:v.x,y:v.y,r:design.viaDrill/2,net:n.netId,hasVia:true,label:'过孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+')'});
+  for(const n of result?.nets||[]) for(const v of n.vias||[]){
+    const span=viaSpan(v,L);
+    add({x:v.x,y:v.y,r:(v.drill!=null?v.drill/2:design.viaDrill/2),net:n.netId,hasVia:true,
+      span,outer:v.outer,
+      label:(span[0]===0&&span[1]===L-1?'过孔':'盲埋孔')+' ('+v.x.toFixed(2)+','+v.y.toFixed(2)+')'});
+  }
   for(const v of design.stitching||[])
-    add({x:v.x,y:v.y,r:design.viaDrill/2,net:v.netId,hasVia:true,label:'缝合孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+')'});
+    add({x:v.x,y:v.y,r:design.viaDrill/2,net:v.netId,hasVia:true,span:[0,L-1],label:'缝合孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+')'});
   return holes;
 }
 function padBoardEdgeGap(design,p){
@@ -5026,34 +5094,60 @@ function checkDRC(design, result, opts){
         add('warn','禁布区冲突','焊盘 '+p.id+' 位于禁布区内');
     }
   }
-  // 过孔间距 / 过孔与焊盘、走线的间距（不同网络）；缝合孔视作其网络过孔
+  // 过孔间距 / 过孔与焊盘、走线的间距（不同网络）；缝合孔视作其网络过孔。
+  // 阶段三 #15：盲埋孔带层跨度——只与**跨度相交**的对象比较（不相交则物理上
+  // 不在同一层，间距无意义；DRC 放宽必须由 span 判定，而不是全局豁免）。
   const holes=manufacturingHoles(design,result);
-  const vias=holes.filter(h=>h.hasVia).map(h=>({x:h.x,y:h.y,net:h.net}));
+  const L_=Math.max(1,design.layers|0);
+  const vias=holes.filter(h=>h.hasVia).map(h=>({
+    x:h.x,y:h.y,net:h.net,
+    outer:h.outer!=null?h.outer:design.viaOuter,
+    drill:2*h.r,
+    span:h.span||[0,L_-1]
+  }));
+  const spanHit=(a,b)=>a[0]<=b[1]&&b[0]<=a[1];
+  // 微孔（HDI，阶段三 #15）：激光孔受深径比与"只能跨相邻层"两条硬约束。
+  // 判据：钻孔 ≤ microvia.drill 即按激光孔口径查（机械钻孔极限不适用），
+  // 但必须满足 ringMin 且 span 跨度 ≤ 1（相邻层）。跨多层的"小孔"是伪 HDI。
+  for(const v of vias){
+    if(v.drill > JLC.microvia.drill+1e-9) continue;      // 机械孔，走既有 DFM
+    const ring=v.outer-v.drill;
+    if(ring < JLC.microvia.ringMin-1e-9)
+      add('error','HDI 激光孔环宽','激光孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+') 环宽 '+ring.toFixed(3)+'mm < '+JLC.microvia.ringMin+'mm');
+    if(JLC.microvia.adjacentOnly && (v.span[1]-v.span[0])>1)
+      add('error','HDI 激光孔跨度','激光孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+') 跨 '+(v.span[1]-v.span[0])+' 层；激光孔只能跨相邻层（深径比 1:1）');
+    if(v.drill < JLC.microvia.drill-1e-9)
+      add('warn','HDI 激光孔孔径','激光孔钻孔 '+v.drill.toFixed(3)+'mm < 工艺口径 '+JLC.microvia.drill+'mm，需与板厂确认');
+  }
   for(let i=0;i<vias.length;i++)for(let j=i+1;j<vias.length;j++){
     const a=vias[i], b=vias[j];
     if(a.net===b.net) continue;
-    if(Math.hypot(a.x-b.x,a.y-b.y) < design.viaOuter+design.clearance)
+    if(!spanHit(a.span,b.span)) continue;                 // 层跨度不相交：不比较
+    if(Math.hypot(a.x-b.x,a.y-b.y) < (a.outer+b.outer)/2+design.clearance)
       add('error','过孔间距','(' + a.x.toFixed(2) + ',' + a.y.toFixed(2) + ') 与 (' + b.x.toFixed(2) + ',' + b.y.toFixed(2) + ') 过孔间距不足');
   }
   for(const v of vias){
-    if(Math.min(v.x,design.width-v.x,v.y,design.height-v.y)<design.viaOuter/2-1e-9)
+    if(Math.min(v.x,design.width-v.x,v.y,design.height-v.y)<v.outer/2-1e-9)
       add('warn','过孔出板','过孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+') 超出板框');
-    const _vR=design.viaOuter/2+design.clearance+_maxPadR;   // 过孔-焊盘违规对的最大轴距界
+    const _vR=v.outer/2+design.clearance+_maxPadR;   // 过孔-焊盘违规对的最大轴距界
     for(const p of pads){
       if(p.netId!=null && p.netId===v.net) continue;
+      // 焊盘不在该过孔的跨度内 ⇒ 不同层，无间距约束
+      if(!shpLayerInSpan(p, v.span, L_)) continue;
       if(Math.abs(v.x-p.x)>_vR||Math.abs(v.y-p.y)>_vR) continue;
       const d=pointPadDistance(v.x,v.y,p);
-      if(d < design.viaOuter/2+design.clearance-1e-9)   // -1e-9：恰在边界(=clearance)不算违规，H1 教训
-        add('error','过孔-焊盘间距','过孔 (' + v.x.toFixed(2) + ',' + v.y.toFixed(2) + ') 距焊盘 ' + p.id + ' 过近');
+      if(d < v.outer/2+design.clearance-1e-9)   // -1e-9：恰在边界(=clearance)不算违规，H1 教训
+        add('error','过孔-焊盘间距','过孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+') 距焊盘 ' + p.id + ' 过近');
     }
     for(const n of result.nets){
       if(n.netId===v.net) continue;
       let hit=false;
-      const _vsR=design.viaOuter/2+design.clearance+netW(design,n.netId)/2+1e-9;   // 违规时 via 中心距段 bbox ≤ 此界
+      const _vsR=v.outer/2+design.clearance+netW(design,n.netId)/2+1e-9;   // 违规时 via 中心距段 bbox ≤ 此界
       for(const path of n.paths){
         for(let k=1;k<path.length;k++){
           const a=path[k-1], b=path[k];
           if(a.l!==b.l) continue;
+          if(!(a.l>=v.span[0]&&a.l<=v.span[1])) continue;   // 走线层不在跨度内
           if(v.x<Math.min(a.x,b.x)-_vsR||v.x>Math.max(a.x,b.x)+_vsR||
              v.y<Math.min(a.y,b.y)-_vsR||v.y>Math.max(a.y,b.y)+_vsR) continue;
           const d=segDist(v.x,v.y,a.x,a.y,b.x,b.y);
@@ -5082,6 +5176,9 @@ function checkDRC(design, result, opts){
     for(let i=0;i<holes.length;i++)for(let j=i+1;j<holes.length;j++){
       const a=holes[i], b=holes[j];
       if(!a.pad&&!b.pad) continue; // via-only DFM check below retains its warning severity.
+      // #15：层跨度不相交的孔物理上不共存于同一层——同 XY 的埋孔与通孔合法
+      //（埋孔只钻内层）。span 相同的仍必须满足孔边距（同网也不豁免）。
+      if(a.span&&b.span&&!(a.span[0]<=b.span[1]&&b.span[0]<=a.span[1])) continue;
       const d=Math.hypot(a.x-b.x,a.y-b.y)-a.r-b.r;
       if(d<JLC.viaEdgeMin-1e-9)
         add('error','孔边距',a.label+' 与 '+b.label+' 孔边距 '+Math.max(0,d).toFixed(2)+'mm < '+JLC.viaEdgeMin+'mm');
@@ -5162,10 +5259,14 @@ function checkDRC(design, result, opts){
     else if(ring<0.15-1e-9) add('warn','DFM 过孔环宽','过孔外径−内径 '+ring.toFixed(2)+'mm，推荐 ≥0.15mm');
     if(design.viaOuter<JLC.via.double.outer-1e-9) add('warn','DFM 过孔','过孔外径 '+design.viaOuter+'mm 低于极限 0.25mm（双层）');
     // 孔边到孔边 ≥0.20mm（含同网络过孔；缝合孔同样计入）
+    // #15：层跨度不相交的孔不共存于一层——埋孔与通孔同 XY 合法，不报警；
+    // 孔径用各自实际钻径（支持微孔），而非全局 design.viaDrill。
     const edgeD=(x,y)=>Math.min(x, design.width-x, y, design.height-y);
     let viaEdgeWarned=0;
     for(let i=0;i<vias.length && viaEdgeWarned<5;i++)for(let j=i+1;j<vias.length;j++){
-      const gap=Math.hypot(vias[i].x-vias[j].x, vias[i].y-vias[j].y)-design.viaDrill;
+      if(!spanHit(vias[i].span, vias[j].span)) continue;
+      const gap=Math.hypot(vias[i].x-vias[j].x, vias[i].y-vias[j].y)
+        -(vias[i].drill/2+vias[j].drill/2);
       if(gap<JLC.viaEdgeMin-1e-9){
         add('warn','DFM 过孔间距','过孔孔边距 '+Math.max(0,gap).toFixed(2)+'mm < 0.20mm（建议 0.30mm），位置 ('+vias[i].x.toFixed(1)+','+vias[i].y.toFixed(1)+')');
         viaEdgeWarned++; break;
@@ -7082,10 +7183,12 @@ function buildGerber(design, result, pour, teardrops){
   const pours=Array.isArray(pour)?pour.filter(Boolean):(pour?[pour]:[]);
   const layerCount=Math.max(1,design.layers||2);
   const drillPts=[];
+  const Lc=Math.max(1,design.layers||2);
   for(const p of (design.pads||[]))
-    if(p.layer==='both') drillPts.push({x:p.x,y:p.y,d:(p.holeR!=null?p.holeR:design.viaDrill/2)*2});
-  if(result&&result.nets) for(const n of result.nets) for(const v of n.vias) drillPts.push({x:v.x,y:v.y,d:design.viaDrill});
-  for(const s of (design.stitching||[])) drillPts.push({x:s.x,y:s.y,d:design.viaDrill});
+    if(p.layer==='both') drillPts.push({x:p.x,y:p.y,d:(p.holeR!=null?p.holeR:design.viaDrill/2)*2,span:[0,Lc-1]});
+  if(result&&result.nets) for(const n of result.nets) for(const v of n.vias)
+    drillPts.push({x:v.x,y:v.y,d:(v.drill!=null?v.drill:design.viaDrill),span:viaSpan(v,Lc)});
+  for(const s of (design.stitching||[])) drillPts.push({x:s.x,y:s.y,d:design.viaDrill,span:[0,Lc-1]});
 
   function copperLayer(l){
     const desc=['C,'+design.trackW.toFixed(5),'C,'+design.viaOuter.toFixed(5)];
@@ -7141,10 +7244,11 @@ function buildGerber(design, result, pour, teardrops){
           s+='X'+fmt6(a.x)+'Y'+fmt6(a.y)+'D02*\nX'+fmt6(b.x)+'Y'+fmt6(b.y)+'D01*\n';
         }
       }
-      // 过孔（两层都闪现）+ 覆铜缝合孔
+      // 过孔只在**其层跨度内**的层闪现（#15：盲埋孔不得在外层留铜环）+ 覆铜缝合孔
       s+='D'+viaAp+'*\n';
       for(const n of result.nets)for(const v of n.vias)
-        s+='X'+fmt6(v.x)+'Y'+fmt6(v.y)+'D03*\n';
+        if(viaOnLayer(v,l,layerCount))
+          s+='X'+fmt6(v.x)+'Y'+fmt6(v.y)+'D03*\n';
       for(const sv of (design.stitching||[]))
         s+='X'+fmt6(sv.x)+'Y'+fmt6(sv.y)+'D03*\n';
     }
@@ -7208,16 +7312,19 @@ function buildGerber(design, result, pour, teardrops){
   const W=fmt6(design.width), H=fmt6(design.height), O=fmt6(0);
   outline+='X'+O+'Y'+O+'D02*\nX'+W+'Y'+O+'D01*\nX'+W+'Y'+H+'D01*\nX'+O+'Y'+H+'D01*\nX'+O+'Y'+O+'D01*\nM02*\n';
   // 钻孔（Excellon）
+  // #15：去重必须含层跨度——同一 XY 同直径的通孔与埋孔是两次不同的机械/激光
+  // 钻孔（埋孔只钻内层），按坐标+直径去重会把埋孔"吞掉"。同一 span 内的
+  // 共位孔仍合并（共享焊盘/过孔孔）。盲埋孔的层跨度以注释节写明，
+  // 交板厂按 l1-l2 分程序（标准 Excellon 无 span 字段，这是行业通行做法）。
   const tools=new Map(),drilled=new Set();
   for(const p of drillPts){
     if(p.d<=0) continue; // Explicit holeR:0 is solid copper, not a zero-diameter tool.
-    const k=p.d.toFixed(3),location=JSON.stringify([p.x.toFixed(3),p.y.toFixed(3),k]);
-    // Deduplicate the physical machine operation, including shared pad/via holes.
-    // Different drill diameters remain distinct and are rejected by the DRC above.
+    const sp=p.span||[0,Lc-1];
+    const k=p.d.toFixed(3),location=JSON.stringify([p.x.toFixed(3),p.y.toFixed(3),k,sp[0],sp[1]]);
     if(drilled.has(location)) continue;
     drilled.add(location);
     if(!tools.has(k)) tools.set(k,[]);
-    tools.get(k).push(p);
+    tools.get(k).push({...p,span:sp});
   }
   const toolList=[...tools.keys()].sort((a,b)=>parseFloat(a)-parseFloat(b));
   let drill=';PCB 自动布线工具 钻孔文件\nM48\nMETRIC,TZ\n';
@@ -7955,4 +8062,4 @@ const EXAMPLES=[
 
 
 
-export { designDefaults, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };
+export { designDefaults, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };

@@ -65,7 +65,7 @@ test('manual routes and vias become fixed obstacles while their owner can pass',
 });
 test('manual layer transitions are included in CLI/GUI via audits',()=>{
   const d=core.designDefaults();d.manual=[{netId:'a',pts:[{x:1,y:2,l:0},{x:1,y:2,l:1},{x:3,y:2,l:1}]}];
-  assert.deepEqual(core.manualRouteEntries(d)[0].vias,[{x:1,y:2}]);
+  assert.deepEqual(core.manualRouteEntries(d)[0].vias,[{x:1,y:2,layers:[0,1]}]);   // #15：换层点带跨度
   assert.throws(()=>core.normalizeResult({nets:[{paths:[[{x:NaN,y:2,l:0}]],vias:[]}]},d));
 });
 test('four-layer track statistics include inner layers before and after beautification',()=>{
