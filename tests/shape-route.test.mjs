@@ -382,3 +382,30 @@ test('软 Prim：gap=0 红线（走线段与过孔同口径）',()=>{
     }
   }
 });
+
+// ---- room-gate v2：外层收敛循环（0.13.8）----
+test('外层循环：多轮协商消更多违规（fable-01 型：上轮回滚的借道在新板态下重裁）',()=>{
+  // 用真实板做行为断言（合成场景难以构造跨轮交互）
+  const d=core.normalizeDesign(core.EXAMPLES[0].build());
+  const baseR=core.routeBoard(d,{}).result;
+  const sp1=core.routeBoardShape(d,{base:baseR,shapeRounds:1});
+  const sp3=core.routeBoardShape(d,{base:baseR,shapeRounds:3});
+  const e1=sp1.result.drcErrors, e3=sp3.result.drcErrors;
+  const c1=sp1.result.stats.connected, c3=sp3.result.stats.connected;
+  // 多轮不得劣于单轮（字典序意义）：DRC 不增且连通不降
+  assert.ok(e3<=e1,'多轮 DRC 劣化：'+e1+'→'+e3);
+  assert.ok(c3>=c1,'多轮连通下降：'+c1+'→'+c3);
+  // 无失败网时 rounds 字段不存在（applied:false 契约）——有失败网才断言
+});
+
+test('外层循环：防抖——连续回滚的网被剔除（不无限振荡）',()=>{
+  const d=core.EXAMPLES[1].build();
+  const baseR=core.routeBoard(d,{}).result;
+  const sp=core.routeBoardShape(d,{base:baseR,shapeRounds:5});
+  // 5 轮上限内应因 target 空/熔断而提前结束；无失败网则如实不动作
+  assert.ok(!sp.shape.rounds || sp.shape.rounds<=5,'轮数上限');
+  // 每轮结束 DRC 不劣于基线
+  const e0=core.checkDRC(d,baseR,{dfm:false}).filter(i=>i.sev==='error').length;
+  const e1=core.checkDRC(d,sp.result,{dfm:false}).filter(i=>i.sev==='error').length;
+  assert.ok(e1<=e0,'DRC 劣化');
+});

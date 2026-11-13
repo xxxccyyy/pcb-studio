@@ -3632,19 +3632,15 @@ function routeBoardShape(design, opts={}){
       if(m && padNetOf.has(m[1])) drcNets.add(padNetOf.get(m[1]));
     }
   }
-  const target=(design.nets||[]).filter(n=>{
-    if(opts.shapeNets && opts.shapeNets.length) return opts.shapeNets.indexOf(n.name)>=0||opts.shapeNets.indexOf(n.id)>=0;
-    const rn=(base.nets||[]).find(x=>x.netId===n.id);
-    if(!rn) return false;
-    return rn.connected<rn.total || drcNets.has(n.id);
-  });
-  if(!target.length) return {result:base, shape:{applied:false,reason:'no-failed-nets',checked:0}};
-  // 3) 逐网：窗口 = 本网焊盘 bbox + 余量；重布→审计→字典序接受，否则回滚
+  // 3) 外层收敛循环（room-gate 完整版契约，0.13.8）：协商落盘 → 修复轮 →
+  //    级联裁决改变板面 → **被借道的网在新板态下可能获得新的可达性/违规
+  //    归属**——BGA 实测借道违规 4~74 个单轮消不掉，需要"再协商"迭代。
+  //    每轮 target 基于当前板态重算；轮末全板裁决 [-drcErrors, connected]
+  //    无改进即停；连续两轮进级联又回滚的网剔除（防抖，防 A/B 互换振荡）。
   const merged={...base, nets:base.nets.map(n=>({...n, paths:(n.paths||[]).map(p=>p.slice()),
     vias:(n.vias||[]).slice(), cells:(n.cells||[]).slice()})), overuse:(base.overuse||[]).slice()};
   const winMargin=opts.shapeWindow!=null?opts.shapeWindow:Math.max(4,2*design.grid);
   const cls=netClsMap(design);
-  let applied=0;
   const notes=[];
   const cascade=[];   // 级联候选：借道已落盘、待修复轮后全板裁决
   // geo 口径（0.13.4 修正三，对称三查）：该网与全板的交互违规数
@@ -3689,6 +3685,40 @@ function routeBoardShape(design, opts={}){
     return vio;
   };
 
+  // 外层循环状态
+  const maxRounds=Math.max(1, opts.shapeRounds!=null?opts.shapeRounds:3);
+  const cascadeRollCount=new Map();   // netId → 连续级联回滚次数（防抖）
+  const exhausted=new Set();          // 防抖剔除集
+  let target=[];                      // 每轮重算
+  let attemptedTotal=0, roundsUsed=0, applied=0, repairTried=0, repairFixed=0,
+      cascadeKept=0, cascadeRolled=0;
+  let prevScore=null;
+  for(let round=0; round<maxRounds; round++){
+    // —— target 重算：基于当前板态 merged（协商/修复/级联改变可达性与违规归属）
+    if(opts.shapeNets && opts.shapeNets.length){
+      target=design.nets.filter(n=>opts.shapeNets.indexOf(n.name)>=0||opts.shapeNets.indexOf(n.id)>=0);
+    } else {
+      const drcNetsNow=new Set();
+      if(opts.shapeFixDrc!==false){
+        const issues=checkDRC(design,merged,{dfm:false}).filter(i=>i.sev==='error');
+        const padNetOf=new Map((design.pads||[]).map(p=>[p.id,p.netId]));
+        for(const it of issues){
+          const m=/焊盘 ([^ ]+)/.exec(it.msg||'');
+          if(m && padNetOf.has(m[1])) drcNetsNow.add(padNetOf.get(m[1]));
+        }
+      }
+      target=design.nets.filter(n=>{
+        if(exhausted.has(n.id)) return false;
+        const rn=merged.nets.find(x=>x.netId===n.id);
+        if(!rn) return false;
+        return rn.connected<rn.total || drcNetsNow.has(n.id);
+      });
+    }
+    if(!target.length) break;
+    roundsUsed++; attemptedTotal+=target.length;
+    const roundApplied=applied;
+    cascade.length=0;   // 每轮独立级联集（跨轮保留会让修复轮面对过期的落盘态）
+    // —— 协商（原逐网 forEach 体，改为 for 以便 break 语义保持）
   target.forEach((n,k)=>{
     onProgress({text:'形状补线 '+n.name,frac:0.1+0.85*(k/target.length)});
     const pads=(design.pads||[]).filter(p=>p.netId===n.id);
@@ -3856,7 +3886,6 @@ function routeBoardShape(design, opts={}){
   //     存在合成谬误（fable-01 实测：两个借道单独看各 +1 连通优于回滚，
   //     合在一起互相违规，全保留后 DRC +5）。候选数通常 ≤3，直接 2^n 子集
   //     枚举取全板字典序最优（连通优先，其次 -净违规）；全 0 子集 = 全回滚。
-  let cascadeKept=0, cascadeRolled=0;
   if(cascade.length){
     // 裁决口径用 checkDRC 权威计数（0.13.6）：netGeoVio 三查与 DRC 的
     // 完整违规家族仍有口径差（擦边借道的段-焊盘/过孔-焊盘组合——
@@ -3896,7 +3925,32 @@ function routeBoardShape(design, opts={}){
           reason:'级联子集裁决：保留子集不含此网（含互相违规的组合裁剪）'});
       }
     }
-  }
+    }
+    // —— 轮末：全板裁决 + 防抖 + 熔断
+    const roundDrc=checkDRC(design,merged,{dfm:false}).filter(i=>i.sev==='error').length;
+    const roundConn=merged.nets.reduce((a,n)=>a+(n.connected||0),0);
+    const roundScore=[-roundDrc, roundConn];
+    const roundCascadeRolled=cascade.filter(c=>notes.some(nn=>nn.net===c.netName&&nn.cascade&&nn.kept===false)).length;
+    const roundCascadeKept=cascade.length-roundCascadeRolled;
+    if(roundCascadeKept===0 && roundCascadeRolled>0){
+      // 本轮级联全军覆没：这些网记一次回滚
+      for(const c of cascade){
+        const cnt=(cascadeRollCount.get(c.candIdx)||0)+1;
+        cascadeRollCount.set(c.candIdx,cnt);
+        if(cnt>=2){ exhausted.add(design.nets.find(x=>merged.nets[c.candIdx]&&merged.nets[c.candIdx].netId===x.id)?.id); }
+      }
+    } else {
+      // 有保留 → 重置相关网的计数
+      for(const c of cascade) cascadeRollCount.set(c.candIdx,0);
+    }
+    // 熔断：全板 [-drc, conn] 无改进（与上轮比）
+    if(prevScore && roundScore[0]===prevScore[0] && roundScore[1]===prevScore[1]) {
+      log('形状补线：第'+(round+1)+'轮无改进，熔断');
+      break;
+    }
+    prevScore=roundScore;
+    void roundApplied;
+  }   // —— 外层 for(round) 结束
   // 4) 统计重算（beautify 已被栅格基线做过；形状补线是正交折线，无需再美化）
   const tc=merged.nets.reduce((a,n)=>a+(n.connected||0),0);
   const tt=merged.nets.reduce((a,n)=>a+(n.total||0),0);
@@ -3908,9 +3962,10 @@ function routeBoardShape(design, opts={}){
   merged.status=(tt===0||tc===tt)&&!merged.overuse.length?'complete':'partial';
   merged.timeMs=Date.now()-started;
   onProgress({text:'完成',frac:1});
-  log('形状补线：'+applied+'/'+target.length+' 网接受');
-  return {result:merged, shape:{applied:true,attempted:target.length,accepted:applied,
-    repaired:repairFixed, repairTried, cascadeKept, cascadeRolled, notes, window:winMargin}};
+  log('形状补线：'+applied+'/'+attemptedTotal+' 网接受（'+roundsUsed+' 轮）');
+  if(!roundsUsed) return {result:base, shape:{applied:false,reason:'no-failed-nets',checked:0}};
+  return {result:merged, shape:{applied:true,attempted:attemptedTotal,accepted:applied,
+    rounds:roundsUsed, repaired:repairFixed, repairTried, cascadeKept, cascadeRolled, notes, window:winMargin}};
 }
 function pathLenOf(paths){
   let s=0;
