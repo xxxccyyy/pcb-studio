@@ -635,17 +635,17 @@
     "stats": {
      "connected": 8,
      "total": 8,
-     "trackTop": 80,
-     "trackBot": 30,
+     "trackTop": 63.5,
+     "trackBot": 46.5,
      "vias": 4,
      "trackLen": 110,
      "trackLayers": [
-      80,
-      30
+      63.5,
+      46.5
      ],
      "trackInner": 0
     },
-    "geometry": "27527824013d90e9ff91ebe1d758dffc0dea4fd1ae5469eadcf8f9f7ca3a32a2"
+    "geometry": "ff720802f5b793b5351a48f8c755842d8c148a71af09726e7d5b5588e8e96026"
    },
    {
     "status": "complete",
@@ -749,19 +749,19 @@
     "stats": {
      "connected": 8,
      "total": 8,
-     "trackTop": 62.5,
-     "trackBot": 20,
+     "trackTop": 14,
+     "trackBot": 21.5,
      "vias": 12,
-     "trackLen": 117,
+     "trackLen": 110,
      "trackLayers": [
-      62.5,
-      13.5,
-      21,
-      20
+      14,
+      25.5,
+      49,
+      21.5
      ],
-     "trackInner": 34.5
+     "trackInner": 74.5
     },
-    "geometry": "4b0264b20d63d5ed62e25e87b3150321dbba7380a9c3e8489a27c9dad71f9563"
+    "geometry": "b072745a7cdab7d0fa010e9fb411e7c8bb05a2b7ee3a921dd5d6f2eb50fcd76d"
    },
    {
     "status": "complete",
@@ -811,19 +811,19 @@
     "stats": {
      "connected": 8,
      "total": 8,
-     "trackTop": 22.677669529663678,
-     "trackBot": 22.26345596729059,
-     "vias": 10,
-     "trackLen": 98.18376618407353,
+     "trackTop": 29.470562748477114,
+     "trackBot": 11.899494936611669,
+     "vias": 11,
+     "trackLen": 96.25483399593902,
      "trackLayers": [
-      22.677669529663678,
-      7.621320343559643,
-      45.62132034355964,
-      22.26345596729059
+      29.470562748477114,
+      13.985281374238573,
+      40.89949493661167,
+      11.899494936611669
      ],
-     "trackInner": 53.242640687119284
+     "trackInner": 54.88477631085024
     },
-    "geometry": "3d2a78d319c4b416fb1b4d4513091ae8000c9bcc0faf3ca58ca918fc5966b1ae"
+    "geometry": "d62d00dea389f5f1e8702866e228cddd1b72bbff491442bf3ccc562e905f3d3d"
    },
    {
     "status": "complete",

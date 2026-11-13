@@ -1620,10 +1620,17 @@ function createSession(design, opts){
         if(failStreak>=cap) break;
         const sCells=new Set(net.cells), sVia=new Map(net.viaSet), sPaths=net.paths,
               sConn=net.connected, sFail=net.failed, sLast=net.failedLast;
-        const vB=net.viaSet.size, lB=pathLen(net.paths);
+        // A2d（0.13.17）：盘内孔（落在自身焊盘铜上的过孔）不计入过孔消除
+        // 比较——它们是口袋球的唯一逃逸出口（车道预留），不是绕行脂肪；
+        // optimize 的"消孔优先"曾把它们当冗余拆掉，BGA 口袋球因此失去逃逸。
+        const nonPadVia=set=>{ let c=0;
+          for(const [cell] of set)
+            if(model.viaPadOwner[cell%NC]!==net.i+1 && model.padOwner[cell]!==net.i+1) c++;
+          return c; };
+        const vB=nonPadVia(sVia), lB=pathLen(net.paths);
         ripNet(net);
         routeNet(net,false);
-        const vA=net.viaSet.size, lA=pathLen(net.paths), fNow=totalFails();
+        const vA=nonPadVia(net.viaSet), lA=pathLen(net.paths), fNow=totalFails();
         const ov=scanOveruse().length;
         const accept = net.connected>=sConn && ov<=ovBase &&
           ( fNow<fBase || (fNow===fBase && ov<ovBase) ||
@@ -7854,6 +7861,19 @@ function fabChecklist(design, result, opts){
   }
   const voOk=design.viaOuter>=JLC.viaSuggest.outer-1e-9?'ok':(design.viaOuter>=JLC.via.double.outer-1e-9?'warn':'fail');
   R('过孔','过孔外径', design.viaOuter.toFixed(2)+' mm', '建议 0.60 / 极限 0.25', voOk);
+  // 盘中孔 VIPPO 检查（A2e，0.13.17）：过孔落在 SMD 焊盘铜内 ⇒ 需树脂塞孔
+  {
+    let vip=0; const vipPads=new Set();
+    for(const n of result?.nets||[]) for(const v of n.vias||[]){
+      for(const p of design.pads||[]){
+        if(p.netId!==n.netId || p.layer==='both') continue;
+        if(pointPadDistance(v.x,v.y,p)<=1e-9){ vip++; vipPads.add(p.id); break; }
+      }
+    }
+    if(vip>0) R('过孔','盘中孔（VIPPO）', vip+' 颗（焊盘 '+vipPads.size+' 个）',
+      '需树脂塞孔+电镀盖帽','人工确认',
+      '盘中孔未塞孔会回流吸锡造成虚焊；按板厂口径确认塞孔工艺（通常 Ø≥0.3mm 或指定树脂塞孔，另行计费）');
+  }
   const ring=design.viaOuter-design.viaDrill;
   R('过孔','外径−内径（环宽）', ring.toFixed(2)+' mm', '推荐 ≥0.15 / 极限 0.10',
     ring>=0.15-1e-9?'ok':(ring>=JLC.viaRingMin-1e-9?'warn':'fail'));
