@@ -4005,8 +4005,34 @@ function routeBoardShape(design, opts={}){
         const issues=checkDRC(design,merged,{dfm:false}).filter(i=>i.sev==='error');
         const padNetOf=new Map((design.pads||[]).map(p=>[p.id,p.netId]));
         for(const it of issues){
+          // ① 焊盘型违规：从消息里的焊盘 id 直接取网
           const m=/焊盘 ([^ ]+)/.exec(it.msg||'');
           if(m && padNetOf.has(m[1])) drcNetsNow.add(padNetOf.get(m[1]));
+          // ② 走线/坐标型违规（间距冲突/走线间距/过孔间距）：消息里带
+          //    "(x, y)" 或 "走线段 (x, y)"——用坐标反查该处附近的网。
+          //    0.13.14 补：p43-single-layer 与 n148 的违规全是这型，此前
+          //    target 抓不到 → rounds=0 静默跳过（批量回归抓出的缺口）。
+          const cm=/\(([\d.]+),\s*([\d.]+)\)/.exec(it.msg||'');
+          if(cm){
+            const x=parseFloat(cm[1]), y=parseFloat(cm[2]);
+            if(Number.isFinite(x)&&Number.isFinite(y)){
+              for(const n of merged.nets){
+                const hw=netW(design,n.netId)/2;
+                let hit=false;
+                for(const path of n.paths||[]){
+                  for(let k=1;k<path.length&&!hit;k++){
+                    const a=path[k-1], b=path[k];
+                    if(a.l!==b.l) continue;
+                    if(segDist(x,y,a.x,a.y,b.x,b.y)<=hw+design.clearance+1e-6){ hit=true; }
+                  }
+                  if(hit) break;
+                }
+                if(!hit) for(const v of n.vias||[])
+                  if(Math.hypot(v.x-x,v.y-y)<=design.viaOuter+design.clearance){ hit=true; break; }
+                if(hit) drcNetsNow.add(n.netId);
+              }
+            }
+          }
         }
       }
       target=design.nets.filter(n=>{
