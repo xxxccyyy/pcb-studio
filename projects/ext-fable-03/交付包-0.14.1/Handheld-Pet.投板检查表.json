@@ -1,0 +1,162 @@
+[
+ {
+  "group": "线宽/线距",
+  "item": "信号线宽（1oz 多层）",
+  "value": "0.30 mm",
+  "limit": "建议 ≥0.15 / 极限 0.09",
+  "status": "ok",
+  "note": "按 −20% 线宽公差校核载流与阻抗"
+ },
+ {
+  "group": "线宽/线距",
+  "item": "线距",
+  "value": "0.20 mm",
+  "limit": "建议 ≥0.15 / 极限 0.09",
+  "status": "ok",
+  "note": ""
+ },
+ {
+  "group": "过孔",
+  "item": "钻孔直径",
+  "value": "0.40 mm",
+  "limit": "建议 0.30 / 极限 0.15",
+  "status": "ok",
+  "note": ""
+ },
+ {
+  "group": "过孔",
+  "item": "插件孔环宽（最小）",
+  "value": "0.20 mm",
+  "limit": "建议 0.25 / 极限 0.18",
+  "status": "warn",
+  "note": ""
+ },
+ {
+  "group": "过孔",
+  "item": "过孔外径",
+  "value": "0.80 mm",
+  "limit": "建议 0.60 / 极限 0.25",
+  "status": "ok",
+  "note": ""
+ },
+ {
+  "group": "过孔",
+  "item": "盘中孔（VIPPO）",
+  "value": "7 颗（焊盘 7 个）",
+  "limit": "需树脂塞孔+电镀盖帽",
+  "status": "人工确认",
+  "note": "盘中孔未塞孔会回流吸锡造成虚焊；按板厂口径确认塞孔工艺（通常 Ø≥0.3mm 或指定树脂塞孔，另行计费）"
+ },
+ {
+  "group": "过孔",
+  "item": "外径−内径（环宽）",
+  "value": "0.40 mm",
+  "limit": "推荐 ≥0.15 / 极限 0.10",
+  "status": "ok",
+  "note": ""
+ },
+ {
+  "group": "过孔",
+  "item": "孔边到孔边（最小）",
+  "value": "0.60 mm",
+  "limit": "建议 0.30 / 极限 0.20",
+  "status": "ok",
+  "note": ""
+ },
+ {
+  "group": "板边",
+  "item": "走线/焊盘/过孔距板边（最近）",
+  "value": "0.00 mm",
+  "limit": "建议 0.3~0.5 / 极限 0.20",
+  "status": "fail",
+  "note": ""
+ },
+ {
+  "group": "载流",
+  "item": "内层铜厚常见 0.5oz",
+  "value": "1A 需 ≥1.6mm",
+  "limit": "大电流走外层或升 1oz 内层",
+  "status": "warn",
+  "note": ""
+ },
+ {
+  "group": "载流",
+  "item": "高频载流（趋肤效应）",
+  "value": "δ(1GHz)=0.002 mm",
+  "limit": "AC 电阻≈ρ/(周长×δ)",
+  "status": "info",
+  "note": "发热仍按 DC 载流；信号完整性主要看阻抗与端接（工具 skinDepth/acTraceR 可查）"
+ },
+ {
+  "group": "人工确认",
+  "item": "传输线判据：走线 > Tr·v/6（FR-4 1ns≈24mm）须端接/控阻（nets[].tr 标注后 advise 自动核对）",
+  "value": "—",
+  "limit": "—",
+  "status": "info",
+  "note": ""
+ },
+ {
+  "group": "人工确认",
+  "item": "板边装配净空 ≥2mm：连接器/把手/外壳干涉区；成排元件同向便于焊接",
+  "value": "—",
+  "limit": "—",
+  "status": "info",
+  "note": ""
+ },
+ {
+  "group": "人工确认",
+  "item": "PDN 验证（RTF2 附录2）：裸板平面电容→装电容阻抗曲线→最坏工况纹波；板内留低感测试点（禁热焊盘、≥2处、间距≥1in）",
+  "value": "—",
+  "limit": "—",
+  "status": "info",
+  "note": ""
+ },
+ {
+  "group": "人工确认",
+  "item": "阻焊桥：绿/彩油 ≥0.10，黑白油 ≥0.13，2oz ≥0.20 mm（极限）",
+  "value": "—",
+  "limit": "建议各 +0.05",
+  "status": "info",
+  "note": ""
+ },
+ {
+  "group": "人工确认",
+  "item": "字符：高 ≥1.0 / 粗 ≥0.1 / 离焊盘 ≥0.15 mm",
+  "value": "—",
+  "limit": "建议 1.2 / 0.15 / 0.2",
+  "status": "info",
+  "note": ""
+ },
+ {
+  "group": "人工确认",
+  "item": "拼板：V-CUT 距走线 ≥0.4 mm；工艺边 ≥3（SMT 5）mm；Mark 点距板边 ≥4~5 mm",
+  "value": "—",
+  "limit": "—",
+  "status": "info",
+  "note": ""
+ },
+ {
+  "group": "人工确认",
+  "item": "插件孔：0.64 方针画 1.0 mm 孔，0.5 引脚画 0.8 mm（公差 +0.13/−0.08）",
+  "value": "—",
+  "limit": "—",
+  "status": "info",
+  "note": ""
+ },
+ {
+  "group": "人工确认",
+  "item": "高压间距按 IEC 62368-1 / 60664-1 单独计算（板厂参数不含安规）",
+  "value": "—",
+  "limit": "—",
+  "status": "info",
+  "note": ""
+ },
+ {
+  "group": "人工确认",
+  "item": "阻抗：仅多层板支持，±10%，须用官方层压结构计算；铜厚/阻焊每 +1mil 约使阻抗 −2Ω（Bogatin B.43/44），估算器未含这两项修正",
+  "value": "需要",
+  "limit": "—",
+  "status": "info",
+  "note": ""
+ }
+]
