@@ -1,0 +1,159 @@
+{
+ "ok": true,
+ "project": "USB-Speakerphone",
+ "generatedBy": "pcb-autorouter@0.13.27",
+ "design": {
+  "nets": 17,
+  "pads": 132,
+  "components": 20,
+  "layers": 4,
+  "width": 45,
+  "height": 35,
+  "external": true
+ },
+ "result": {
+  "nets": 17,
+  "total": 95,
+  "connectedSum": 84,
+  "vias": 17
+ },
+ "gates": {
+  "verify": {
+   "ok": true,
+   "findings": []
+  },
+  "drc": {
+   "errors": 8,
+   "warnings": 30,
+   "fabFail": 0,
+   "detail": [
+    "网络 3V3：还有 1 个焊盘未连通",
+    "网络 GND：还有 2 个焊盘未连通",
+    "网络 USB_DP：还有 3 个焊盘未连通",
+    "网络 USB_DM：还有 1 个焊盘未连通",
+    "网络 I2S_WS：还有 1 个焊盘未连通",
+    "网络 I2S_DIN：还有 1 个焊盘未连通",
+    "网络 CC2：还有 2 个焊盘未连通",
+    "过孔 (27.50,17.50) 距网络 5V 的走线过近"
+   ]
+  },
+  "connectivity": {
+   "total": 95,
+   "connected": 84,
+   "ok": false
+  }
+ },
+ "override": {
+  "forced": true,
+  "reason": "--force"
+ },
+ "evidenceLevels": {
+  "roundtrip-verified": "写后回读对账通过（最强自证）",
+  "deterministic": "工具几何/文件生成（可机器复算）",
+  "datasheet-backed": "厂商参数表口径（BOM/检查表——人工复核 C 编号与封装）"
+ },
+ "artifacts": [
+  {
+   "file": "USB-Speakerphone.嘉立创EDA.json",
+   "kind": "easyeda-pcb",
+   "bytes": 14242,
+   "evidence": "roundtrip-verified"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-F_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 13147,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-In1_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 7943,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-In2_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 5840,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-B_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 45437,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-F_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 4212,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-B_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 277,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-F_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 519,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-B_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 109,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone-Edge_Cuts.gbr",
+   "kind": "gerber",
+   "bytes": 136,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\USB-Speakerphone.drl",
+   "kind": "gerber",
+   "bytes": 995,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "USB-Speakerphone.ipc356.txt",
+   "kind": "ipc-d-356a",
+   "bytes": 8620,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "USB-Speakerphone.svg",
+   "kind": "svg",
+   "bytes": 59104,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "USB-Speakerphone.BOM.csv",
+   "kind": "bom",
+   "bytes": 379,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "USB-Speakerphone.贴片坐标.csv",
+   "kind": "pos",
+   "bytes": 462,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "USB-Speakerphone.渲染.png",
+   "kind": "render-png",
+   "bytes": 5063,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "USB-Speakerphone.投板检查表.json",
+   "kind": "fab-checklist",
+   "bytes": 4709,
+   "evidence": "datasheet-backed"
+  }
+ ]
+}

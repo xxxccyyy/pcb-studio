@@ -1,0 +1,157 @@
+{
+ "ok": true,
+ "project": "Voice-Hub",
+ "generatedBy": "pcb-autorouter@0.13.27",
+ "design": {
+  "nets": 19,
+  "pads": 148,
+  "components": 22,
+  "layers": 4,
+  "width": 60,
+  "height": 35,
+  "external": true
+ },
+ "result": {
+  "nets": 19,
+  "total": 112,
+  "connectedSum": 101,
+  "vias": 37
+ },
+ "gates": {
+  "verify": {
+   "ok": true,
+   "findings": []
+  },
+  "drc": {
+   "errors": 6,
+   "warnings": 33,
+   "fabFail": 0,
+   "detail": [
+    "网络 3V3：还有 1 个焊盘未连通",
+    "网络 USB_DP：还有 2 个焊盘未连通",
+    "网络 USB_DM：还有 2 个焊盘未连通",
+    "网络 CC1：还有 2 个焊盘未连通",
+    "网络 SPK_N：还有 2 个焊盘未连通",
+    "走线距焊盘 J1-B4A9 过近"
+   ]
+  },
+  "connectivity": {
+   "total": 112,
+   "connected": 101,
+   "ok": false
+  }
+ },
+ "override": {
+  "forced": true,
+  "reason": "--force"
+ },
+ "evidenceLevels": {
+  "roundtrip-verified": "写后回读对账通过（最强自证）",
+  "deterministic": "工具几何/文件生成（可机器复算）",
+  "datasheet-backed": "厂商参数表口径（BOM/检查表——人工复核 C 编号与封装）"
+ },
+ "artifacts": [
+  {
+   "file": "Voice-Hub.嘉立创EDA.json",
+   "kind": "easyeda-pcb",
+   "bytes": 19047,
+   "evidence": "roundtrip-verified"
+  },
+  {
+   "file": "gerber\\Voice-Hub-F_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 18989,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub-In1_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 11074,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub-In2_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 8991,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub-B_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 73356,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub-F_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 4641,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub-B_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 277,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub-F_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 563,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub-B_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 109,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub-Edge_Cuts.gbr",
+   "kind": "gerber",
+   "bytes": 136,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\Voice-Hub.drl",
+   "kind": "gerber",
+   "bytes": 1527,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "Voice-Hub.ipc356.txt",
+   "kind": "ipc-d-356a",
+   "bytes": 11588,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "Voice-Hub.svg",
+   "kind": "svg",
+   "bytes": 93303,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "Voice-Hub.BOM.csv",
+   "kind": "bom",
+   "bytes": 427,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "Voice-Hub.贴片坐标.csv",
+   "kind": "pos",
+   "bytes": 510,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "Voice-Hub.渲染.png",
+   "kind": "render-png",
+   "bytes": 5962,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "Voice-Hub.投板检查表.json",
+   "kind": "fab-checklist",
+   "bytes": 4143,
+   "evidence": "datasheet-backed"
+  }
+ ]
+}

@@ -123,6 +123,18 @@
 
 ## 5. 已知边界（诚实声明）
 
+### 5.0 JS API 并行入口（CLI 之外的编程接口，0.13.x 审计补记 F-a）
+
+- `routeBoardParallel(design, opts)` → `{result, session:null, from}`：候选级并行
+  （viaCost 候选分给 K 个 worker，`from`=胜出候选名）。`opts.engineUrl` **可选**——
+  缺省或无 Worker 环境自动降级为串行候选链（返回形状不变）。
+- `routeBoardIterParallel(design, opts)` → 双态返回：`iterWorkers≥2` 且传了
+  `opts.engineUrl` → `{result, session:null, from, iterations, ...}`（协商内波次并行）；
+  否则回退 `{result, session, fallback:true, timeMs}`（串行口径）。**`engineUrl` 必传**：
+  worker 用它 import 引擎（浏览器内联构建里模块元属性不可用，缺省 throw）。
+  两入口都会原地改写 design（grid 提升 + 焊盘吸附，与 routeBoard 同款）；
+  调用方按返回对象的 `fallback` 字段判别走了哪条路。
+
 - **原理图**：工具不画原理图。连接关系以 design JSON 的 nets 表达（等价于网表）。
   交付物是 PCB；若用户要原理图，需在嘉立创EDA内按 nets 表手绘或由 AI 生成 EasyEDA 原理图 JSON（路线图）。
 - ~~铺铜/缝合孔~~：已串入 CLI（pour 命令）；泪滴已进 Gerber 铜层（制造化）。

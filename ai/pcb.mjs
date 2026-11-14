@@ -18,6 +18,7 @@
                                      量化根因对策。只补失败网、字典序接受（绝不退步），
                                      默认关闭；输出附 shape{attempted/accepted/notes}
                                      [--blind-vias] 相邻层盲埋孔生成（0.13.18，opt-in）
+                                     （旗标/选项名是 blindVias 不是 hdi；design 侧写 design.hdi.blindVias）
                                      [--fanout-first auto|inner|outer] 扇出优先（0.13.20）
                                      [--no-compact-pairs] 关差分对强制压实（0.13.27
                                      缺省开启：route 后把 partner 重构到设计间隙带）
@@ -1198,8 +1199,11 @@ switch (cmd) {
     const checklist = core.fabChecklist(d, r, { pour: (r.pours || r.pour || null) });
     emit(join(dir, proj + '.投板检查表.json'), 'fab-checklist', JSON.stringify(checklist, null, 1), 'datasheet-backed');
     // manifest：交付物清单 + 门禁结果 + 证据级（AI 手册 §4 的贯彻）
+    // 版本回退读 package.json——硬编码 '0.9.0' 曾让 0.13.27 的重交付 manifest 仍写 0.9.0（审计 F-b 成因）
+    const engineVersion = process.env.npm_package_version
+      || JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
     const manifest = {
-      ok: true, project: proj, generatedBy: 'pcb-autorouter@' + (process.env.npm_package_version || '0.9.0'),
+      ok: true, project: proj, generatedBy: 'pcb-autorouter@' + engineVersion,
       design: { nets: d.nets.length, pads: d.pads.length, components: new Set(d.pads.map(p => p.id.split('-')[0])).size,
         layers: d.layers, width: d.width, height: d.height, external: !!d.external },
       result: { nets: r.nets.length,

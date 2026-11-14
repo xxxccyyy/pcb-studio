@@ -1,6 +1,6 @@
 {
   "name": "pcb-autorouter",
-  "version": "0.13.27",
+  "version": "0.14.0",
   "description": "零依赖网页版 PCB 自动布线工具：A* 迷宫布线 + PathFinder 协商拥塞 + 多边形覆铜 + DRC",
   "type": "module",
   "scripts": {
