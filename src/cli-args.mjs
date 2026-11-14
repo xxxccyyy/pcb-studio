@@ -1,4 +1,4 @@
-const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch','--blind-vias']);
+const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch','--blind-vias','--no-compact-pairs']);
 const flagCommands={
   '-o':['place','route','export','device','schem','pour','tune','bom','pos','autopcb','render','import','deliver'],
   '--via-cost':['route','autopcb'],'--max-iter':['route','autopcb'],
@@ -11,6 +11,7 @@ const flagCommands={
   '--iter-waves':['route','autopcb'],'--shard':['route','autopcb'],
   '--shape-patch':['route','autopcb'],'--shape-window':['route','autopcb'],'--shape-nets':['route','autopcb'],
   '--blind-vias':['route','autopcb'],'--fanout-first':['route','autopcb'],
+  '--no-compact-pairs':['route','autopcb'],
   '--pair':['tune','diffz'],'--z':['diffz'],
   '--islands':['pour'],'--min-island-area':['pour'],'--fill':['pour'],'--grid-w':['pour'],'--grid-gap':['pour'],
   '--clearance':['pour'],'--edge-margin':['pour'],'--min-width':['pour'],

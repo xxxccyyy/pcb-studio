@@ -879,6 +879,7 @@ function createSession(design, opts){
     return true;
   }
   function enterOK(net, s, hard){
+    if(S.pairBand && !S.pairBand.has(s)) return false;   // 差分压实限带（0.13.27；null=关闭零开销）
     if(!passable(net,s)) return false;
     if(hard){
       const own=net.cells.has(s)?1:0;
@@ -1610,6 +1611,7 @@ function createSession(design, opts){
     for(const n of netOut){ tc+=n.connected; tt+=n.total; }
     return {
       ...(S.capacityStall?{capacityStall:true}:{}),
+      ...(S.compact?{compact:S.compact}:{}),
       status:(tt===0||tc===tt)&&!overuse.length ? 'complete':'partial',
       iterations:S.iter, timeMs:Date.now()-S.t0,
       nets:netOut, overuse,
@@ -1815,8 +1817,131 @@ function createSession(design, opts){
     return {improved:improvedAny, overuse:S.overuse.length, fails:totalFails()};
   }
 
+  /* ---- 差分对强制压实（0.13.27，0.4.0 留档后续项"route 后成对重构"）----
+     偏置式走廊（0.4.0）不保证收敛；本方法对每对 partner 真正重构：拆掉
+     partner，在"master 偏移环带 ∪ partner 焊盘 escape 区"的限带 A* 里重布，
+     验收=耦合占比提升 + DRC error 不增 + 连通满，否则快照回滚。
+     serpentineTune 的三层合法性在此天然获得——A* 产出即模型合法，验收再
+     加 DRC 门。环带数学复用 buildPairBonus（steps=round((Wc+S)/grid)，容差
+     ±1 格）。 */
+  function compactPairs(opts2){
+    opts2=opts2||{};
+    const target=opts2.pairCoupleTarget!=null?opts2.pairCoupleTarget:0.6;
+    if(!Number.isFinite(target)||target<0||target>1)
+      throw new Error('pairCoupleTarget must be between 0 and 1');
+    const groups=new Map();
+    for(const n of nets){
+      const p=netMeta[n.i]&&netMeta[n.i].pair;
+      if(!p) continue;
+      if(!groups.has(p)) groups.set(p,[]);
+      groups.get(p).push(n);
+    }
+    const pairGroups=[...groups.entries()].filter(([,ms])=>ms.length===2)
+      .sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0);
+    const report={pairs:[], compacted:0, skipped:0, drcBefore:0, drcAfter:0};
+    if(!pairGroups.length) return report;   // 无 pair：不落 compact 字段（输出位级不变）
+    const drcErrs=()=>{
+      const r=buildResult();
+      return checkDRC(design,{...r,nets:[...r.nets,...manualRouteEntries(design)]},{dfm:false})
+        .filter(i=>i.sev==='error').length;
+    };
+    report.drcBefore=drcErrs();
+    for(const [gname,[A,B]] of pairGroups){
+      if(A.connected!==A.total||B.connected!==B.total){
+        report.pairs.push({group:gname,action:'skip-unrouted'}); report.skipped++; continue;
+      }
+      const zt=A.diffZ>0?A.diffZ:90;
+      const zi=diffPairZFor(design, netW(design,A.id), zt);
+      if(!zi.ok||!zi.achievable||zi.sFor==null){
+        report.pairs.push({group:gname,action:'skip-unreachable-impedance'}); report.skipped++; continue;
+      }
+      const gStep=Math.max(design.grid, 0.25);
+      const bandCenter=(netW(design,A.id)+netW(design,B.id))/2+zi.sFor;
+      const stats=()=>{ let c=0,t=0;
+        for(const m of [A,B]){
+          const o=m===A?B:A;
+          const st=pairCoupleStats([m.paths],[o.paths],bandCenter,gStep);
+          c+=st.coupledLen; t+=st.totalLen;
+        }
+        return {ratio:t>0?c/t:0};
+      };
+      const before=stats();
+      const buildBand=(M,P)=>{
+        const steps=Math.round(bandCenter/grid);
+        const band=new Set();
+        // 列→master 实际有铜的层——环带只标这些层（耦合 DRC 只数同层段，
+        // 异层平行不占比，跨层环带只会浪费带宽）
+        const colLayers=new Map();
+        for(const s of M.cells){
+          const l=(s/NC)|0, c=s%NC;
+          if(!colLayers.has(c)) colLayers.set(c,[]);
+          if(!colLayers.get(c).includes(l)) colLayers.get(c).push(l);
+        }
+        for(const [c,ls] of colLayers){
+          const gx=c%GW, gy=(c-gx)/GW;
+          for(const l2 of ls){
+            for(let dy=-steps-1;dy<=steps+1;dy++)for(let dx=-steps-1;dx<=steps+1;dx++){
+              const d2=Math.hypot(dx,dy);
+              if(Math.abs(d2-steps)>1) continue;
+              const x=gx+dx, y=gy+dy;
+              if(x<0||y<0||x>=GW||y>=GH) continue;
+              band.add(l2*NC+y*GW+x);
+            }
+          }
+        }
+        // partner 焊盘格 + escape 区（R 步内全层放开——partner 从自己焊盘
+        // 出发 joining 带；跨层逃逸也放开）
+        const R=opts2.pairEscapeSteps!=null?opts2.pairEscapeSteps:12;
+        for(const p of padsByNet.get(P.i)||[]){
+          for(const st of (model.padCells.get(p.id)||[])){
+            band.add(st);
+            const l=(st/NC)|0, c=st%NC, gx=c%GW, gy=(c-gx)/GW;
+            for(let l2=0;l2<L;l2++) for(let dy=-R;dy<=R;dy++) for(let dx=-R;dx<=R;dx++){
+              if(Math.hypot(dx,dy)>R) continue;
+              const x=gx+dx, y=gy+dy;
+              if(x<0||y<0||x>=GW||y>=GH) continue;
+              band.add(l2*NC+y*GW+x);
+            }
+          }
+        }
+        return band;
+      };
+      const attempt=(M,P)=>{
+        const saved=snapshot();
+        ripNet(P);
+        S.pairBand=buildBand(M,P);
+        let okConn=false;
+        try{ routeNet(P,false); okConn=P.connected===P.total; }
+        finally{ S.pairBand=null; }
+        if(!okConn){ restore(saved); return null; }
+        S.overuse=scanOveruse();
+        const after=stats();
+        const drcA=drcErrs();
+        if(after.ratio>before.ratio+1e-9 && drcA<=report.drcBefore) return {after,drcA};
+        restore(saved);
+        return null;
+      };
+      const ratioOf=m=>pairCoupleStats([m.paths],[(m===A?B:A).paths],bandCenter,gStep).ratio;
+      const first=ratioOf(A)>=ratioOf(B)?[A,B]:[B,A];
+      let res=attempt(first[0],first[1]);
+      if(!res) res=attempt(first[1],first[0]);
+      if(res){
+        report.compacted++;
+        report.pairs.push({group:gname, ratioBefore:+before.ratio.toFixed(3),
+          ratioAfter:+res.after.ratio.toFixed(3), action:'compacted'});
+      }else{
+        report.skipped++;
+        report.pairs.push({group:gname, ratioBefore:+before.ratio.toFixed(3), action:'skipped'});
+      }
+    }
+    S.overuse=scanOveruse();
+    report.drcAfter=drcErrs();
+    S.compact=report;   // 有 pair 板才附 compact 报告
+    return report;
+  }
+
   startQueue(false);
-  return {step, buildResult, rerouteSingle, optimize, snapshot, restore, session:S,
+  return {step, buildResult, rerouteSingle, optimize, compactPairs, snapshot, restore, session:S,
     beginIteration, exportShared, adoptShared, routeList, commitRoutes,
     startQueue, detShuffle, shardQueue};
 }
@@ -2068,6 +2193,34 @@ function diffPairZFor(design, w, target){
     ?'4 层：微带参考内层平面，h=0.2（与 PDN 平面电容同假设）'
     :'2 层：参考对层铜皮，h≈1.5 core——经典口径下 90Ω 难达成（如实报告）' };
   return r;
+}
+/* 差分对耦合占比（0.13.27 从 checkDRC 逐行等价提取——DRC 与压实器单一事实源）：
+   本网各同层段按 gStep 采样中点，到伙伴同层段最近距离落在设计间隙带
+   |d−bandCenter|≤gStep 内的长度占比。bandCenter=(wM+wO)/2+sFor（中心距口径）。 */
+function pairCoupleStats(mPathLists, oPathLists, bandCenter, gStep){
+  const oSegs=[];
+  for(const paths of oPathLists) for(const path of paths) for(let k=1;k<path.length;k++){
+    const a=path[k-1], b=path[k];
+    if(a.l===b.l) oSegs.push({ax:a.x,ay:a.y,bx:b.x,by:b.y,l:a.l});
+  }
+  let coupledLen=0, totalLen=0;
+  for(const paths of mPathLists) for(const path of paths) for(let k=1;k<path.length;k++){
+    const a=path[k-1], b=path[k];
+    if(a.l!==b.l) continue;
+    const segLen=Math.hypot(b.x-a.x, b.y-a.y);
+    const steps=Math.max(1, Math.ceil(segLen/gStep));
+    for(let q=0;q<steps;q++){
+      const t=(q+0.5)/steps, sx=a.x+(b.x-a.x)*t, sy=a.y+(b.y-a.y)*t;
+      let dMin=1e9;
+      for(const os of oSegs){
+        if(os.l!==a.l) continue;
+        dMin=Math.min(dMin, segDist(sx,sy,os.ax,os.ay,os.bx,os.by));
+      }
+      totalLen+=segLen/steps;
+      if(Math.abs(dMin-bandCenter)<=gStep) coupledLen+=segLen/steps;
+    }
+  }
+  return { ratio: totalLen>0?coupledLen/totalLen:0, coupledLen, totalLen };
 }
 
 /* ============================================================
@@ -3739,6 +3892,11 @@ function routeBoard(design,opts={}){
     }
     const saved=best.session.snapshot();
     best.session.optimize(2,st=>onProgress({text:'逐网优化 · '+st.pass+' · '+st.done+'/'+st.total,frac:0.95}));
+    // 差分对强制压实（0.13.27，0.4.0 留档后续项）：无 pair 板 no-op 位级不变
+    if(opts.compactPairs!==false){
+      const cp=best.session.compactPairs({pairCoupleTarget: opts.pairCoupleTarget});
+      if(opts.onStage) opts.onStage({stage:'compact-pairs', compacted:cp.compacted, skipped:cp.skipped});
+    }
     const next=prepare(best.session.buildResult());
     if(!scoreBetter(routeScore(best.result),routeScore(next))) best.result=next;
     else best.session.restore(saved);
@@ -6021,36 +6179,17 @@ function checkDRC(design, result, opts){
         if(!zi.ok||!zi.achievable){
           add('warn','差分耦合','差分对 '+g+' 目标 '+zt+'Ω 在当前叠层不可达（'+zi.stackup.note+'，最低可达 '+zi.zdiffMinAtSmin+'Ω @ S=0.1mm）——建议 4 层或放宽目标/接受不控阻抗');
         }else{
-          const centerGap=(members.reduce((s2,m)=>s2+netW(design,m.id),0)/members.length)/1+zi.sFor;
           const gStep=Math.max(design.grid, 0.25);
           let coupledLen=0, totalLen=0;
           for(const m of members){
             const other=members.find(x=>x.id!==m.id);
             const oNets=[...((result&&result.nets)||[]), ...manualRouteEntries(design)].filter(x=>x.netId===other.id);
-            const oSegs=[];
-            for(const on of oNets) for(const path of (on.paths||[])) for(let k=1;k<path.length;k++){
-              const a=path[k-1], b=path[k];
-              if(a.l===b.l) oSegs.push({ax:a.x,ay:a.y,bx:b.x,by:b.y,l:a.l});
-            }
             const mNets=[...((result&&result.nets)||[]), ...manualRouteEntries(design)].filter(x=>x.netId===m.id);
             const wM=netW(design, m.id), wO=netW(design, other.id);
             const bandCenter=(wM+wO)/2+zi.sFor;
-            for(const on of mNets) for(const path of (on.paths||[])) for(let k=1;k<path.length;k++){
-              const a=path[k-1], b=path[k];
-              if(a.l!==b.l) continue;
-              const segLen=Math.hypot(b.x-a.x, b.y-a.y);
-              const steps=Math.max(1, Math.ceil(segLen/gStep));
-              for(let q=0;q<steps;q++){
-                const t=(q+0.5)/steps, sx=a.x+(b.x-a.x)*t, sy=a.y+(b.y-a.y)*t;
-                let dMin=1e9;
-                for(const os of oSegs){
-                  if(os.l!==a.l) continue;
-                  dMin=Math.min(dMin, segDist(sx,sy,os.ax,os.ay,os.bx,os.by));
-                }
-                totalLen+=segLen/steps;
-                if(Math.abs(dMin-bandCenter)<=gStep) coupledLen+=segLen/steps;
-              }
-            }
+            // 耦合采样（0.13.27 提取为 pairCoupleStats——DRC 与压实器单一事实源）
+            const st=pairCoupleStats(mNets.map(n=>n.paths||[]), oNets.map(n=>n.paths||[]), bandCenter, gStep);
+            coupledLen+=st.coupledLen; totalLen+=st.totalLen;
           }
           const ratio=totalLen>0?coupledLen/totalLen:0;
           if(totalLen>0&&ratio<0.6)
@@ -8861,4 +9000,4 @@ const EXAMPLES=[
 
 
 
-export { designDefaults, detectBallArrays, fanoutMoveToFront, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };
+export { designDefaults, detectBallArrays, fanoutMoveToFront, pairCoupleStats, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };

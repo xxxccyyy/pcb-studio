@@ -1,5 +1,48 @@
 # 更新日志
 
+## 0.13.27（2026-11-14）—— 差分对强制压实：route 后成对重构（0.4.0 留档后续项）
+
+### 交付
+- **compactPairs 会话方法**：对每对 partner 真正重构——拆掉耦合较差者，在
+  "master 偏移环带 ∪ partner 焊盘 escape 区（R=12 格全层）"的限带 A* 里重布
+  （环带数学复用 buildPairBonus：steps=round(Wc+S)/grid，容差 ±1 格；环带只标
+  master 实际有铜的层——异层平行不占比）。验收=耦合占比提升 + DRC error 不增
+  + 连通满，否则快照回滚；master 选择失败换位重试一次。
+- **限带机制**：enterOK 单一 choke point 加 `S.pairBand` 过滤（null=关闭零开销），
+  RMST/Prim/reroute 全部 astar 调用天然继承。
+- **pairCoupleStats 提取**：checkDRC 耦合采样块（原 :6024-6055）逐行等价提取为
+  模块级助手——DRC 与压实器单一事实源（diffpair.test 5 项位级通过为证）。
+- **routeBoard 接线**：optimize 之后自动调用（缺省开启，`--no-compact-pairs`
+  关闭；opts.pairCoupleTarget 可调 0~1）；result 附 compact 报告；无 pair 板
+  不落字段（输出位级不变）。
+- **DRC 语义闭环**：压实后占比 ≥0.6 → 差分耦合 warn 消失——DRC 的"建议清除
+  对内障碍后重布"现在引擎自己会做。
+
+### 实测
+- **压实触发现场**（pairBias=false 让偏置失灵）：占比 **0→0.716**（compacted:1），
+  DRC 0、连通 8/8、差分耦合 warn 消失——接受路径端到端证明
+- **已耦合板**（0.913）：如实 skipped——不强行重构
+- **对角交叉对**：拓扑性反平行，如实 skipped（占比 0.399）——压实的边界：
+  平行拓扑不存在时无从重构
+- **带全堵**：skipped 且与关闭时逐字一致（快照还原语义）
+
+### 深检记录
+- 过程中排除一个假警报：探针用未吸附 design 副本复检 DRC 产生 0% 假 warn
+  （grid 0.25→0.4 被 routeBoard 提升、路线对应吸附后足迹——M3/QFN 同款教训，
+  DRC 复检必须用同一被改写 design 对象；插桩确认内部 prepare 全程 0.73~0.93）
+- beautify 假设一度怀疑破坏平行耦合——实证排除（beautify=false 同样 warn，
+  真因是探针口径）
+
+### 边界（如实）
+- iter-parallel 自建会话路径不接压实（routeBoard/parallel 包装器已继承）
+- 等长：平行段等长但端点段各自到达，差分等长 warn 可能变化，验收只锁 error
+- 阻碍在带内的障碍（如窄缝只容单线）压实无法解决——如实 skipped 留给
+  DRC/advise 指引
+
+### 验证
+pair-compact 6/6 + diffpair 5/5 + search-baseline 16/16；232 node:test +
+全量套件 0 失败；一致性审计 27/27；index.html 已重建。
+
 ## 0.13.26（2026-11-14）—— 深检：M1 复现性证明 + 足迹独立审计 + 画像更新
 
 ### 三项独立验证（0.13.25 的 M1 结果）
