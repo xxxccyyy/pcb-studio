@@ -11,9 +11,83 @@
   "drcBefore": 9,
   "drcAfter": 9
  },
+ "joint": {
+  "nets": [
+   {
+    "net": "n3",
+    "contenders": [
+     "n2",
+     "n7",
+     "n10"
+    ],
+    "action": "no-gain",
+    "connBefore": 82
+   },
+   {
+    "net": "n4",
+    "contenders": [
+     "n2",
+     "n7",
+     "n10"
+    ],
+    "action": "no-gain",
+    "connBefore": 82
+   },
+   {
+    "net": "n5",
+    "contenders": [
+     "n2",
+     "n17"
+    ],
+    "action": "no-gain",
+    "connBefore": 82
+   },
+   {
+    "net": "n6",
+    "contenders": [
+     "n2",
+     "n17"
+    ],
+    "action": "no-gain",
+    "connBefore": 82
+   },
+   {
+    "net": "n8",
+    "contenders": [
+     "n7",
+     "n10",
+     "n13"
+    ],
+    "action": "no-gain",
+    "connBefore": 82
+   },
+   {
+    "net": "n9",
+    "contenders": [
+     "n7",
+     "n11",
+     "n13"
+    ],
+    "action": "no-gain",
+    "connBefore": 82
+   },
+   {
+    "net": "n18",
+    "contenders": [
+     "n2",
+     "n11"
+    ],
+    "action": "no-gain",
+    "connBefore": 82
+   }
+  ],
+  "improved": 0,
+  "drcBefore": 9,
+  "drcAfter": 9
+ },
  "status": "partial",
  "iterations": 60,
- "timeMs": 17443,
+ "timeMs": 15384,
  "nets": [
   {
    "netId": "n2",
