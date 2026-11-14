@@ -1,5 +1,43 @@
 # 更新日志
 
+## 0.14.3（2026-11-14）—— 性能深优轮：14 处位级一致热路径优化（11 案例对拍逐字节一致）
+
+### 背景
+门图立项关闭（0.14.2）后的空档轮。三路并行侦察产出 26 处未优化热点清单
+（历史报告遗留项 / engine.mjs 全函数审读 / 质量侧边界），本轮落地 14 处，
+全部**位级一致**（输出 JSON 逐字节不变，布通率/线长/过孔/DRC 数字不变）。
+详见 [深度优化报告-20261114](docs/深度优化报告-20261114.md)。
+
+### 第一梯队（12 处）
+- **checkGeoSpacing 两段式保序排序扫描**：协商/逐网优化主热点，无排序 O(S²) 全对
+  → 按层+x0 排序收集候选对（提前 break）→ (i,j) 字典序回排原判定——输出序不变
+- **checkDRC 5 处**：manufacturingHoles 数值键、过孔-走线 wOf 复用、DFM 焊盘-走线
+  按层索引、`Array.from` 复活副本、3W pairOf Map 化
+- **形状管线 5 处**：keepSet 启用、crossHist 预解析、dst 增量维护、过孔回填增量、
+  shpAstar 缓冲复用
+- **A\***：adjPenAt ownStamp 戳替代 Set.has
+- **Prim 选序 O(p³)→O(p²)**（栅格+shape 两侧，严格 < 保选中序）
+- **autoPlace 代价函数索引化**：maxTrackW 外提（原每退火步 spread 全 nets）、
+  W.get 活对象数组、dirBlk 复用
+- **杂项**：pourContains/pourNear y-slab 边索引、beautify 谓词索引、pairCoupleStats
+  bbox 快筛、serpentine pairOf Map 化
+
+### 第二梯队（2 处）
+- **rebuildViaInf 增量补丁**（routeNet 尾部）：via 快照差分口径，补丁区=旧∪新盘
+  清零+全盘重放——stale 窗口语义不变；收益对象是 n130/BGA 级大 TS 板
+- **形状修复轮全板违规归属一次扫描**（allNetGeoVio）：O(N×S²)→O(S²)，四族归属
+  规则与 netGeoVio 对称差口径逐族对齐
+
+### 实测（中位）
+形状管线 **-34%**、autoPlace **-66%**、布局布线循环 **-45%**、协商热循环 -13~-24%、
+密板 DRC -24%、大铜皮查询 **-93%**；超小板 optimize +3.7ms（排序开销，留档可加门槛）；
+fable-03 栅格全链与 m1-p01 中性（双实例同进程 A/B 核实）。
+
+### 对拍架与两次真 bug 抓获
+新增 `.scratch/diff-perf-20261114.mjs`（11 案例 sha256 守门）与 `tests/bench-hotloop.mjs`
+微基准。差分架当场抓出两个未流入交付的 bug：pour slab 恰在 yhi 的水平边双侧越界
+漏检、pairCoupleStats bbox 快筛端点序假设——均修复并 0/2000 复验。
+
 ## 0.14.1（2026-11-14）—— 多网联合重布：失败网+阻塞者子集枚举（#12b 栅格侧落地）
 
 ### 背景（0.14.0 后的 Fable 三板诊断）
