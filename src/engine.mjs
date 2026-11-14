@@ -812,12 +812,21 @@ function createSession(design, opts){
 
   // ---- 过孔影响区重建（从全部过孔精确重算） ----
   let viaInfEmpty=true;
+  // 深优 2026-11-14：via 快照——patchViaInf 的差分基线。每次全量重建后刷新全部网；
+  // routeNet 尾部用增量补丁时只刷新变化网。快照口径保证「自上次重建以来所有
+  // viaSet 变化」（含 optimize 接受等不触发重建的路径）都进补丁区。
+  const _viaSnap=new Map();
+  // 双口径半径（纯函数，session 生命周期内恒定——原 rebuild 内联算式原样外提）
+  const _vDdT=design.viaOuter/2+design.clearance+maxTrackW(design)/2;
+  const _vRadiusT=Math.sqrt(_vDdT*_vDdT+grid*grid/2);
+  const _vRadiusV=design.viaOuter+design.clearance;
   function rebuildViaInf(){
     // No vias is common on small boards. Clear once when the last via disappears,
     // including after rip-up or snapshot restoration; skip repeated full-grid work.
     if(!nets.some(net=>net.viaSet.size)){
       if(!viaInfEmpty){ viaInf.fill(0); viaInfV.fill(0); }   // viaInf TS fill
       viaInfEmpty=true;
+      for(const n of nets) _viaSnap.set(n.i,[...n.viaSet]);
       return;
     }
     viaInfEmpty=false;
@@ -835,9 +844,7 @@ function createSession(design, opts){
     // 旧实现单半径取 max(两者)：过孔口径正确，走线口径在 (via-trace, via-via)
     // 带内过度封锁（BGA-64 的 0.42-0.53mm 带是内圈球的逃逸通道，封死它
     // = 138 个 DRC 主因）。
-    const dT=design.viaOuter/2+design.clearance+maxTrackW(design)/2;
-    const radiusT=Math.sqrt(dT*dT+grid*grid/2);
-    const radiusV=design.viaOuter+design.clearance;
+    const radiusT=_vRadiusT, radiusV=_vRadiusV;
     for(const net of nets){
       const o=net.i+1;
       for(const [c,via] of net.viaSet){
@@ -862,6 +869,113 @@ function createSession(design, opts){
     }
     for(let t=0;t<TS;t++) viaInf[t]=tmpMulti[t]? -2 : tmpOwner[t];
     for(let t=0;t<NC;t++) viaInfV[t]=tmpMultiV[t]? -2 : tmpOwnerV[t];
+    for(const n of nets) _viaSnap.set(n.i,[...n.viaSet]);
+  }
+  // 增量补丁：只重算「自上次重建以来 viaSet 有变化的网」的旧∪新过孔盘覆盖区。
+  // 位级一致论证：区域外格的贡献从未变化（补丁不触碰）；区域内格先清零再重放
+  // 全部相交过孔盘——重放与 rebuild 的标记算式逐行同构，owner/multi 终值与
+  // 标记次序无关（0→o；≠o→-2；===o 保持），故区域内终值=全量重建值。
+  // stale 窗口语义不变：rip 后、补丁前 viaInf 保持旧态（与原 rebuild 时序一致）。
+  function patchViaInf(){
+    const changed=[];
+    for(const net of nets){
+      const snap=_viaSnap.get(net.i);
+      const cur=net.viaSet;
+      if(!snap){ if(cur.size) changed.push({net, old:[]}); continue; }
+      if(snap.length!==cur.size){ changed.push({net, old:snap}); continue; }
+      let same=true, idx=0;
+      for(const [c,via] of cur){
+        const sv=snap[idx++];
+        if(sv[0]!==c){ same=false; break; }
+        const la=via.layers||allLayers, lb=sv[1].layers||allLayers;
+        if(la!==lb&&(la.length!==lb.length||la[0]!==lb[0]||la[1]!==lb[1])){ same=false; break; }
+      }
+      if(!same) changed.push({net, old:snap});
+    }
+    if(!changed.length) return;
+    const rT=_vRadiusT/grid, riT=Math.ceil(rT), rV=_vRadiusV/grid, riV=Math.ceil(rV);
+    // 区域 bbox（T/V 两口径各自收集）
+    let tx0=Infinity,tx1=-Infinity,ty0=Infinity,ty1=-Infinity;
+    let vx0=Infinity,vx1=-Infinity,vy0=Infinity,vy1=-Infinity;
+    for(const ch of changed){
+      for(const [c] of ch.old) {
+        const gx=c%GW, gy=(c-gx)/GW;
+        tx0=Math.min(tx0,gx-riT); tx1=Math.max(tx1,gx+riT);
+        ty0=Math.min(ty0,gy-riT); ty1=Math.max(ty1,gy+riT);
+        vx0=Math.min(vx0,gx-riV); vx1=Math.max(vx1,gx+riV);
+        vy0=Math.min(vy0,gy-riV); vy1=Math.max(vy1,gy+riV);
+      }
+      for(const [c] of ch.net.viaSet){
+        const gx=c%GW, gy=(c-gx)/GW;
+        tx0=Math.min(tx0,gx-riT); tx1=Math.max(tx1,gx+riT);
+        ty0=Math.min(ty0,gy-riT); ty1=Math.max(ty1,gy+riT);
+        vx0=Math.min(vx0,gx-riV); vx1=Math.max(vx1,gx+riV);
+        vy0=Math.min(vy0,gy-riV); vy1=Math.max(vy1,gy+riV);
+      }
+    }
+    tx0=Math.max(0,tx0); tx1=Math.min(GW-1,tx1); ty0=Math.max(0,ty0); ty1=Math.min(GH-1,ty1);
+    vx0=Math.max(0,vx0); vx1=Math.min(GW-1,vx1); vy0=Math.max(0,vy0); vy1=Math.min(GH-1,vy1);
+    if(tx0>tx1||ty0>ty1){ /* 不可能：changed 非空 */ }
+    // 清零区域（T：全层区域列；V：区域格）——区域内旧贡献全部抹除
+    for(const ch of changed){
+      for(const [c,via] of ch.old){
+        const gx=c%GW, gy=(c-gx)/GW;
+        const ax0=Math.max(0,gx-riT), ax1=Math.min(GW-1,gx+riT);
+        const ay0=Math.max(0,gy-riT), ay1=Math.min(GH-1,gy+riT);
+        for(const l of (via.layers||allLayers)){
+          const off=l*NC;
+          for(let y=ay0;y<=ay1;y++) for(let x=ax0;x<=ax1;x++) viaInf[off+y*GW+x]=0;
+        }
+        const bx0=Math.max(0,gx-riV), bx1=Math.min(GW-1,gx+riV);
+        const by0=Math.max(0,gy-riV), by1=Math.min(GH-1,gy+riV);
+        for(let y=by0;y<=by1;y++) for(let x=bx0;x<=bx1;x++) viaInfV[y*GW+x]=0;
+      }
+      for(const [c,via] of ch.net.viaSet){
+        const gx=c%GW, gy=(c-gx)/GW;
+        const ax0=Math.max(0,gx-riT), ax1=Math.min(GW-1,gx+riT);
+        const ay0=Math.max(0,gy-riT), ay1=Math.min(GH-1,gy+riT);
+        for(const l of (via.layers||allLayers)){
+          const off=l*NC;
+          for(let y=ay0;y<=ay1;y++) for(let x=ax0;x<=ax1;x++) viaInf[off+y*GW+x]=0;
+        }
+        const bx0=Math.max(0,gx-riV), bx1=Math.min(GW-1,gx+riV);
+        const by0=Math.max(0,gy-riV), by1=Math.min(GH-1,gy+riV);
+        for(let y=by0;y<=by1;y++) for(let x=bx0;x<=bx1;x++) viaInfV[y*GW+x]=0;
+      }
+    }
+    // 重放：全部网的现役过孔，与区域 bbox 相交者整盘重标（区域外幂等）
+    const anyVias=nets.some(n=>n.viaSet.size);
+    if(anyVias){
+      for(const net of nets){
+        const o=net.i+1;
+        for(const [c,via] of net.viaSet){
+          const gx=c%GW, gy=(c-gx)/GW;
+          if(gx+riT<tx0||gx-riT>tx1||gy+riT<ty0||gy-riT>ty1) continue;
+          const ax0=Math.max(0,gx-riT), ax1=Math.min(GW-1,gx+riT);
+          const ay0=Math.max(0,gy-riT), ay1=Math.min(GH-1,gy+riT);
+          for(const l of (via.layers||allLayers)){
+            const off=l*NC;
+            for(let y=ay0;y<=ay1;y++) for(let x=ax0;x<=ax1;x++){
+              if(Math.hypot(x-gx,y-gy)>=rT) continue;
+              const s=off+y*GW+x;
+              if(viaInf[s]===0) viaInf[s]=o;
+              else if(viaInf[s]!==o) viaInf[s]=-2;
+            }
+          }
+          if(gx+riV<vx0||gx-riV>vx1||gy+riV<vy0||gy-riV>vy1) continue;
+          const bx0=Math.max(0,gx-riV), bx1=Math.min(GW-1,gx+riV);
+          const by0=Math.max(0,gy-riV), by1=Math.min(GH-1,gy+riV);
+          for(let y=by0;y<=by1;y++) for(let x=bx0;x<=bx1;x++){
+            if(Math.hypot(x-gx,y-gy)>=rV) continue;
+            const s=y*GW+x;
+            if(viaInfV[s]===0) viaInfV[s]=o;
+            else if(viaInfV[s]!==o) viaInfV[s]=-2;
+          }
+        }
+      }
+    }
+    viaInfEmpty=!anyVias;
+    for(const ch of changed) _viaSnap.set(ch.net.i,[...ch.net.viaSet]);
   }
 
   // ---- 单元通行判断 ----
@@ -1250,7 +1364,7 @@ function createSession(design, opts){
       }
       net.connected=countConn();
       net.failed=net.total-net.connected;
-      rebuildViaInf();
+      patchViaInf();   // 深优 2026-11-14：routeNet 尾部增量补丁（快照差分口径，位级一致）
     };
     // RMST 分解（Hanan 网格直角斯坦纳树；引脚过多时 rmstTasks 返回 null）
     // Prim 未全连 → RMST 回退（同尺重试；RMST goal=dst 语义 0.6.3 已修复）
@@ -1298,7 +1412,7 @@ function createSession(design, opts){
         }
         net.connected=countConn();
         net.failed=net.total-net.connected;
-                rebuildViaInf();
+                patchViaInf();   // 深优 2026-11-14：RMST 尾部同款增量补丁
         // RMST 成功口径（0.6.3 修订）：goal=dst 修复后 RMST 语义正确，但外部板实测
         // Prim 顺序布线更快且质量同级（iCEBreaker 4 层：Prim 156.7s/419 vs RMST 293.6s/413）
         // → Prim 为主、RMST 仅在 Prim 未全连时作回退
@@ -4189,6 +4303,88 @@ function routeBoardShape(design, opts={}){
     return vio;
   };
 
+  // 深优 2026-11-14：全板违规归属扫描——一次遍历产出每网 netGeoVio 等值计数。
+  // 修复轮的归属循环原实现对每网调 netGeoVio（=2×全板段审计）→ O(N×S²)；
+  // 收敛为 1 次共享排序扫描（auditGeometry 同款 sweep 产出违规对）+ 四族
+  // 逐网遍历各一次。归属规则与 netGeoVio 的对称差口径逐族对齐：
+  //   族1 段-段（audit 对称差）：违规对两侧各 +1（含 manualRouteEntries 参与——
+  //       auditGeometry 内部拼入 manual，对称差里与 entry 成对者计入 entry）
+  //   族2 段-焊盘 / 族3 过孔-焊盘 / 族4 过孔-段：只记"被评网"一侧
+  //   族5 过孔-过孔：两侧各 +1（每网作为被评网各计一次）
+  const allNetGeoVio=()=>{
+    const counts=new Map();
+    const bump=(id,n)=>counts.set(id,(counts.get(id)||0)+n);
+    // —— 族1：段-段（auditGeometry 同款排序扫描，产出对归属）——
+    const netsAll=[...merged.nets, ...manualRouteEntries(design)];
+    const segs=[];
+    for(const n of netsAll){
+      const hw=netW(design,n.netId)/2;
+      for(const path of n.paths||[]) for(let i=1;i<path.length;i++){
+        const a=path[i-1], b=path[i];
+        if(a.l!==b.l) continue;
+        if(Math.abs(a.x-b.x)<1e-12 && Math.abs(a.y-b.y)<1e-12) continue;
+        segs.push({net:n.netId,l:a.l,hw,a,b,
+          x0:Math.min(a.x,b.x),x1:Math.max(a.x,b.x),
+          y0:Math.min(a.y,b.y),y1:Math.max(a.y,b.y)});
+      }
+    }
+    let segsegAll=0;
+    const byLayer=new Map();
+    for(const s of segs){ let a=byLayer.get(s.l); if(!a){ a=[]; byLayer.set(s.l,a); } a.push(s); }
+    for(const [l,arr] of byLayer){
+      arr.sort((p,q)=>p.x0-q.x0||p.y0-q.y0||p.net-q.net);
+      for(let i=0;i<arr.length;i++){
+        const s=arr[i];
+        for(let j=i+1;j<arr.length;j++){
+          const t=arr[j];
+          if(t.net===s.net) continue;
+          const reach=s.hw+t.hw+design.clearance;
+          if(t.x0>s.x1+reach) break;
+          if(t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
+          if(segSegDist(s.a.x,s.a.y,s.b.x,s.b.y,t.a.x,t.a.y,t.b.x,t.b.y)<reach-1e-9){
+            segsegAll++; bump(s.net,1); bump(t.net,1);
+          }
+        }
+      }
+    }
+    // —— 族2~5：与 netGeoVio 的逐网循环同构，按属主一侧归属 ——
+    const padsAll=design.pads||[];
+    for(const n of merged.nets){
+      const hw=netW(design,n.netId)/2;
+      for(const path of n.paths||[]) for(let k=1;k<path.length;k++){
+        const a=path[k-1], b=path[k];
+        if(a.l!==b.l) continue;
+        for(const p of padsAll){
+          if(p.netId===n.netId||!shpLayerInSpan(p,[a.l,a.l],L)) continue;
+          if(segmentPadDistance(a,b,p)<hw+design.clearance-1e-9) bump(n.netId,1);   // 族2
+        }
+      }
+      for(const v of n.vias||[]){
+        const outer=v.outer!=null?v.outer:design.viaOuter;
+        const span=viaSpan(v,L);
+        for(const p of padsAll){
+          if(p.netId===n.netId||!shpLayerInSpan(p,span,L)) continue;
+          if(pointPadDistance(v.x,v.y,p)<outer/2+design.clearance-1e-9) bump(n.netId,1);   // 族3
+        }
+        for(const o2 of merged.nets){
+          if(o2.netId===n.netId) continue;
+          const hwN=netW(design,o2.netId)/2;
+          for(const path of o2.paths||[]) for(let k=1;k<path.length;k++){
+            const a=path[k-1], b=path[k];
+            if(a.l!==b.l) continue;
+            if(!viaOnLayer(v,a.l,L)) continue;
+            if(segDist(v.x,v.y,a.x,a.y,b.x,b.y)<outer/2+design.clearance+hwN-1e-9){ bump(n.netId,1); break; }   // 族4
+          }
+          for(const ov of o2.vias||[]){
+            if(!viaSpanOverlap(v,ov,L)) continue;
+            if(Math.hypot(v.x-ov.x,v.y-ov.y)<(outer+(ov.outer!=null?ov.outer:design.viaOuter))/2+design.clearance-1e-9){ bump(n.netId,1); bump(o2.netId,1); }   // 族5
+          }
+        }
+      }
+    }
+    return {counts, segsegAll};
+  };
+
   // 外层循环状态
   const maxRounds=Math.max(1, opts.shapeRounds!=null?opts.shapeRounds:3);
   const cascadeRollCount=new Map();   // netId → 连续级联回滚次数（防抖）
@@ -4376,18 +4572,20 @@ function routeBoardShape(design, opts={}){
   let repairFixed=0, repairTried=0;
   for(let pass=0;pass<repairPasses;pass++){
     // 全板违规归属：哪几个网卷入？（对称差——用 netGeoVio 的全板版）
-    const allVio=auditGeometry(design,merged);
+    // 深优 2026-11-14：一次全板归属扫描替代 reduce(netGeoVio)+逐网重算——
+    // 原口径每网 2×全板段审计（O(N×S²)），收敛为 1 次共享排序扫描 + 四族单遍
+    const _vioAll=allNetGeoVio();
     // 触发条件含段-焊盘/过孔类违规（auditGeometry 只查段-段——Fable-01 实测
     // 其违规全是段-焊盘型，allVio 为空导致修复轮从不触发）
-    const totalVio=allVio.length+merged.nets.reduce((a,net)=>a+netGeoVio(net),0);
+    let _vioSum=0; for(const v of _vioAll.counts.values()) _vioSum+=v;
+    const totalVio=_vioAll.segsegAll+_vioSum;
     if(!totalVio) break;
     const involved=new Set();
     {
-      // 归属：对每个违规点找最近的卷入网（段-段违规的两侧）。简化实现：
-      // 逐网重算 netGeoVio 全板上下文——>0 即卷入。
+      // 归属：每网等值计数 >0 即卷入（与逐网 netGeoVio>0 逐位同值）
       for(const net of merged.nets){
         if(repaired.has(net.netId)) continue;
-        if(netGeoVio(net)>0) involved.add(net.netId);
+        if((_vioAll.counts.get(net.netId)||0)>0) involved.add(net.netId);
       }
     }
     if(!involved.size) break;
