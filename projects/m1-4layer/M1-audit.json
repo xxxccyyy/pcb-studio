@@ -1,0 +1,382 @@
+[
+ {
+  "name": "p01-lqfp144-mcu",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.6,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p02-dual-lqfp64",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.3,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p03-qfn32-farm",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.2,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p04-soic16-farm",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.3,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p05-ws2812-8x16",
+  "pads": 512,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 512,
+   "total": 512
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 512,
+  "total": 512,
+  "vias": 293,
+  "drcErrors": 0,
+  "timeSec": 43.4,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p06-dip40-tht",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.8,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p07-hdr-farm",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.4,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p08-dual-lqfp48-hdr",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.3,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p09-0603-farm",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.2,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p10-lqfp100",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.4,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p11-mixed-mcu",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.3,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p12-power-mixed",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.3,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p13-backplane",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.3,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p14-shallow-mixed",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.2,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p15-triple-lqfp48",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.3,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p16-qfn-plus-lqfp144",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.3,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p17-broadcast-200",
+  "pads": 204,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 204,
+   "total": 204
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 204,
+  "total": 204,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.5,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p18-mixed-tech",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.5,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p19-qfn-dense-05",
+  "pads": 200,
+  "layers": 4,
+  "grid": {
+   "status": "complete",
+   "connected": 200,
+   "total": 200
+  },
+  "shapeUsed": false,
+  "status": "complete",
+  "connected": 200,
+  "total": 200,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 0.1,
+  "ok": true,
+  "mismatchVsSummary": false
+ },
+ {
+  "name": "p20-quad-lqfp64",
+  "pads": 256,
+  "layers": 4,
+  "grid": {
+   "status": "partial",
+   "connected": 192,
+   "total": 256
+  },
+  "shapeUsed": true,
+  "status": "complete",
+  "connected": 256,
+  "total": 256,
+  "vias": 0,
+  "drcErrors": 0,
+  "timeSec": 5.1,
+  "ok": true,
+  "mismatchVsSummary": false
+ }
+]
