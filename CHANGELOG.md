@@ -1,5 +1,50 @@
 # 更新日志
 
+## 0.14.1（2026-11-14）—— 多网联合重布：失败网+阻塞者子集枚举（#12b 栅格侧落地）
+
+### 背景（0.14.0 后的 Fable 三板诊断）
+残留网（84/95、101/112、101/110）的形状补线拒绝原因以 **no-path** 为主
+（obs 387~423）——在现有协商铜的障碍下轴图真无路，但 0.11.7 隔离实验证明
+个体可达。失败机理 = 现有协商铜的分配不留路 → 单网重布无解，需要
+**拆阻塞者 → 失败网先布 → 阻塞者绕行**的多网联合重排。骨架镜像形状侧级联
+（0.13.6 已证明有效），侦察确认不依赖形状专属结构、完全可平移。
+
+### 交付
+- **jointReroute 会话方法**：失败网（cap 8）逐个处理——阻塞者探测
+  （openPads 2.5mm 内有铜的网，重叠计数 top-3）→ mask 枚举（2^n，n≤3）→
+  每 mask：restore → 拆 F+子集 → routeNet(F,true) 独占走廊 → 阻塞者按
+  net.i 序软重布 → scanOveruse → 全板 `[-drcE, conn]` 权威计分
+  （checkDRC dfm:false 含 manualRouteEntries，与 deliver/测试同口径）→
+  严格更优才换 bestMask → 平手保守回滚
+- **commitRoutes 语义修复**：提交铜后 `S.overuse=scanOveruse()`——此前
+  摄档/并行提交后 overuse 停留旧值（并行路径下轮反正重算，无风险；
+  standalone 摄档口径由此修复）
+- **routeBoard 接线**：compactPairs 之后自动调用（缺省开启，
+  `--no-joint-reroute` 关）；result 附 joint 报告；全连通板 no-op 不落字段
+  （输出位级不变——search-baseline 16 fixtures 全 complete 已核实）
+- **CLI**：`--no-joint-reroute`（route/autopcb）+ 帮助文本
+
+### 实测（Fable-01 实板摄档接入）
+improved 2 网、**DRC error 14→9（-5）**、连通守恒 84——字典序接受
+DRC 纯收益；其余 5 网如实 no-gain。
+
+### 深检记录
+- 过程抓到并修掉三个实现 bug：applyMask 残留死代码、mask 位序在 rip/reroute
+  两阶段不一致（选择序≠枚举序）、saved 快照未按失败网重取（前一网的改进
+  会被后一网的 restore 吞掉）
+- 排除一个假警报：测试口径漏 manualRouteEntries + commitRoutes overuse
+  停留旧值叠加造成的"DRC 增加"假象——两者都已修复为正确语义
+
+### 边界（如实）
+- 只打失败网；全连通板的 overuse 残留（BGA-64 2 层 13 DRC）是另一模式
+- iter-parallel 自建会话路径不接（同 compactPairs）
+- 阻塞者 top-3 截断（形状侧无 2^n 防护是已知欠账，栅格侧补上）
+
+### 验证
+joint-reroute 4 项（含 Fable 实板接入王牌测试）+ 238 既有全绿 + 并行
+12/12（commitRoutes 语义修复无副作用）+ search-baseline 16/16 原样 +
+审计 28/28；index.html 已重建。
+
 ## 0.14.0（2026-11-14）—— 0.13.x 审计修复：文档/交付包补齐（F-a/F-b/F-d/F-e）
 
 ### 审计发现的处置（5 项按严重度）

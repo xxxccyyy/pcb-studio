@@ -1612,6 +1612,7 @@ function createSession(design, opts){
     return {
       ...(S.capacityStall?{capacityStall:true}:{}),
       ...(S.compact?{compact:S.compact}:{}),
+      ...(S.joint?{joint:S.joint}:{}),
       status:(tt===0||tc===tt)&&!overuse.length ? 'complete':'partial',
       iterations:S.iter, timeMs:Date.now()-S.t0,
       nets:netOut, overuse,
@@ -1733,6 +1734,7 @@ function createSession(design, opts){
       if(net.failed===0) buildPairBonus(net);
     }
     rebuildViaInf();
+    S.overuse=scanOveruse();   // 提交铜后过孔态已变——S.overuse 必须反映现实（0.14.1：摄档口径修复，并行路径在下轮 beginIteration 反正重算）
     if(clearQueue!==false){ S.queue.length=0; S.processed=0; }   // 并行驱动的 commit 契约：清空队列 → beginIteration 再评估（波次模式最后波才清）
   }
   // ---- 确定性洗牌（借鉴 Freerouting AutoroutePassRunner：协商停滞 ≥2 轮时
@@ -1940,8 +1942,99 @@ function createSession(design, opts){
     return report;
   }
 
+  /* ---- 多网联合重布（0.14.1，#12b 多网联合规划的栅格侧落地）----
+     Fable 三板诊断（0.14.0 后）：残留网的形状补线拒绝原因以 no-path 为主——
+     在现有协商铜的障碍下轴图真无路，但隔离实验证明个体可达（0.11.7 实证）。
+     单网重布对固定障碍无能为力；救法 = 拆掉阻塞者 → 失败网先布（独占清空的
+     走廊）→ 阻塞者绕行重布，按"哪个阻塞者子集参与"做 mask 枚举，全板
+     [-drcE, conn] 权威计分取最优，平手保守回滚。
+     骨架镜像形状侧级联（0.13.6，:4293-4332 原设计）：快照对 + mask 枚举 +
+     权威计分，已证明不依赖形状专属结构。 */
+  function jointReroute(opts2){
+    opts2=opts2||{};
+    const maxNets=opts2.jointRerouteMaxNets!=null?opts2.jointRerouteMaxNets:8;
+    if(!Number.isInteger(maxNets)||maxNets<0||maxNets>64)
+      throw new Error('jointRerouteMaxNets must be an integer from 0 to 64');
+    const R=opts2.jointR!=null?opts2.jointR:2.5;
+    if(!Number.isFinite(R)||R<=0) throw new Error('jointR must be a positive finite number');
+    const failed=nets.filter(n=>n.total>0&&n.connected<n.total).sort((a,b)=>a.i-b.i).slice(0,maxNets);
+    const report={nets:[], improved:0, drcBefore:0, drcAfter:0};
+    if(!failed.length) return report;   // 无失败网：不落 joint 字段（输出位级不变）
+    const score=()=>{
+      // 口径与 deliver/测试一致：计入 manualRouteEntries（手动布线也是铜）
+      const r=buildResult();
+      const drcE=checkDRC(design,{...r,nets:[...r.nets,...manualRouteEntries(design)]},{dfm:false})
+        .filter(i=>i.sev==='error').length;
+      return [-drcE, r.stats.connected];
+    };
+    report.drcBefore=-score()[0];
+    for(const F of failed){
+      // 阻塞者探测（neighborhoodRipup 的 openPads 语义：未被 F.cells 覆盖的焊盘）
+      const openPads=(padsByNet.get(F.i)||[]).filter(p=>{
+        const cells=model.padCells.get(p.id)||[];
+        for(const st of cells) if(F.cells.has(st)) return false;
+        return true;
+      });
+      if(!openPads.length){ report.nets.push({net:F.id,action:'skip-no-open-pads'}); continue; }
+      const contenders=new Map();
+      const R2=R*R;
+      for(const n3 of nets){
+        if(n3.i===F.i||n3.cells.size===0) continue;
+        let inR=0;
+        for(const s3 of n3.cells){
+          const c3=s3%NC;
+          const cx3=(c3%GW+0.5)*grid, cy3=(((c3/GW)|0)+0.5)*grid;
+          for(const p of openPads){
+            const dx=cx3-p.x, dy=cy3-p.y;
+            if(dx*dx+dy*dy<=R2){ inR++; break; }
+          }
+          if(inR) break;
+        }
+        if(inR) contenders.set(n3.i, inR);
+      }
+      // 选择按重叠计数降序（top-3，2^n 爆炸防护），mask 枚举按 net.i 序（确定性）
+      const work=[...contenders.entries()].sort((a,b)=>b[1]-a[1]||a[0]-b[0]).slice(0,3)
+        .map(([i3])=>nets[i3]).sort((a,b)=>a.i-b.i);
+      if(!work.length){ report.nets.push({net:F.id,action:'skip-no-contenders'}); continue; }
+      const connBefore=nets.reduce((a,n)=>a+n.connected,0);
+      const saved=snapshot();            // 每个失败网重取快照——前一个网的改进必须生效
+      const baseScore=score();
+      let bestMask=0, bestScore=baseScore;
+      const applyMask=m=>{
+        restore(saved);
+        ripNet(F);
+        for(let k=0;k<work.length;k++) if((m>>k)&1) ripNet(work[k]);
+        routeNet(F, true);              // 独占清空后的走廊
+        for(let k=0;k<work.length;k++) if((m>>k)&1) routeNet(work[k], false);   // net.i 序软重布
+        S.overuse=scanOveruse();
+      };
+      for(let m=1;m<(1<<work.length);m++){
+        applyMask(m);
+        const sc=score();
+        if(sc[0]>bestScore[0]||(sc[0]===bestScore[0]&&sc[1]>bestScore[1])){
+          bestMask=m; bestScore=sc;
+        }
+      }
+      if(bestMask!==0){
+        applyMask(bestMask);
+        report.improved++;
+        report.nets.push({net:F.id, contenders:work.map(c=>c.id), action:'improved',
+          connBefore, connAfter:nets.reduce((a,n)=>a+n.connected,0),
+          drcAfter:-bestScore[0]});
+      }else{
+        restore(saved);
+        S.overuse=scanOveruse();
+        report.nets.push({net:F.id, contenders:work.map(c=>c.id), action:'no-gain',
+          connBefore});
+      }
+    }
+    report.drcAfter=-score()[0];
+    S.joint=report;
+    return report;
+  }
+
   startQueue(false);
-  return {step, buildResult, rerouteSingle, optimize, compactPairs, snapshot, restore, session:S,
+  return {step, buildResult, rerouteSingle, optimize, compactPairs, jointReroute, snapshot, restore, session:S,
     beginIteration, exportShared, adoptShared, routeList, commitRoutes,
     startQueue, detShuffle, shardQueue};
 }
@@ -3896,6 +3989,11 @@ function routeBoard(design,opts={}){
     if(opts.compactPairs!==false){
       const cp=best.session.compactPairs({pairCoupleTarget: opts.pairCoupleTarget});
       if(opts.onStage) opts.onStage({stage:'compact-pairs', compacted:cp.compacted, skipped:cp.skipped});
+    }
+    // 多网联合重布（0.14.1）：失败网的阻塞者子集枚举重排；全连通板 no-op 位级不变
+    if(opts.jointReroute!==false){
+      const jr=best.session.jointReroute({jointRerouteMaxNets: opts.jointRerouteMaxNets, jointR: opts.jointR});
+      if(opts.onStage) opts.onStage({stage:'joint-reroute', improved:jr.improved, nets:jr.nets.length});
     }
     const next=prepare(best.session.buildResult());
     if(!scoreBetter(routeScore(best.result),routeScore(next))) best.result=next;

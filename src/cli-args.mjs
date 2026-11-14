@@ -11,7 +11,7 @@ const flagCommands={
   '--iter-waves':['route','autopcb'],'--shard':['route','autopcb'],
   '--shape-patch':['route','autopcb'],'--shape-window':['route','autopcb'],'--shape-nets':['route','autopcb'],
   '--blind-vias':['route','autopcb'],'--fanout-first':['route','autopcb'],
-  '--no-compact-pairs':['route','autopcb'],
+  '--no-compact-pairs':['route','autopcb'],'--no-joint-reroute':['route','autopcb'],
   '--pair':['tune','diffz'],'--z':['diffz'],
   '--islands':['pour'],'--min-island-area':['pour'],'--fill':['pour'],'--grid-w':['pour'],'--grid-gap':['pour'],
   '--clearance':['pour'],'--edge-margin':['pour'],'--min-width':['pour'],

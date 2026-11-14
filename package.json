@@ -1,10 +1,10 @@
 {
   "name": "pcb-autorouter",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "零依赖网页版 PCB 自动布线工具：A* 迷宫布线 + PathFinder 协商拥塞 + 多边形覆铜 + DRC",
   "type": "module",
   "scripts": {
-    "test": "npm run check && node tests/router.test.mjs && node --test tests/geometry.test.mjs tests/pour.test.mjs tests/pour-optimize.test.mjs tests/serpentine.test.mjs tests/diffpair.test.mjs tests/parallel-route.test.mjs tests/iter-parallel.test.mjs tests/kicad-import.test.mjs tests/easyeda-import.test.mjs tests/rules-schema.test.mjs tests/dsn-ses.test.mjs tests/reliability.test.mjs tests/server.test.mjs tests/search-regression.test.mjs tests/placement-rules.test.mjs tests/manufacturing-rules.test.mjs tests/shape-route.test.mjs tests/shape-geometry.test.mjs tests/fanout-advice.test.mjs tests/shape-batch.test.mjs tests/hdi.test.mjs tests/m3-qfn.test.mjs tests/m1-batch.test.mjs tests/pair-compact.test.mjs && node tests/books-insights.test.mjs && node tests/cli.test.mjs && node tests/kicad-plugin.test.mjs && node tests/fuzz-cli.mjs && node tests/deep-validate.mjs && node tests/verify-optimizations.mjs",
+    "test": "npm run check && node tests/router.test.mjs && node --test tests/geometry.test.mjs tests/pour.test.mjs tests/pour-optimize.test.mjs tests/serpentine.test.mjs tests/diffpair.test.mjs tests/parallel-route.test.mjs tests/iter-parallel.test.mjs tests/kicad-import.test.mjs tests/easyeda-import.test.mjs tests/rules-schema.test.mjs tests/dsn-ses.test.mjs tests/reliability.test.mjs tests/server.test.mjs tests/search-regression.test.mjs tests/placement-rules.test.mjs tests/manufacturing-rules.test.mjs tests/shape-route.test.mjs tests/shape-geometry.test.mjs tests/fanout-advice.test.mjs tests/shape-batch.test.mjs tests/hdi.test.mjs tests/m3-qfn.test.mjs tests/m1-batch.test.mjs tests/pair-compact.test.mjs tests/joint-reroute.test.mjs && node tests/books-insights.test.mjs && node tests/cli.test.mjs && node tests/kicad-plugin.test.mjs && node tests/fuzz-cli.mjs && node tests/deep-validate.mjs && node tests/verify-optimizations.mjs",
     "start": "node server.mjs",
     "bench": "node tests/bench-heuristic.mjs",
     "build": "node scripts/build.mjs",

@@ -22,6 +22,8 @@
                                      [--fanout-first auto|inner|outer] 扇出优先（0.13.20）
                                      [--no-compact-pairs] 关差分对强制压实（0.13.27
                                      缺省开启：route 后把 partner 重构到设计间隙带）
+                                     [--no-joint-reroute] 关多网联合重布（0.14.1 缺省开启：
+                                     失败网+阻塞者子集枚举重排，全板 [-DRC,连通] 计分）
      drc    <design.json> [result.json]      DRC + 嘉立创投板检查表
      advise <design.json> [result.json]      按优先级给出可执行建议（经验层）
      export <easyeda|gerber|dsn|ses|svg|ipc356> <design.json> [result.json] [-o out]
@@ -826,6 +828,8 @@ switch (cmd) {
     const blindVias = !!argFlag(rest, '--blind-vias', '');
     // 差分对强制压实（0.13.27）：缺省开启，--no-compact-pairs 关闭
     const compactPairs = !argFlag(rest, '--no-compact-pairs', '');
+    // 多网联合重布（0.14.1）：缺省开启，--no-joint-reroute 关闭
+    const jointReroute = !argFlag(rest, '--no-joint-reroute', '');
     // 扇出优先（0.13.20 F1）：--fanout-first [auto|inner|outer]，缺省不带 = off
     const ffRaw = argFlag(rest, '--fanout-first', '');
     const fanoutFirst = ffRaw === '' ? undefined
@@ -834,7 +838,7 @@ switch (cmd) {
     if (iterWorkers > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
       const shard = parseInt(argFlag(rest, '--shard', '0'));
-      const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard, blindVias, fanoutFirst, compactPairs,
+      const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard, blindVias, fanoutFirst, compactPairs, jointReroute,
         engineUrl, neighbourhoodRipup: nbRipup });
       result = par.result; via = { mode: 'iter-parallel', blind: blindVias || undefined, fanout: fanoutFirst, compact: compactPairs ? undefined : 'off', workers: par.workers,
         iterations: par.iterations, waves: iterWaves ?? 2, shard: shard || 0 };
@@ -845,10 +849,10 @@ switch (cmd) {
     }
     if (parallel > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
-      const par = await core.routeBoardParallel(d, { viaCost, maxIter, parallel, engineUrl, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst, compactPairs });
+      const par = await core.routeBoardParallel(d, { viaCost, maxIter, parallel, engineUrl, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst, compactPairs, jointReroute });
       result = par.result; via = { mode: 'parallel', blind: blindVias || undefined, fanout: fanoutFirst, from: par.from, workers: parallel };
     } else {
-      result = core.routeBoard(d, { viaCost, maxIter, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst, compactPairs }).result;
+      result = core.routeBoard(d, { viaCost, maxIter, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst, compactPairs, jointReroute }).result;
       via = { mode: 'serial' };
     }
     if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
