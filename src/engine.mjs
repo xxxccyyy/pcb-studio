@@ -707,8 +707,11 @@ function createSession(design, opts){
   for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)
     if(Math.max(Math.abs(dx),Math.abs(dy))===2) ring2Offs.push([dx,dy]);
   // 会话级单实例的邻近罚函数（热循环不建闭包）
+  // 深优 2026-11-14：net.cells.has → ownStamp===gen（O(1) 类型化读，语义等价——
+  // ownStamp 在 astar 入口对 net.cells 全量置 gen 戳 :932，adjPenAt 仅在 astar
+  // 邻域扩展内被调用，生命周期覆盖）
   function adjPenAt(net, s2, myPair){
-    if(usage[s2]<=0 || net.cells.has(s2)) return 0;
+    if(usage[s2]<=0 || ownStamp[s2]===gen) return 0;
     if(myPair){
       const oi=cellOwner[s2]-1;
       if(oi>=0 && netMeta[oi] && netMeta[oi].pair===myPair && usage[s2]<=2) return 0;
@@ -1206,16 +1209,22 @@ function createSession(design, opts){
       if(root<0){ net.failed=pads.length; net.connected=0; return; }
       const inT=new Array(pads.length).fill(false); inT[root]=true;
       const order=[root];
+      // 深优 2026-11-14：Prim 选序 O(p³)→O(p²)——维护各未接盘到树的当前最近距离。
+      // 每对距离只算一次（算式逐位相同），min 语义与严格 < 的扫描序不变 → 选中序位级一致
+      const minD=new Float64Array(pads.length).fill(Infinity);
+      for(let i=0;i<pads.length;i++){ if(inT[i]) continue;
+        const dx=pads[i].x-pads[root].x, dy=pads[i].y-pads[root].y; minD[i]=dx*dx+dy*dy; }
       while(order.length<pads.length){
         let bi=-1, bd=Infinity;
         for(let i=0;i<pads.length;i++){
           if(inT[i]) continue;
-          for(const o of order){
-            const dx=pads[i].x-pads[o].x, dy=pads[i].y-pads[o].y, d=dx*dx+dy*dy;
-            if(d<bd){ bd=d; bi=i; }
-          }
+          if(minD[i]<bd){ bd=minD[i]; bi=i; }
         }
         inT[bi]=true; order.push(bi);
+        for(let i=0;i<pads.length;i++){ if(inT[i]) continue;
+          const dx=pads[i].x-pads[bi].x, dy=pads[i].y-pads[bi].y, d=dx*dx+dy*dy;
+          if(d<minD[i]) minD[i]=d;
+        }
       }
       const tree=new Set();
       for(const s of (padCells.get(pads[root].id)||[])) tree.add(s);
@@ -1417,6 +1426,9 @@ function createSession(design, opts){
   }
   function checkGeoSpacing(){
     // 几何间距审查：采样走线段，查不同网走线实际间距 < trackW + clearance
+    // （2026-11-14 深优：两段式保序排序扫描——先按层+x0 排序收集 bbox 通过的候选对
+    // （auditGeometry/checkDRC 同款提前 break），再按 (i,j) 字典序回排逐对原判定，
+    // 输出顺序与原 O(S²) 双循环完全一致（位级守门），热成本从全对降到候选对）
     const allSegs=[];
     for(const net of nets)
       for(const rawPath of net.paths)
@@ -1424,29 +1436,52 @@ function createSession(design, opts){
         for(let k=1;k<path.length;k++){
           const a=path[k-1], b=path[k];
           if(a.l!==b.l) continue;
-          allSegs.push({net:net.i, x1:a.x, y1:a.y, x2:b.x, y2:b.y, l:a.l});
+          const s={net:net.i, x1:a.x, y1:a.y, x2:b.x, y2:b.y, l:a.l};
+          s.x0=Math.min(s.x1,s.x2); s.x1m=Math.max(s.x1,s.x2);
+          s.y0=Math.min(s.y1,s.y2); s.y1m=Math.max(s.y1,s.y2);
+          allSegs.push(s);
         }
     const maxNeed=design.clearance+maxTrackW(design);
-    const vios=[];
     const N=allSegs.length;
+    // 段 0 或 1 时无对可查（原双循环同样不产出）
+    if(N<2) return [];
+    // ---- 阶段 A：按层分组排序扫描，收集候选对（bbox 通过对的超集）----
+    const byLayer=new Map();
     for(let i=0;i<N;i++){
-      const a=allSegs[i];
-      const abx1=Math.min(a.x1,a.x2)-maxNeed, abx2=Math.max(a.x1,a.x2)+maxNeed;
-      const aby1=Math.min(a.y1,a.y2)-maxNeed, aby2=Math.max(a.y1,a.y2)+maxNeed;
-      for(let j=i+1;j<N;j++){
-        const b=allSegs[j];
-        if(a.net===b.net||a.l!==b.l) continue;
-        // bbox 快筛
-        if(Math.min(b.x1,b.x2)>abx2||Math.max(b.x1,b.x2)<abx1||
-           Math.min(b.y1,b.y2)>aby2||Math.max(b.y1,b.y2)<aby1) continue;
-        const d=segSegDist(a.x1,a.y1,a.x2,a.y2,b.x1,b.y1,b.x2,b.y2);
-        const need=design.clearance+(netW(design,nets[a.net].id)+netW(design,nets[b.net].id))/2;
-        if(d<need-1e-9){
-          const midX=((a.x1+a.x2+b.x1+b.x2)/4), midY=((a.y1+a.y2+b.y1+b.y2)/4);
-          const ci=Math.max(0,Math.min(GW-1,Math.floor(midX/grid)));
-          const cj=Math.max(0,Math.min(GH-1,Math.floor(midY/grid)));
-          vios.push(a.l*NC+cj*GW+ci);
+      const s=allSegs[i];
+      let a=byLayer.get(s.l); if(!a){ a=[]; byLayer.set(s.l,a); }
+      a.push(i);
+    }
+    const cand=[];
+    for(const arr of byLayer.values()){
+      arr.sort((p,q)=>allSegs[p].x0-allSegs[q].x0);
+      for(let ii=0;ii<arr.length;ii++){
+        const a=allSegs[arr[ii]];
+        const rx2=a.x1m+maxNeed, ry1=a.y0-maxNeed, ry2=a.y1m+maxNeed;
+        for(let jj=ii+1;jj<arr.length;jj++){
+          const bi=arr[jj], b=allSegs[bi];
+          if(b.x0>rx2) break;                      // 左边界已超出可能间距（x 升序）
+          if(a.net===b.net) continue;
+          if(b.y0>ry2||b.y1m<ry1) continue;        // y 快筛
+          cand.push(arr[ii]<bi?arr[ii]*N+bi:bi*N+arr[ii]);
         }
+      }
+    }
+    // ---- 阶段 B：按 (i,j) 字典序回排，逐对原判定（输出序=原双循环发现序）----
+    cand.sort((p,q)=>p-q);
+    const netWs=new Array(nets.length);
+    for(const net of nets) netWs[net.i]=netW(design,net.id);
+    const vios=[];
+    for(const k of cand){
+      const i=(k/N)|0, j=k-i*N;
+      const a=allSegs[i], b=allSegs[j];
+      const d=segSegDist(a.x1,a.y1,a.x2,a.y2,b.x1,b.y1,b.x2,b.y2);
+      const need=design.clearance+(netWs[a.net]+netWs[b.net])/2;
+      if(d<need-1e-9){
+        const midX=((a.x1+a.x2+b.x1+b.x2)/4), midY=((a.y1+a.y2+b.y1+b.y2)/4);
+        const ci=Math.max(0,Math.min(GW-1,Math.floor(midX/grid)));
+        const cj=Math.max(0,Math.min(GH-1,Math.floor(midY/grid)));
+        vios.push(a.l*NC+cj*GW+ci);
       }
     }
     return vios;
@@ -2294,7 +2329,8 @@ function pairCoupleStats(mPathLists, oPathLists, bandCenter, gStep){
   const oSegs=[];
   for(const paths of oPathLists) for(const path of paths) for(let k=1;k<path.length;k++){
     const a=path[k-1], b=path[k];
-    if(a.l===b.l) oSegs.push({ax:a.x,ay:a.y,bx:b.x,by:b.y,l:a.l});
+    if(a.l===b.l) oSegs.push({ax:a.x,ay:a.y,bx:b.x,by:b.y,l:a.l,
+      x0:Math.min(a.x,b.x),x1:Math.max(a.x,b.x),y0:Math.min(a.y,b.y),y1:Math.max(a.y,b.y)});
   }
   let coupledLen=0, totalLen=0;
   for(const paths of mPathLists) for(const path of paths) for(let k=1;k<path.length;k++){
@@ -2307,6 +2343,10 @@ function pairCoupleStats(mPathLists, oPathLists, bandCenter, gStep){
       let dMin=1e9;
       for(const os of oSegs){
         if(os.l!==a.l) continue;
+        // 深优 2026-11-14：bbox 轴距快筛——轴距 ≥ 当前 dMin 的段不可能改进 min
+        //（bboxDist ≥ max 轴距 ≥ dMin ⇒ segDist ≥ dMin；min 无舍入，跳过者位级同值）
+        const gx=Math.max(os.x0-sx, sx-os.x1, 0), gy=Math.max(os.y0-sy, sy-os.y1, 0);
+        if(Math.max(gx,gy)>=dMin) continue;
         dMin=Math.min(dMin, segDist(sx,sy,os.ax,os.ay,os.bx,os.by));
       }
       totalLen+=segLen/steps;
@@ -3639,8 +3679,7 @@ function autoPlace(design, opts){
   };
   comps.forEach(applyComp);
   // 代价一律按"吸附+钳位后"的坐标评估（所见即所得），避免吸附量化制造碰撞
-  const SX=p=>W.get(p).x;
-  const SY=p=>W.get(p).y;
+  // （深优 2026-11-14：原 SX/SY 闭包由 WA 活对象数组替代，见 cost() 前置改造）
   const hots=(opts.hotspots||[]).map(h=>({x0:h.x0,y0:h.y0,x1:h.x1,y1:h.y1,own:new Set(h.owners||[])}));
   const compBox=c=>{
     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
@@ -3649,32 +3688,44 @@ function autoPlace(design, opts){
     return {x0,y0,x1,y1};
   };
   const byNet=new Map();
-  for(const p of pads){
+  for(let pi=0;pi<pads.length;pi++){
+    const p=pads[pi];
     if(p.netId==null) continue;
     if(!byNet.has(p.netId)) byNet.set(p.netId,[]);
-    byNet.get(p.netId).push(p);
+    byNet.get(p.netId).push(pi);
   }
+  // 深优 2026-11-14：代价函数热点改造（位级一致——同一批 W 活对象、同一求和顺序，
+  // 只消热循环里的 Map.get 与每步重复外提）：
+  //  ① W.get 闭包 → 按焊盘下标的活对象数组 WA（W.set 的就是这些对象引用）
+  //  ② maxTrackW(design) 出 cost() 外提（design.nets 布局期不变，纯函数值恒定）
+  //  ③ dirBlk 缓冲外提复用（每步 fill(0)）
+  const WA=pads.map(p=>W.get(p));
+  const SXi=i=>WA[i].x, SYi=i=>WA[i].y;
+  const _apKos=design.keepouts||[];
+  const _apPocket=design.clearance+maxTrackW(design)/2+2*design.grid;
+  const _apDirBlk=new Uint8Array(pads.length);   // bit0=N bit1=E bit2=S bit3=W
   // 贴边罚权重：固定 20000（第五轮 A/B：n51/n45 上 0/20000/自适应三档结果完全相同——
   // 有效成分是货架初始边距 1.5，梯度罚保留作防护，可用 opts.edgeWeight 覆盖）
   const edgeW=opts.edgeWeight!=null ? opts.edgeWeight : 20000;
   function cost(){
     let s=0;
-    for(const [,ps] of byNet)
-      for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++)
-        s+=Math.abs(SX(ps[i])-SX(ps[j]))+Math.abs(SY(ps[i])-SY(ps[j]));
+    for(const [,idx] of byNet)
+      for(let i=0;i<idx.length;i++)for(let j=i+1;j<idx.length;j++)
+        s+=Math.abs(SXi(idx[i])-SXi(idx[j]))+Math.abs(SYi(idx[i])-SYi(idx[j]));
     for(let i=0;i<pads.length;i++)for(let j=i+1;j<pads.length;j++){
-      const a=pads[i],b=pads[j];
-      if(compOf.get(a)===compOf.get(b)) continue;
-      const wa=W.get(a), wb=W.get(b);
-      const ox=(wa.w+wb.w)/2-Math.abs(SX(a)-SX(b)), oy=(wa.h+wb.h)/2-Math.abs(SY(a)-SY(b));
+      const a=i,b=j;
+      if(compOf.get(pads[a])===compOf.get(pads[b])) continue;
+      const wa=WA[a], wb=WA[b];
+      const ox=(wa.w+wb.w)/2-Math.abs(SXi(a)-SXi(b)), oy=(wa.h+wb.h)/2-Math.abs(SYi(a)-SYi(b));
       // 焊盘重叠 = 硬约束；常数下限 0.1 防止"恰好接触"时比例罚金归零（浮点边界教训）
       if(ox>0&&oy>0) s+=1000000*(0.1+Math.min(ox,oy));
       // 边缘间距罚：不重叠但铜边距 < clearance 同样违规（Q1 嵌进 U1 引脚间隙的教训）
-      else if(Math.abs(SX(a)-SX(b))<(wa.w+wb.w)/2+design.clearance && Math.abs(SY(a)-SY(b))<(wa.h+wb.h)/2+design.clearance)
+      else if(Math.abs(SXi(a)-SXi(b))<(wa.w+wb.w)/2+design.clearance && Math.abs(SYi(a)-SYi(b))<(wa.h+wb.h)/2+design.clearance)
         s+=200000;
     }
-    for(const p of pads){
-      const w=W.get(p);   // 出板检查用未钳位坐标：漂出板外必须受罚
+    for(let pi=0;pi<pads.length;pi++){
+      const p=pads[pi];
+      const w=WA[pi];   // 出板检查用未钳位坐标：漂出板外必须受罚
       if(w.x-w.w/2<-0.01||w.x+w.w/2>design.width+0.01||w.y-w.h/2<-0.01||w.y+w.h/2>design.height+0.01) s+=100000;
       // 贴边梯度罚：焊盘边缘距板边 < 1.2mm 每毫米罚 edgeW——留出逃逸走廊
       // （纯线性梯度，不封死：连接器等贴边器件仍可由 spec 指定）
@@ -3682,8 +3733,8 @@ function autoPlace(design, opts){
       // 疏板全额罚。opts.edgeWeight 可强制覆盖。
       { const dEdge=Math.min(w.x-w.w/2, design.width-(w.x+w.w/2), w.y-w.h/2, design.height-(w.y+w.h/2));
         if(dEdge<1.2) s+=edgeW*(1.2-dEdge); }
-      const x=SX(p), y=SY(p);
-      for(const k of (design.keepouts||[])){
+      const x=SXi(pi), y=SYi(pi);
+      for(const k of _apKos){
         if(k.scope&&_apCls.get(p.netId)===k.scope) continue;   // class keepout 本类网焊盘自由
         if(Math.abs(x-k.x)<(k.w+w.w)/2 && Math.abs(y-k.y)<(k.h+w.h)/2) s+=100000;
       }
@@ -3693,20 +3744,20 @@ function autoPlace(design, opts){
     // 判据与布线器一致：b 阻挡 a 的某正交方向 ⇔ 边距 < halfClr + 2*grid（影响区盖住逃逸格，恰界不算）；
     // 斜向不算独立方向（布线器斜向移动需两个正交格空闲，正交堵死则斜向不可用）。
     // 板边同判。空网焊盘可作阻挡者但不计罚（不参与布线）。罚 300000：高于线长项，低于重叠硬罚。
-    const pocketReach=design.clearance+maxTrackW(design)/2+2*design.grid;
     {
-      const dirBlk=new Uint8Array(pads.length);   // bit0=N bit1=E bit2=S bit3=W
+      const pocketReach=_apPocket, dirBlk=_apDirBlk;
+      dirBlk.fill(0);
       for(let i=0;i<pads.length;i++)for(let j=i+1;j<pads.length;j++){
         const a=pads[i],b=pads[j];
         if(a.netId!=null&&b.netId!=null&&a.netId===b.netId) continue;
-        const wa=W.get(a),wb=W.get(b);
-        const ax=Math.abs(SX(b)-SX(a))-(wa.w+wb.w)/2, ay=Math.abs(SY(b)-SY(a))-(wa.h+wb.h)/2;
+        const wa=WA[i],wb=WA[j];
+        const ax=Math.abs(SXi(j)-SXi(i))-(wa.w+wb.w)/2, ay=Math.abs(SYi(j)-SYi(i))-(wa.h+wb.h)/2;
         if(ax>=pocketReach&&ay>=pocketReach) continue;
-        if(ax>ay){ if(SX(b)>SX(a)){dirBlk[i]|=2;dirBlk[j]|=8;}else{dirBlk[i]|=8;dirBlk[j]|=2;} }
-        else if(ay>ax){ if(SY(b)>SY(a)){dirBlk[i]|=4;dirBlk[j]|=1;}else{dirBlk[i]|=1;dirBlk[j]|=4;} }
+        if(ax>ay){ if(SXi(j)>SXi(i)){dirBlk[i]|=2;dirBlk[j]|=8;}else{dirBlk[i]|=8;dirBlk[j]|=2;} }
+        else if(ay>ax){ if(SYi(j)>SYi(i)){dirBlk[i]|=4;dirBlk[j]|=1;}else{dirBlk[i]|=1;dirBlk[j]|=4;} }
       }
       for(let i=0;i<pads.length;i++){
-        const w=W.get(pads[i]);
+        const w=WA[i];
         if(w.x-w.w/2<pocketReach) dirBlk[i]|=8;
         else if(design.width-(w.x+w.w/2)<pocketReach) dirBlk[i]|=2;
         if(w.y-w.h/2<pocketReach) dirBlk[i]|=1;
@@ -5878,7 +5929,8 @@ function manufacturingHoles(design,result){
     // #15：合并键必须含层跨度——同一 XY 的埋孔与通孔是**两块不同的物理钻**
     //（埋孔只钻内层，通孔贯穿），合并会丢失其一并伪造孔边距豁免。
     const span=h.span||[0,L-1];
-    const key=h.net!=null?JSON.stringify([h.x,h.y,h.r,h.net,span[0],span[1]]):null;
+    // 深优 2026-11-14：数值逗号拼接键替代 JSON.stringify（同唯一性、免数组分配与序列化）
+    const key=h.net!=null?h.x+','+h.y+','+h.r+','+h.net+','+span[0]+','+span[1]:null;
     const prev=key!=null?byDrill.get(key):null;
     if(prev){
       if(h.pad){prev.pads.push(h.pad);prev.pad=prev.pad||h.pad;}
@@ -6030,7 +6082,8 @@ function checkDRC(design, result, opts){
     for(const n of result.nets){
       if(n.netId===v.net) continue;
       let hit=false;
-      const _vsR=v.outer/2+design.clearance+netW(design,n.netId)/2+1e-9;   // 违规时 via 中心距段 bbox ≤ 此界
+      const _nw2=wOf(n.netId)/2;   // 深优 2026-11-14：复用 widths 缓存，免逐段重复 netW 查找
+      const _vsR=v.outer/2+design.clearance+_nw2+1e-9;   // 违规时 via 中心距段 bbox ≤ 此界
       for(const path of n.paths){
         for(let k=1;k<path.length;k++){
           const a=path[k-1], b=path[k];
@@ -6039,7 +6092,7 @@ function checkDRC(design, result, opts){
           if(v.x<Math.min(a.x,b.x)-_vsR||v.x>Math.max(a.x,b.x)+_vsR||
              v.y<Math.min(a.y,b.y)-_vsR||v.y>Math.max(a.y,b.y)+_vsR) continue;
           const d=segDist(v.x,v.y,a.x,a.y,b.x,b.y);
-          if(d < design.viaOuter/2+design.clearance+netW(design,n.netId)/2-1e-9){ hit=true; break; }
+          if(d < design.viaOuter/2+design.clearance+_nw2-1e-9){ hit=true; break; }
         }
         if(hit) break;
       }
@@ -6623,6 +6676,24 @@ function beautifyResult(design, result){
   const store=new Map();
   for(const n of result.nets) store.set(n.netId, collect(n.paths));
 
+  // 深优 2026-11-14：谓词型检查的空间索引（chamferOK/segClearOK 只返回真/假，
+  // 违规命中次序不影响结果 → 排序扫描的候选集语义与全扫逐位一致）。
+  // pads/vias 按左界排序 + 提前 break；异网段按层分组按左界排序 + 提前 break。
+  const padsX=[...pads].sort((a,b)=>a.box[0]-b.box[0]);
+  const viasX=[...vias].sort((a,b)=>a.x-b.x);
+  const segsByLayer=new Map();
+  for(const [oid,segs] of store) for(const s2 of segs){
+    let a2=segsByLayer.get(s2.l); if(!a2){ a2=[]; segsByLayer.set(s2.l,a2); }
+    a2.push({oid, s:s2});
+  }
+  for(const a2 of segsByLayer.values()) a2.sort((u,v)=>u.s.bx[0]-v.s.bx[0]);
+  // bbox 轴距下界（段到矩形 bbox 的距离 ≥ max 轴距）——超过阈值者必不违规，免 segRect 调用
+  const boxFar=(box,ax,ay,bx,by,th)=>{
+    const dx=Math.max(box[0]-Math.max(ax,bx), Math.min(ax,bx)-box[2], 0);
+    const dy=Math.max(box[1]-Math.max(ay,by), Math.min(ay,by)-box[3], 0);
+    return Math.max(dx,dy)>=th;
+  };
+
   function chamferOK(netId, ax,ay,bx,by, l){
     const w=netW(design,netId);
     const m=w+clr+vo+g;
@@ -6636,22 +6707,26 @@ function beautifyResult(design, result){
       if(k[2]<bx1||k[0]>bx2||k[3]<by1||k[1]>by2) continue;
       if(segRect(k)<w/2-eps) return false;
     }
-    for(const p of pads){
-      if(p.box[2]<bx1||p.box[0]>bx2||p.box[3]<by1||p.box[1]>by2) continue;
-      if(segRect(p.box)<clr+w/2-eps) return false;
+    const padTh=clr+w/2-eps;
+    for(const p of padsX){
+      if(p.box[0]>bx2) break;
+      if(p.box[2]<bx1||p.box[3]<by1||p.box[1]>by2) continue;
+      if(segRect(p.box)<padTh) return false;
     }
-    for(const v of vias){
+    const viaTh=vo+clr+w/2-eps;
+    for(const v of viasX){
+      if(v.x>bx2) break;
       if(v.net===netId) continue;
-      if(v.x<bx1||v.x>bx2||v.y<by1||v.y>by2) continue;
-      if(segDist(v.x,v.y,ax,ay,bx,by)<vo+clr+w/2-eps) return false;
+      if(v.x<bx1||v.y<by1||v.y>by2) continue;
+      if(segDist(v.x,v.y,ax,ay,bx,by)<viaTh) return false;
     }
-    for(const [oid,segs] of store){
-      if(oid===netId) continue;
-      for(const s2 of segs){
-        if(s2.l!==l) continue;
-        if(s2.bx[2]<bx1||s2.bx[0]>bx2||s2.bx[3]<by1||s2.bx[1]>by2) continue;
-        if(segSegDist(ax,ay,bx,by, s2.x1,s2.y1,s2.x2,s2.y2)<w+clr-eps) return false;
-      }
+    const segTh=w+clr-eps;
+    const arr=segsByLayer.get(l);
+    if(arr) for(const e of arr){
+      if(e.s.bx[0]>bx2) break;
+      if(e.oid===netId) continue;
+      if(e.s.bx[2]<bx1||e.s.bx[3]<by1||e.s.bx[1]>by2) continue;
+      if(segSegDist(ax,ay,bx,by, e.s.x1,e.s.y1,e.s.x2,e.s.y2)<segTh) return false;
     }
     return true;
   }
@@ -6666,24 +6741,31 @@ function beautifyResult(design, result){
     // 精确线段距离（第六轮 n72 教训：步进采样对擦边接触漏检，与 chamferOK 同修）
     const segRect=(box)=>segmentRectDistance({x:ax,y:ay},{x:bx,y:by},
       {x:(box[0]+box[2])/2, y:(box[1]+box[3])/2, w:box[2]-box[0], h:box[3]-box[1]});
+    const mnX=Math.min(ax,bx), mxX=Math.max(ax,bx), mnY=Math.min(ay,by), mxY=Math.max(ay,by);
     for(const k of kos)
       if(segRect(k)<w/2-eps) return false;
-    for(const p of pads){
+    const padTh=clr+w/2-eps;
+    for(const p of padsX){
       if(p.net===netId) continue;   // 同网焊盘允许接触（连接保持由 contactOK 负责）
-      if(segRect(p.box)<clr+w/2-eps) return false;
+      // bbox 轴距下界 ≥ 阈值者 segRect 必 ≥ 阈值（矩形在 bbox 内）→ 安全跳过
+      if(boxFar(p.box,ax,ay,bx,by,padTh)) continue;
+      if(segRect(p.box)<padTh) return false;
     }
-    for(const v of vias){
+    const viaTh=vo+clr+w/2-eps;
+    for(const v of viasX){
       if(v.net===netId) continue;
-      if(segDist(v.x,v.y,ax,ay,bx,by)<vo+clr+w/2-eps) return false;
+      // 点到段 bbox 的距离 ≥ max 轴距 → 超阈值者 segDist 必 ≥ 阈值 → 安全跳过
+      const dx0=Math.max(mnX-v.x, v.x-mxX, 0), dy0=Math.max(mnY-v.y, v.y-mxY, 0);
+      if(Math.max(dx0,dy0)>=viaTh) continue;
+      if(segDist(v.x,v.y,ax,ay,bx,by)<viaTh) return false;
     }
-    for(const [oid,segs] of store){
-      if(oid===netId) continue;
-      for(const s2 of segs){
-        if(s2.l!==l) continue;
-        if(s2.bx[2]<Math.min(ax,bx)-1||s2.bx[0]>Math.max(ax,bx)+1||
-           s2.bx[3]<Math.min(ay,by)-1||s2.bx[1]>Math.max(ay,by)+1) continue;
-        if(segSegDist(ax,ay,bx,by, s2.x1,s2.y1,s2.x2,s2.y2)<w+clr-eps) return false;
-      }
+    const segTh=w+clr-eps;
+    const arr=segsByLayer.get(l);
+    if(arr) for(const e of arr){
+      if(e.s.bx[0]>mxX+1) break;
+      if(e.oid===netId) continue;
+      if(e.s.bx[2]<mnX-1||e.s.bx[3]<mnY-1||e.s.bx[1]>mxY+1) continue;
+      if(segSegDist(ax,ay,bx,by, e.s.x1,e.s.y1,e.s.x2,e.s.y2)<segTh) return false;
     }
     return true;
   }
@@ -7011,7 +7093,10 @@ function serpentineTune(design, result, opts){
         // 两区域口径：B=新增铜（bump 包络减基线条带）从严——pair 伙伴 serpGap（3W，保对内
         // 几何纪律）、其余 clr；L=既有基线条带（路由已合法）维持 clr 现状。禁布区按全域包络。
         const myPair=(design.nets.find(x=>x.id===sn.net.id)||{}).pair||null;
-        const pairOf=id=>{ if(id==null) return null; const n=design.nets.find(x=>x.id===id); return (n&&n.pair)||null; };
+        // 深优 2026-11-14：pair 查表 Map 化——原 pairOf 每次线性扫 design.nets，
+        // 被 corridorFree/diagFit 每障碍每二分轮调用
+        const _pairMap=new Map(design.nets.map(x=>[x.id,x.pair||null]));
+        const pairOf=id=>id==null?null:(_pairMap.get(id)||null);
         const reqClr=nid=>(myPair&&nid!=null&&nid!==sn.net.id&&pairOf(nid)===myPair)?serpGap:clr;
         const corridorFree=(cd, A, s, local)=>{
           const W2=W/2;
@@ -7563,17 +7648,48 @@ function _pourOpenMask(src, WF, HF, rc){
   const d1=_pourMorphH(e2, WF, HF, rc, false);
   return _pourMorphV(d1, WF, HF, rc, false);
 }
-function pourContains(pour, x, y){   // 射线法（+x），跨全部环偶奇判定——无需环嵌套分组
-  if(!pour||!pour.polys) return false;
-  let cross=0;
+// 深优 2026-11-14：pour 查询的 y-slab 边索引（WeakMap 惰性构建；polys 构造后只读，
+// computePour 是唯一写点 :8057）。查询只扫跨越该 y 带的边——同一批边、同一算式，
+// 奇偶计数与次序无关 → 位级一致。
+const _pourSlab=new WeakMap();
+function _pourIndex(pour){
+  let idx=_pourSlab.get(pour);
+  if(idx) return idx;
+  let ylo=Infinity, yhi=-Infinity;
+  for(const poly of pour.polys) for(const ring of [poly.outer, ...poly.holes])
+    for(let i=1;i<ring.length;i+=2){ const y=ring[i]; if(y<ylo)ylo=y; if(y>yhi)yhi=y; }
+  if(ylo>yhi){ ylo=0; yhi=0; }
+  const rows=Math.max(1,Math.min(256,Math.ceil((yhi-ylo)/1)||1));
+  const h=((yhi-ylo)/rows)||1;
+  const bins=Array.from({length:rows},()=>[]);
   for(const poly of pour.polys) for(const ring of [poly.outer, ...poly.holes]){
     for(let i=0;i<ring.length;i+=2){
       const j=(i+2)%ring.length;
       const y1=ring[i+1], y2=ring[j+1];
-      if((y1>y)!==(y2>y)){
-        const xx=ring[i]+(y-y1)*(ring[j]-ring[i])/(y2-y1);
-        if(x<xx) cross++;
-      }
+      // clamp 双侧（恰在 yhi 的水平边 floor(rows) 会双侧越界——r0 越界必须同样夹回，
+      // 否则该边被分配进 0 个 bin，pourNear 漏检——pourprobe 差分实测抓出）
+      let r0=Math.max(0,Math.min(rows-1,Math.floor((Math.min(y1,y2)-ylo)/h)));
+      let r1=Math.max(0,Math.min(rows-1,Math.floor((Math.max(y1,y2)-ylo)/h)));
+      if(r0>r1){ const tt=r0; r0=r1; r1=tt; }
+      for(let r=r0;r<=r1;r++) bins[r].push(ring,i,j);
+    }
+  }
+  idx={bins,ylo,yhi,h,rows};
+  _pourSlab.set(pour,idx);
+  return idx;
+}
+function pourContains(pour, x, y){   // 射线法（+x），跨全部环偶奇判定——无需环嵌套分组
+  if(!pour||!pour.polys) return false;
+  const idx=_pourIndex(pour);
+  if(y<idx.ylo||y>idx.yhi) return false;   // 带外无跨越边 → cross=0 → 偶 → false（与全扫一致）
+  const b=idx.bins[Math.max(0,Math.min(idx.rows-1,Math.floor((y-idx.ylo)/idx.h)))];
+  let cross=0;
+  for(let t=0;t<b.length;t+=3){
+    const ring=b[t], i=b[t+1], j=b[t+2];
+    const y1=ring[i+1], y2=ring[j+1];
+    if((y1>y)!==(y2>y)){
+      const xx=ring[i]+(y-y1)*(ring[j]-ring[i])/(y2-y1);
+      if(x<xx) cross++;
     }
   }
   return (cross&1)===1;
@@ -7581,15 +7697,19 @@ function pourContains(pour, x, y){   // 射线法（+x），跨全部环偶奇�
 function pourNear(pour, x, y, reach){   // 点在铜皮内或距其边界 ≤ reach（DRC 回流检查用）
   if(!pour||!pour.polys||!pour.polys.length) return false;
   if(pourContains(pour, x, y)) return true;
+  const idx=_pourIndex(pour);
   const r2=reach*reach;
-  for(const poly of pour.polys) for(const ring of [poly.outer, ...poly.holes]){
-    for(let i=0;i<ring.length;i+=2){
-      const j=(i+2)%ring.length;
+  // 边的 y 区间与 [y-reach,y+reach] 不相交者最近点距必 > reach（钳位投影 y 落在区间内）→ 安全跳过
+  const r0=Math.max(0,Math.floor((y-reach-idx.ylo)/idx.h)), r1=Math.min(idx.rows-1,Math.floor((y+reach-idx.ylo)/idx.h));
+  for(let r=r0;r<=r1;r++){
+    const b=idx.bins[r];
+    for(let t=0;t<b.length;t+=3){
+      const ring=b[t], i=b[t+1], j=b[t+2];
       const ax=ring[i], ay=ring[i+1], bx=ring[j], by=ring[j+1];
       const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy;
-      let t=L2>1e-18?((x-ax)*dx+(y-ay)*dy)/L2:0;
-      t=Math.max(0,Math.min(1,t));
-      const ex=ax+t*dx-x, ey=ay+t*dy-y;
+      let t2=L2>1e-18?((x-ax)*dx+(y-ay)*dy)/L2:0;
+      t2=Math.max(0,Math.min(1,t2));
+      const ex=ax+t2*dx-x, ey=ay+t2*dy-y;
       if(ex*ex+ey*ey<=r2) return true;
     }
   }
@@ -8558,8 +8678,7 @@ function shpBuildAxes(design, netPads, wHalf, win, OBS, cls, netId){
   // 抽稀只删非本网焊盘所在的坐标，焊盘中心永远保留——否则源/汇节点消失。
   const Bx=merge(xsB), By=merge(ysB), Cx=merge(xsC), Cy=merge(ysC);
   const keepSet=new Set([...Cx,...Cy]);   // Cx/Cy 已含本网焊盘全部相关坐标
-  const keepArr=[...new Set([...Cx,...Cy])];
-  const isKeep=v=>keepArr.indexOf(v)>=0;
+  const isKeep=v=>keepSet.has(v);         // 深优 2026-11-14：启用死代码 keepSet，替换 O(n) indexOf
   const thin=(arr)=>{ let k=0; return arr.filter(v=>isKeep(v)||((k++%2)===0)); };
   const cands=[
     {xs:mid(merge(Bx,Cx)), ys:mid(merge(By,Cy))},
@@ -8730,13 +8849,18 @@ const cs=colsIn(k.x-k.w/2-vR,k.x+k.w/2+vR), rs=rowsIn(k.y-k.h/2-vR,k.y+k.h/2+vR)
   // 只对 pen>0 的边加（软边），量级 = 争议次数 × histScale（mm 深度口径）。
   const HS=histScale!=null?histScale:8;   // 每次争议的额外深度（mm 口径）
   if(soft && crossHist && crossHist.size){
+    // 深优 2026-11-14：crossHist 键进图前一次性预解析——热路径免逐格 split/字符串转数
+    const histParsed=[];
+    for(const [key,cnt] of crossHist){
+      const parts=key.split('|');
+      histParsed.push([+parts[0], +parts[1], +parts[2], cnt]);
+    }
     const histAt=(x,y,l)=>{
       let sum=0;
       const xi=Math.round(x*4), yi=Math.round(y*4);   // 0.25mm 量化格
-      for(const [key,cnt] of crossHist){
-        const parts=key.split('|');
-        if(+parts[0]!==l) continue;
-        if(Math.abs(+parts[1]-xi)<=2 && Math.abs(+parts[2]-yi)<=2) sum+=cnt;
+      for(const [hl,hx,hy,cnt] of histParsed){
+        if(hl!==l) continue;
+        if(Math.abs(hx-xi)<=2 && Math.abs(hy-yi)<=2) sum+=cnt;
       }
       return sum;
     };
@@ -8759,6 +8883,17 @@ const cs=colsIn(k.x-k.w/2-vR,k.x+k.w/2+vR), rs=rowsIn(k.y-k.h/2-vR,k.y+k.h/2+vR)
    状态 =(节点, 入向)，入向 ∈{左,右,上,下,过孔来}，用于拐弯罚。
    代价 = 线段长度 + 拐弯罚 + 过孔代价；启发式 = 到目标包围盒的曼哈顿下界
    （忽略过孔与非负拐弯罚 ⇒ 可采纳，故最优）。 */
+// 深优 2026-11-14：shpAstar 会话级缓冲复用（同 SN 直接复用五套类型化数组，逐位一致——
+// 每次调用照常 fill 重置语义状态，只省分配与 GC；栅格侧 astar 同款做法 :893-951）
+let _shpAstBuf=null;
+function shpAstBuffers(SN,LNN){
+  if(_shpAstBuf&&_shpAstBuf.SN===SN) return _shpAstBuf;
+  const b={SN,
+    gv:new Float64Array(SN), par:new Int32Array(SN), closed:new Uint8Array(SN),
+    dstSet:new Uint8Array(LNN), hc:new Float64Array(Math.max(64,SN>>2)), hs:new Int32Array(Math.max(64,SN>>2))};
+  _shpAstBuf=b;
+  return b;
+}
 function shpAstar(G, srcNodes, dstNodes, opts){
   opts=opts||{};
   const {Nx,Ny,L,NN,xs,ys,hok,vok,viaOk,penH,penV,penVia}=G;
@@ -8777,12 +8912,13 @@ function shpAstar(G, srcNodes, dstNodes, opts){
     var NH=n=>{ const x=xs[n%Nx], y=ys[((n%NN)/Nx)|0];
       return (x<dx0?dx0-x:x>dx1?x-dx1:0)+(y<dy0?dy0-y:y>dy1?y-dy1:0); };
   } else return null;
-  const gv=new Float64Array(SN).fill(Infinity), par=new Int32Array(SN).fill(-1);
-  const closed=new Uint8Array(SN);
+  const B=shpAstBuffers(SN,L*NN);
+  const gv=B.gv, par=B.par, closed=B.closed, dstSet=B.dstSet;
+  gv.fill(Infinity); par.fill(-1); closed.fill(0); dstSet.fill(0);
   // 可增长二叉堆：同一状态可多次入堆（惰性删除），堆深 ≠ 状态数——
   // 定长数组会静默丢弃越界写入（类型化数组 OOB 写=无操作），进而破坏堆序，
   // 表现为找到的路径远劣于最优（压缩图单元实测抓出）。
-  let hc=new Float64Array(Math.max(64,SN>>2)), hs=new Int32Array(hc.length), hn=0;
+  let hc=B.hc, hs=B.hs, hn=0;   // 堆内容无需清零：hn=0 即空堆（惰性删除语义不变）
   const hgrow=()=>{
     const nc=new Float64Array(hc.length*2), ns2=new Int32Array(hc.length*2);
     nc.set(hc); ns2.set(hs); hc=nc; hs=ns2;
@@ -8805,7 +8941,6 @@ function shpAstar(G, srcNodes, dstNodes, opts){
       hc[i]=lc; hs[i]=ls; }
     return top;
   };
-  const dstSet=new Uint8Array(L*NN);
   for(const n of dstNodes) dstSet[n]=1;
   for(const n of srcNodes){ const st=n*D+4; if(closed[st]) continue;
     gv[st]=0; push(NH(n),st); }
@@ -8901,7 +9036,12 @@ function shpRouteNet(design, net, OBS, win, opts){
   if(!G) return null;
   const lay=p=>padLayersOfPad(p,L);
   const inTree=new Uint8Array(L*G.NN);
-  const markPad=p=>{ for(const l of lay(p)) for(const n of G.padNodes(p,l)) inTree[n]=1; };
+  // 深优 2026-11-14：dst 列表增量维护——原实现每接一个盘全扫 inTree O(L·NN)。
+  // 标记点集中改道 markNode：置位时顺手入列。dst 仅喂 dstSet（顺序无关）与
+  // shpAstar 的目标 bbox（min/max 归并，顺序无关）——位级一致。
+  const dstList=[];
+  const markNode=n=>{ if(!inTree[n]){ inTree[n]=1; dstList.push(n); } };
+  const markPad=p=>{ for(const l of lay(p)) for(const n of G.padNodes(p,l)) markNode(n); };
   // 起点：焊盘铜节点最多的焊盘（并列取下标最小 → 确定性）
   let root=pads[0], rootN=-1;
   for(const p of pads){
@@ -8911,6 +9051,7 @@ function shpRouteNet(design, net, OBS, win, opts){
   if(rootN<=0) return null;
   markPad(root);
   const paths=[], vias=[];
+  let viaMarked=0;   // 已回填进树的过孔数（增量处理游标）
   const reached=new Set([root]);
   const order=[root];
   // Prim：每次取与已接入集合最近的未接入焊盘。
@@ -8920,22 +9061,28 @@ function shpRouteNet(design, net, OBS, win, opts){
   // 通道后，后接入的盘在硬模式找不到锚点。这与栅格引擎 PathFinder 的
   // enterOK 软阶段同语义：硬约束布不通就付代价过。
   let softJoins=0;
+  // 深优 2026-11-14：Prim 选序 O(p³)→O(p²)——维护各未接盘到树的当前最近距离平方。
+  // 每对距离只算一次（算式逐位相同），严格 < 扫描序不变 → 选中序位级一致
+  const minD=new Map();
+  for(const p of pads) if(p!==root) minD.set(p,(p.x-root.x)**2+(p.y-root.y)**2);
   while(order.length<pads.length){
     let best=null, bd=Infinity;
     for(const p of pads){
       if(reached.has(p)) continue;
-      for(const o of order){
-        const d=(p.x-o.x)**2+(p.y-o.y)**2;
-        if(d<bd){ bd=d; best=p; }
-      }
+      const d=minD.get(p);
+      if(d<bd){ bd=d; best=p; }
     }
     if(!best) break;
     const src=[];
     for(const l of lay(best)) for(const n of G.padNodes(best,l)) src.push(n);
     reached.add(best); order.push(best);
+    for(const p of pads){
+      if(reached.has(p)) continue;
+      const d=(p.x-best.x)**2+(p.y-best.y)**2;
+      if(d<minD.get(p)) minD.set(p,d);
+    }
     if(!src.length) continue;                        // 零格焊盘：如实不可达
-    const dst=[];
-    for(let n=0;n<inTree.length;n++) if(inTree[n]) dst.push(n);
+    const dst=dstList;
     if(!dst.length) continue;
     let pts=shpAstar(G,src,dst,{viaCost:opts.viaCost,turnPen:opts.turnPen});
     let softJoin=false;
@@ -8973,17 +9120,21 @@ function shpRouteNet(design, net, OBS, win, opts){
         for(let i=0;i<G.Nx;i++){
           const x=G.xs[i];
           if(x<x0-1e-9||x>x1+1e-9) continue;
-          if(segDist(x,y,a.x,a.y,b.x,b.y)<=hw+1e-9) inTree[off+j*G.Nx+i]=1;
+          if(segDist(x,y,a.x,a.y,b.x,b.y)<=hw+1e-9) markNode(off+j*G.Nx+i);
         }
       }
     }
     markPad(best);
-    for(const v of vias){
+    // 深优 2026-11-14：过孔回填只处理本轮新增（原实现对迄今全部过孔重扫）——
+    // 置位幂等，跳过已标记者不改变 inTree 终态
+    for(let vi=viaMarked;vi<vias.length;vi++){
+      const v=vias[vi];
       const i=G.xs.findIndex(x=>Math.abs(x-v.x)<1e-9);
       const j=G.ys.findIndex(y=>Math.abs(y-v.y)<1e-9);
       if(i<0||j<0) continue;
-      for(let l=0;l<L;l++) inTree[l*G.NN+j*G.Nx+i]=1;
+      for(let l=0;l<L;l++) markNode(l*G.NN+j*G.Nx+i);
     }
+    viaMarked=vias.length;
   }
   // 连通统计：焊盘铜内是否有已覆盖节点（与栅格 countConn 同口径，诚实口径：
   // 多分量时仅计真正接入铜皮的焊盘）
