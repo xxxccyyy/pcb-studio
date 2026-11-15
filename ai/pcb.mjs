@@ -1245,6 +1245,12 @@ switch (cmd) {
       iterations: parseInt(argFlag(rest, '--iterations', '4000')),
       maxIter: parseInt(argFlag(rest, '--max-iter', '60')),
       viaCost: Number(argFlag(rest, '--via-cost', '15')),
+      // 与 route 一致：已接受的策略开关不能在布局-布线循环中被静默忽略。
+      blindVias: !!options.get('--blind-vias'),
+      compactPairs: !options.get('--no-compact-pairs'),
+      jointReroute: !options.get('--no-joint-reroute'),
+      fanoutFirst: ({inner:'inner_first',outer:'outer_first'}[options.get('--fanout-first')]
+        || options.get('--fanout-first')),
       anchor: (argFlag(rest, '--anchor', '') || '').split(',').filter(Boolean)
     });
     // 形状补线（阶段三 #12）：对最终布局再做一轮失败网重布；默认关闭

@@ -190,6 +190,12 @@ pcb-autorouter/
 
 ## 运行测试
 
+本轮优化：网络面板按焊盘坐标缓存长度下界、混合线宽几何扫描防漏检、Worker 完整设计指纹防止旧障碍模型重布，以及 CLI 策略开关修复。新增回归已接入 `npm test`；面板几何准备性能可用 `node tests/bench-net-panel.mjs` 复现。范围、验证与后续建议见 [交互性能与布线正确性复查](docs/optimization-review-followup.md)。Windows PowerShell 如拦截 `npm.ps1`，可使用 `npm.cmd test`，无需修改系统执行策略。
+
+后续深度优化：首次大网长度下界的 Prim 从 O(P³) 降为 O(P²)、形状补线仅审计候选网走线段冲突、取消/失败统一失效 Worker 会话。对拍与性能边界见 [深度优化报告](docs/deep-optimization-20261115.md)；可运行 `node tests/bench-net-lower-bound.mjs` 和 `node tests/bench-candidate-geometry.mjs` 复现。
+
+引擎质量/性能轮：修正 soft A* 近邻行列坐标及无缓存回退、按搜索代际缓存过孔检查环、约束自动过孔与已有固定钻孔的物理间距。21 案例几何 DRC 合计 61→48，但过孔合计 90→115，存在明确质量权衡，不代表所有设计无损提升或实际生产良率保证；详细对比与复现见 [引擎质量与性能报告](docs/engine-quality-performance-20261115.md)。
+
 几何回归包含各层距离下界、过孔影响区、正交/斜向走线交叉、每网线宽及精确间距边界。运行 `npm run bench` 可测量距离图与完整布线性能；测量结果及后续改进建议见 [优化审查](docs/optimization-review.md)。
 
 PCB 设计质量改进：自动布局保留输入布局候选、重启时同步恢复代价缓存；焊盘按实际铜边与共同层检查设计间距；物理孔距与板边检查统一实际钻孔尺寸和每网线宽。新检查可能指出旧工程原先未被检出的错误，不代表旧工程已自动修复。详情见 [PCB 设计质量改进](docs/pcb-design-quality.md)。两轮优化的独立差分验证、审计发现及补充修复见 [优化正确性复查](docs/optimization-audit.md)。

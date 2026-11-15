@@ -1,11 +1,11 @@
-const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch','--blind-vias','--no-compact-pairs']);
+const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch','--blind-vias','--no-compact-pairs','--no-joint-reroute']);
 const flagCommands={
   '-o':['place','route','export','device','schem','pour','tune','bom','pos','autopcb','render','import','deliver'],
   '--via-cost':['route','autopcb'],'--max-iter':['route','autopcb'],
   '--iterations':['place','autopcb'],'--anchor':['place','autopcb'],
   '--rounds':['autopcb'],'--devices':['schem'],
   '--net':['pour','drop','pdn'],'--result':['pour','autopcb'],'--layer':['pour'],'--stitch-spacing':['pour'],'--no-stitch':['pour'],
-  '--pair':['tune'],'--group':['tune'],'--serp-gap':['tune'],'--tol':['tune'],
+  '--group':['tune'],'--serp-gap':['tune'],'--tol':['tune'],
   '--target':['tune'],'--max-amp':['tune'],
   '--parallel':['route','autopcb'],'--no-nb-ripup':['route'],'--iter-workers':['route','autopcb'],
   '--iter-waves':['route','autopcb'],'--shard':['route','autopcb'],
@@ -49,6 +49,8 @@ export function parseArguments(command,argv){
       if(!Number.isFinite(number)||number<min||number>max||(integer&&!Number.isInteger(number)))
         throw new Error(token+' must be '+(integer?'an integer':'a number')+' from '+min+' to '+max);
     }
+    if(token==='--fanout-first'&&!['off','auto','inner','outer','inner_first','outer_first'].includes(value))
+      throw new Error('--fanout-first must be off, auto, inner or outer (inner_first/outer_first also accepted)');
     if(token==='--layer'&&!['top','bottom'].includes(value)) throw new Error('--layer must be top or bottom');
     if(token==='--fill'&&!['solid','grid'].includes(value)) throw new Error('--fill must be solid or grid');
     if(token==='--islands'&&!['always','area','never'].includes(value)) throw new Error('--islands must be always, area or never');

@@ -696,6 +696,8 @@
   }
   async function rerouteOne(id){
     if(app.routing) return;
+    // 空闲期 Worker 异常没有待决 request/catch；不能据旧 UI 标记重建一个无会话 Worker。
+    if(!routingClient.worker) app.session=null;
     if(!app.session||!app.result){toast('请先执行一次自动布线');return;}
     routingBusy(true);
     try{
@@ -710,7 +712,7 @@
       app.result=response.result;
       computeDerived(); renderNets(); renderStats(); runDRC(); requestDraw();
       toast(response.outcome.ok?'网络已单独重布 ✓':'单独重布失败，请查看 DRC');
-    }catch(error){app.session=null;toast(error.name==='AbortError'?'已停止重布':error.message);}
+    }catch(error){invalidateRoutingSession();toast(error.name==='AbortError'?'已停止重布':error.message);}
     finally{routingBusy(false);}
   }
   function clearNetRoutes(id){
@@ -864,7 +866,7 @@
     if(key==='1'){ e.preventDefault(); zoomAt(10); return; }
     if(key==='+'||key==='='){ e.preventDefault(); zoomAt(app.view.scale*1.2); return; }
     if(key==='-'){ e.preventDefault(); zoomAt(app.view.scale/1.2); return; }
-    if(app.routing){ if(e.key==='Escape') routingClient.dispose(); return; }
+    if(app.routing){ if(e.key==='Escape') invalidateRoutingSession(); return; }
     if(app.draw){
       if(e.key==='Enter'){ e.preventDefault(); finishDraw(); return; }
       if(e.key==='Escape'){ app.draw=null; syncCanvasUI(); requestDraw(); return; }
@@ -962,12 +964,34 @@
   $('pDel').addEventListener('click',()=>{ if(app.sel) removeObj(app.sel); });
 
   // ---------------- 网络面板 ----------------
+  function createNetGeometryCache(lowerBound){
+    let currentDesign=null, cache=new Map();
+    return d=>{
+      // 撤销/导入会更换 design；缓存不持有历史设计或已删除网络。
+      if(d!==currentDesign){ currentDesign=d; cache=new Map(); }
+      const groups=new Map(d.nets.map(n=>[n.id,{pads:[]}]));
+      for(const p of d.pads) groups.get(p.netId)?.pads.push(p);
+      const next=new Map();
+      for(const [id,group] of groups){
+        // 下界仅取决于本网焊盘坐标；选网、名字、DRC/布线结果不改变它。
+        const signature=JSON.stringify(group.pads.map(p=>[p.x,p.y]));
+        const old=cache.get(id);
+        const entry=old?.signature===signature?old:{signature,value:lowerBound(group.pads)};
+        group.lowerBound=entry.value;
+        next.set(id,entry);
+      }
+      cache=next;
+      return groups;
+    };
+  }
+  const netGeometryCache=createNetGeometryCache(netLowerBound);
   function renderNets(){
     const d=app.design, list=$('netList'); list.innerHTML='';
+    const geometry=netGeometryCache(d);
     for(const n of d.nets){
-      const cnt=d.pads.filter(p=>p.netId===n.id).length;
+      const group=geometry.get(n.id), cnt=group.pads.length;
       let st=['','未布'], cls='', lnTxt='';
-      const lb=netLowerBound(d.pads.filter(p=>p.netId===n.id));
+      const lb=group.lowerBound;
       if(app.result){
         const rn=app.result.nets.find(x=>x.netId===n.id);
         if(rn){ if(!rn.total){ st=['','空']; }
@@ -1291,6 +1315,12 @@
   $('btnFit').addEventListener('click',fitView);
 
   // ---------------- 自动布线 ----------------
+  function invalidateRoutingSession(){
+    // Worker 是会话的唯一持有者；取消或失败时同步清标记，不能等 Promise catch。
+    // 保留已显示的 result/design：重布与形状补线失败不应抹掉原有成果。
+    app.session=null;
+    routingClient.dispose();
+  }
   function routingBusy(busy){
     app.routing=busy;
     if(busy){
@@ -1336,7 +1366,7 @@
         ? '✅ 布线完成：全部网络连通，无间距冲突'
         : '⚠ 请查看统计与 DRC 结果');
     }catch(error){
-      app.session=null;
+      invalidateRoutingSession();
       if(error.name==='AbortError') toast('已停止布线');
       else{toast('布线失败：'+error.message);$('drcList').textContent=error.message;}
     }finally{
@@ -1344,7 +1374,7 @@
     }
   }
   $('btnRoute').addEventListener('click',()=>runRoute());
-  $('btnStop').addEventListener('click',()=>routingClient.dispose());
+  $('btnStop').addEventListener('click',()=>invalidateRoutingSession());
   $('btnAutopcb').addEventListener('click',async()=>{
     if(app.routing||!app.design) return;
     if(!confirm('将自动布局（会移动未锚定元件）并完整布线，继续？')) return;
@@ -1378,8 +1408,14 @@
         ? '形状补线：接受 '+sh.accepted+'/'+sh.attempted+' 网（连通 '+app.result.stats.connected+'/'+app.result.stats.total+'）'
         : '形状补线未改动（'+(sh.reason||'无失败网')+'）');
     }catch(error){
-      toast('形状补线失败：'+error.message);
-      $('drcList').textContent=error.message;
+      invalidateRoutingSession();
+      if(error.name==='AbortError'){
+        toast('已停止形状补线，保留原布线结果');
+        $('drcList').textContent='形状补线已停止，保留原布线结果，可重新检查 DRC。';
+      }else{
+        toast('形状补线失败：'+error.message);
+        $('drcList').textContent=error.message;
+      }
     }finally{
       routingBusy(false); $('progressWrap').style.display='none'; requestDraw();
     }

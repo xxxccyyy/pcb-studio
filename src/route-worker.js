@@ -1,15 +1,11 @@
 import { routeBoard, routeBoardShape, autoPlace, normalizeDesign, beautifyResult } from './engine.mjs';
 
 let session=null;
-// 建会话时的设计指纹（#14d）：手动走线/禁布增删会让既有 model 变陈旧——
-// 单网重布必须用与新设计一致的门禁，否则新加的障碍对重布不可见（静默冲突）。
+// 会话捕获建模时的障碍和规则；任何设计变化都保守地要求重新建模。
+// 保存完整的规范化设计，而非字段白名单：漏掉 stitching、间距/过孔参数、
+// 网络元数据或 rules 会让单网重布静默使用旧 model，后续新增约束也不能漏检。
 let sessionKey=null;
-const fingerprint=d=>JSON.stringify({
-  pads:d.pads,p:1,
-  manual:(d.manual||[]).map(m=>({n:m.netId,pts:m.pts})),
-  keepouts:d.keepouts,tracks:d.nets.map(n=>[n.id,n.w,n.tr]),
-  g:d.grid,w:d.width,h:d.height,l:d.layers
-});
+const fingerprint=d=>JSON.stringify(d);
 self.onmessage=event=>{
   const {id,command,design,options={},netId,result:prevResult}=event.data;
   const progress=update=>self.postMessage({id,type:'progress',...update});

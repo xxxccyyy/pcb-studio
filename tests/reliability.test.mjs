@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import vm from 'node:vm';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -32,6 +34,23 @@ test('CLI parses repeated positional values, boolean flags and fractional costs'
   assert.deepEqual(args,['same.json','same.json']);assert.equal(options.get('--no-stitch'),true);
   assert.equal(parseArguments('route',['x','--via-cost','17.3']).options.get('--via-cost'),'17.3');
   assert.deepEqual(parseArguments('spec',['--','-name.json']).args,['-name.json']);
+});
+test('CLI joint-reroute switch is boolean regardless of option order',()=>{
+  for(const cmd of ['route','autopcb']){
+    for(const argv of [['board.json','--no-joint-reroute'],['--no-joint-reroute','board.json'],
+      ['board.json','--no-joint-reroute','--max-iter','2']]){
+      const {args,options}=parseArguments(cmd,argv);
+      assert.deepEqual(args,['board.json']);assert.equal(options.get('--no-joint-reroute'),true);
+    }
+  }
+});
+test('CLI validates fanout modes before starting routing or reading files',()=>{
+  for(const cmd of ['route','autopcb']){
+    for(const mode of ['off','auto','inner','outer','inner_first','outer_first'])
+      assert.equal(parseArguments(cmd,['board.json','--fanout-first',mode]).options.get('--fanout-first'),mode);
+    assert.throws(()=>parseArguments(cmd,['board.json','--fanout-first','typo']),/--fanout-first must/);
+    assert.throws(()=>parseArguments(cmd,['board.json','--fanout-first']),/Missing value/);
+  }
 });
 test('CLI rejects missing, unknown, duplicate and invalid option values',()=>{
   for(const [cmd,args] of [['route',['-o']],['route',['--via-cost','no']],['route',['--max-iter','1.5']],
@@ -91,6 +110,23 @@ test('CLI option errors are clean JSON with a nonzero exit status',()=>{
   for(const args of [['route','missing.json','--via-cost','NaN'],['route','missing.json','-o'],['route','--unknown']]){
     const r=spawnSync(process.execPath,[cli,...args],{encoding:'utf8'});
     assert.equal(r.status,1);assert.equal(JSON.parse(r.stdout).ok,false);assert.equal(r.stderr,'');
+  }
+});
+test('CLI routing strategy switches work end to end for route and autopcb',t=>{
+  const dir=mkdtempSync(join(tmpdir(),'pcb-strategy-'));
+  // mkdtempSync 返回本测试独占的绝对目录；只清理此目录。
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  const design=join(dir,'design.json'),placed=join(dir,'placed.json');
+  const d=core.designDefaults();d.width=20;d.height=15;
+  d.nets=[{id:'a',name:'A'}];
+  d.pads=[3,15].map((x,i)=>({id:'P'+i,netId:'a',x,y:7,w:1,h:1,shape:'circle',layer:'both'}));
+  writeFileSync(design,JSON.stringify(d));
+  const cli=fileURLToPath(new URL('../ai/pcb.mjs',import.meta.url));
+  for(const cmd of ['route','autopcb']){
+    const args=[cli,cmd,design,'--no-joint-reroute','--no-compact-pairs','--blind-vias','--fanout-first','inner','--max-iter','2'];
+    if(cmd==='autopcb')args.push('--rounds','1','--iterations','1','-o',placed);
+    const r=spawnSync(process.execPath,args,{encoding:'utf8',timeout:30000});
+    assert.equal(r.status,0,r.stdout+'\n'+r.stderr);assert.equal(JSON.parse(r.stdout).ok,true);
   }
 });
 test('placement is repeatable with a seed',()=>{

@@ -2368,14 +2368,21 @@ function netLowerBound(pads){
   if(pts.length<2) return 0;
   const t=rmstTasks(pts);
   if(t) return t.reduce((a,k)=>a+Math.abs(k.to.x-k.from.x)+Math.abs(k.to.y-k.from.y),0);
-  const inT=[0], rest=pts.slice(1).map((_,i)=>i+1); let len=0;
-  while(rest.length){
+  // Prim：未入树点缓存到当前树的最近距离，只与新入树点比较，O(P²)/O(P)。
+  // 索引升序扫描 + 严格 < 保留旧 rest×inT 的同距选点顺序及浮点累加次序；
+  // 不去重坐标，不改变 <=10 点的精确 RMST 分支或其求和表达式。
+  const used=new Uint8Array(pts.length), nearest=new Float64Array(pts.length).fill(Infinity);
+  used[0]=1;
+  let len=0, last=0;
+  for(let left=pts.length-1;left>0;left--){
     let bi=0, bd=Infinity;
-    for(const i of rest) for(const j of inT){
-      const d=Math.abs(pts[i].x-pts[j].x)+Math.abs(pts[i].y-pts[j].y);
-      if(d<bd){ bd=d; bi=i; }
+    const p=pts[last];
+    for(let i=1;i<pts.length;i++) if(!used[i]){
+      const d=Math.abs(pts[i].x-p.x)+Math.abs(pts[i].y-p.y);
+      if(d<nearest[i]) nearest[i]=d;
+      if(nearest[i]<bd){ bd=nearest[i]; bi=i; }
     }
-    len+=bd; inT.push(bi); rest.splice(rest.indexOf(bi),1);
+    len+=bd; used[bi]=1; last=bi;
   }
   return len;
 }
@@ -4207,20 +4214,56 @@ function auditGeometry(design, result, opts){
   for(const s of segs){ let a=byLayer.get(s.l); if(!a){ a=[]; byLayer.set(s.l,a); } a.push(s); }
   for(const [l,arr] of byLayer){
     arr.sort((p,q)=>p.x0-q.x0||p.y0-q.y0||p.net-q.net);
+    let maxHalf=0;
+    for(const s of arr) if(s.hw>maxHalf) maxHalf=s.hw;
     for(let i=0;i<arr.length;i++){
       const s=arr[i];
+      const scanReach=s.hw+maxHalf+design.clearance;
       for(let j=i+1;j<arr.length;j++){
         const t=arr[j];
+        if(t.x0>s.x1+scanReach) break; // 后续段可能更宽，终止界必须覆盖本层最大半宽
         if(t.net===s.net) continue;
         const reach=s.hw+t.hw+design.clearance;
-        if(t.x0>s.x1+reach) break;                       // 左边界已超出可能间距
-        if(t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
+        if(t.x0>s.x1+reach||t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
         const d=segSegDist(s.a.x,s.a.y,s.b.x,s.b.y,t.a.x,t.a.y,t.b.x,t.b.y);
         if(d<reach-1e-9) out.push({x:(s.a.x+s.b.x)/2,y:(s.a.y+s.b.y)/2,l});
       }
     }
   }
   return out;
+}
+
+// 只计算候选网参与的段-段违规，等价于两次全板审计的计数差。
+// 避免在每次试探接受/回滚时重新扫描与该网无关的全部段对。
+function countNetSegmentViolations(design, entry, rest){
+  const byLayer=new Map(), hw=netW(design,entry.netId)/2;
+  for(const path of entry.paths||[]) for(let i=1;i<path.length;i++){
+    const a=path[i-1],b=path[i];
+    if(a.l!==b.l||(Math.abs(a.x-b.x)<1e-12&&Math.abs(a.y-b.y)<1e-12)) continue;
+    const s={net:entry.netId,hw,a,b,x0:Math.min(a.x,b.x),x1:Math.max(a.x,b.x),
+      y0:Math.min(a.y,b.y),y1:Math.max(a.y,b.y)};
+    let group=byLayer.get(a.l); if(!group){group=[];byLayer.set(a.l,group);} group.push(s);
+  }
+  if(!byLayer.size) return 0;
+  let count=0;
+  for(const n of [...rest,...manualRouteEntries(design)]){
+    if(n.netId===entry.netId) continue;
+    const otherHalf=netW(design,n.netId)/2, reach=hw+otherHalf+design.clearance;
+    for(const path of n.paths||[]) for(let i=1;i<path.length;i++){
+      const a=path[i-1],b=path[i],group=byLayer.get(a.l);
+      if(a.l!==b.l||!group||(Math.abs(a.x-b.x)<1e-12&&Math.abs(a.y-b.y)<1e-12)) continue;
+      const t={net:n.netId,a,b,x0:Math.min(a.x,b.x),x1:Math.max(a.x,b.x),
+        y0:Math.min(a.y,b.y),y1:Math.max(a.y,b.y)};
+      for(const own of group){
+        // 与全板 sweep 保持完全相同的参数方向及边界算式（稳定排序时 entry 在先）。
+        let s=own,o=t;
+        if((s.x0-o.x0||s.y0-o.y0||s.net-o.net)>0){s=t;o=own;}
+        if(o.x0>s.x1+reach||o.y0>s.y1+reach||o.y1<s.y0-reach) continue;
+        if(segSegDist(s.a.x,s.a.y,s.b.x,s.b.y,o.a.x,o.a.y,o.b.x,o.b.y)<reach-1e-9) count++;
+      }
+    }
+  }
+  return count;
 }
 
 function routeBoardShape(design, opts={}){
@@ -4268,8 +4311,7 @@ function routeBoardShape(design, opts={}){
   // before/after 用同一函数（对称），存量违规自动抵消，只剩净增量。
   const netGeoVio=(netEntry)=>{
     const rest=merged.nets.filter(x=>x.netId!==netEntry.netId);
-    let vio=auditGeometry(design,{nets:[netEntry,...rest]}).length
-          - auditGeometry(design,{nets:rest}).length;          // 段-段
+    let vio=countNetSegmentViolations(design,netEntry,rest);   // 段-段（只审计候选网）
     const hw=netW(design,netEntry.netId)/2;
     for(const path of netEntry.paths||[]) for(let k=1;k<path.length;k++){
       const a=path[k-1], b=path[k];
@@ -4333,14 +4375,17 @@ function routeBoardShape(design, opts={}){
     for(const s of segs){ let a=byLayer.get(s.l); if(!a){ a=[]; byLayer.set(s.l,a); } a.push(s); }
     for(const [l,arr] of byLayer){
       arr.sort((p,q)=>p.x0-q.x0||p.y0-q.y0||p.net-q.net);
+      let maxHalf=0;
+      for(const s of arr) if(s.hw>maxHalf) maxHalf=s.hw;
       for(let i=0;i<arr.length;i++){
         const s=arr[i];
+        const scanReach=s.hw+maxHalf+design.clearance;
         for(let j=i+1;j<arr.length;j++){
           const t=arr[j];
+          if(t.x0>s.x1+scanReach) break; // 与 auditGeometry 同口径：不能用当前候选的半宽终止
           if(t.net===s.net) continue;
           const reach=s.hw+t.hw+design.clearance;
-          if(t.x0>s.x1+reach) break;
-          if(t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
+          if(t.x0>s.x1+reach||t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
           if(segSegDist(s.a.x,s.a.y,s.b.x,s.b.y,t.a.x,t.a.y,t.b.x,t.b.y)<reach-1e-9){
             segsegAll++; bump(s.net,1); bump(t.net,1);
           }
