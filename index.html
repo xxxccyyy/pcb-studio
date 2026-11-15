@@ -708,7 +708,8 @@ function snapToGrid(v, grid){
 // （0.14.9 分离场在跨层掩码不对称处非一致，见深度检查报告-0.14.9.md 探针 B2）。
 // 不可通行种子（目标格自身不可入）只置 0 不向外松弛——进入该格本就非法，经它中转
 // 的路径不存在，跳过仍可采纳且更紧；A* 亦无法遍历进入该格，Lipschitz 链无缺口。
-// mask=null 保持旧"分离场"口径逐位不变（导出兼容/基准对照/默认路径）。
+// mask=null 保持旧"分离场"口径逐位不变（导出兼容/基准对照/--no-obstacle-h 回退路径——
+// 0.14.10 起默认路径为 mask=组合一致场）。
 function fillDistanceMap(model, goals, viaCost, diag, distances, queue, mask){
   const {GW,NC,L,TS}=model, BIG=1e9;
   distances.fill(BIG);

@@ -10,8 +10,8 @@ function load(file) {
   const core=new Function(source+'\n'+extract('EXAMPLES')+'\nreturn {createSession,checkDRC,EXAMPLES};')();
   // Isolate the real session heuristic for a repeatable comparison without A* noise.
   // 0.14.9 起直接驱动 fillDistanceMap（computeH 已带网感知掩码构建，无法脱离会话脚手架
-  // 提取）：以全通掩码调用——障碍感知口径的无障碍特例与旧盲口径场值相同，
-  // 跨版本场值断言仍有效；掩码构建的开销在深度优化报告的 A/B 里单独核算。
+  // 提取）：以全通掩码调用。0.14.10 起全通掩码=组合一致场（换层计 1），与旧盲分离场
+  //（viaH 传播）在多层板上数值不同——跨版本耗时对比有效，场值等价断言已移除。
   const h0=source.indexOf('function fillDistanceMap(');
   const h1=source.indexOf('// 过孔影响区',h0);
   const helper=h0>=0&&h1>h0 ? source.slice(h0,h1) : '';
@@ -42,8 +42,10 @@ for(const L of [2,4]) {
       v.times.push((performance.now()-t)/5);
     }
     if(runners.length===2) {
-      const a=runners[0].run(),b=runners[1].run();
-      for(let i=0;i<a.length;i++) assert.ok(Math.abs(a[i]-b[i])<1e-4);
+      // 0.14.10 起跨版本场值断言移除：mask 模式改组合一致场（换层计 1 + 组合路径），
+      // 与旧盲分离场（viaH=1.5 传播）在多层板上数值不同（刻意变更，一致性证明见
+      // docs/深度优化报告-20261116c.md）——跨版本对比只看耗时，场值等价由
+      // search-regression（默认路径行为钉死）与优化锁承接
     }
     console.log(JSON.stringify({grid:`${GW}x${GH}x${L}`,viaCost,
       ...Object.fromEntries(runners.map(v=>[v.name,+median(v.times).toFixed(3)]))}));
