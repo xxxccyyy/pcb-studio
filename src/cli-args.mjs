@@ -1,4 +1,4 @@
-const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch','--blind-vias','--no-compact-pairs','--no-joint-reroute']);
+const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch','--blind-vias','--no-compact-pairs','--no-joint-reroute','--apply']);
 const flagCommands={
   '-o':['place','route','export','device','schem','pour','tune','bom','pos','autopcb','render','import','deliver'],
   '--via-cost':['route','autopcb'],'--max-iter':['route','autopcb'],
@@ -18,7 +18,7 @@ const flagCommands={
   '--check':['bom'],'--scale':['render'],'--export':['verify'],'--project':['deliver'],'--force':['deliver'],
   '--current':['drop'],'--entries':['drop'],'--auto-return':['pour'],'--return-reach':['pour'],
   '--vdd':['pdn'],'--itrans':['pdn'],'--ripple':['pdn'],'--dt-us':['pdn'],'--esl-nh':['pdn'],'--cap-uf':['pdn'],'--pkg-lnh':['pdn'],
-  '--plan':['pdn'],'--plane-pf':['pdn'],'--fmin':['pdn'],'--fmax':['pdn'],'--plan-esl-nh':['pdn']
+  '--plan':['pdn'],'--apply':['currents'],'--plane-pf':['pdn'],'--fmin':['pdn'],'--fmax':['pdn'],'--plan-esl-nh':['pdn']
 };
 const numericFlags={'--via-cost':[0,100000,false],'--max-iter':[1,1000,true],
   '--iterations':[1,1000000,true],'--rounds':[1,20,true],

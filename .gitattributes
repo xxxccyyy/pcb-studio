@@ -1,0 +1,7 @@
+# 行尾锁死：源码锚点测试（via-ring-cache 等 7 个测试用 indexOf('\n…') 定位引擎源码块）
+# 依赖工作区文件为 LF。0.14.4 实测教训：python 补丁工具写出 CRLF 会让锚点全灭，
+# 而 build --check 读源码时归一化、拦不住它。必须在仓库层强制 LF。
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

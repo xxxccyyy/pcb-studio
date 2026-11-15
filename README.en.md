@@ -1,36 +1,56 @@
-# PCB Auto-Router & Design Tool (Human + AI)
+# PCB Studio — Zero-Dependency Local PCB Auto-Placement / Routing / DRC / Delivery (Human + AI)
 
-A zero-dependency, fully local PCB **auto-placement / auto-routing / DRC / fabrication-export** tool.
+A zero-dependency, fully local PCB **auto-placement / auto-routing / DRC / fabrication-delivery** tool.
 
-- **For humans**: open `index.html` in a browser — that's it. Visual editor, routing, copper pour, DFM checks.
-- **For AI agents**: a headless CLI (`ai/pcb.mjs`) + the [AI Operator's Manual](docs/AI-使用手册.md) — give the agent your requirements and it designs the board autonomously and hands back a JLCEDA-openable file.
+> **Language note:** this file is a compact English summary. The **Chinese
+> [README.md](README.md) is the canonical, fully detailed documentation**; the
+> Chinese docs under `docs/` (AI manual, capability whitepaper, roadmap, case
+> studies, per-round benchmark reports) are maintained continuously and may be
+> ahead of this summary.
 
-**Highlights**
+- **For humans**: double-click `index.html` — it opens self-contained in a browser. Visual editor, autorouting, copper pour, DRC/DFM checks, undo/redo.
+- **For AI agents**: a headless CLI (`ai/pcb.mjs`, all-JSON stdout) + the [AI Operator's Manual](docs/AI-%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C.md) — the agent goes from netlist to a JLCEDA-openable deliverable autonomously.
 
-- Routing: A* maze + PathFinder negotiated congestion, RMST (Dreyfus–Wagner) Steiner decomposition, per-net rip-up optimizer (Freerouting BatchOptimizer style), chord straightening (KiCad mergeStep), stall-shuffle, routability-driven place→route loop (`autopcb`) with component auto-rotation
-- Placement: multi-restart simulated annealing, anchoring, keepouts, board-edge margins
-- Net classes: per-net track width end-to-end (router → DRC → Gerber apertures → EasyEDA)
-- Deliverables: EasyEDA Std PCB JSON (docType 3, with silkscreen designators), EasyEDA Std schematic JSON (docType 1), Specctra DSN / SES round-trip, 8-piece Gerber (copper / mask / silk pin-1 markers / outline / multi-tool drill, with pour & teardrops), BOM (JLC SMT format), pick&place CPL
-- Checking: DRC, JLC fab checklist (copper-weight aware), netlist ERC, export round-trip self-verification (`verify`), PNG render for AI visual inspection (`render`)
-- Parts: fetch real symbols & land patterns by LCSC C-number (`device`), verify stock/package (`part`, `bom --check`)
-- 5 router codebases studied line-by-line (Freerouting, KiCad PNS, gEDA toporouter, OpenROAD FlexDR, pcb-rnd) — see `docs/`
+## Highlights
 
-**Quick start (AI)**
+- **Routing**: A\* maze search + PathFinder negotiated congestion; RMST (Dreyfus–Wagner) Steiner decomposition for multi-pin nets; per-net rip-up-and-reroute optimizer (Freerouting BatchOptimizer style, lexicographic accept — never regresses); chord straightening + 45° corner beautification (KiCad mergeStep idea); layer-preferred directions; 8-direction diagonal routing with enforced clearance pairs; routability-driven place→route loop (`autopcb`); optional shape-based (compressed-coordinate) patch routing for grid failures.
+- **Placement**: multi-restart simulated annealing over connection cost + hard penalties (overlap / off-board / keepout), 90° component auto-rotation, grid-quantized evaluation.
+- **Copper**: true polygon pour (Minkowski clearance offset + flood + contour trace), thermal reliefs, island-removal modes (KiCad semantics), grid hatch, minimum-neck elimination, stitching vias, return-via pairing for high-speed layer changes, teardrops.
+- **Constraints**: per-net track width (net classes end-to-end: router → DRC → Gerber apertures → EasyEDA), differential pairs (coupled corridor + compaction + impedance solver `diffz`), length-matching serpentine tuning (`tune`), declarative `design.rules` schema (netClass / pairs / length groups / class keepout).
+- **Checks**: DRC (connectivity, spacing incl. 45°, overlaps, via ring/edge), JLC DFM checklist (copper-weight aware), netlist ERC, PDN/IR-drop estimate, current-aware width sizing (IPC-2152 anchors), impedance estimator (IPC-2141), return-path and 3W reminders, export round-trip self-verification (`verify`), PNG render for AI visual self-inspection (`render`).
+- **Interop**: import KiCad `.kicad_pcb` and EasyEDA Std PCB JSON; export Specctra DSN / read back SES (Freerouting round-trip); KiCad 7/8 Action Plugin (`kicad-plugin/`) drives the engine from pcbnew.
+- **Delivery** (`deliver`): gated package — verify + DRC + connectivity gates → EasyEDA JSON, 8-piece Gerber (LPD/LPC pour polarity, teardrops), Excellon drill (multi-tool by hole size), IPC-D-356A netlist, SVG, BOM (JLC SMT format), pick&place CPL, PNG, fab checklist, `manifest.json` with per-artifact evidence grades.
+- **Parts**: fetch real symbols & land patterns by LCSC C-number (`device`), verify existence/stock/package (`part`, `bom --check`).
+- **Pedigree**: 5 production router codebases studied line-by-line (Freerouting, KiCad PNS, gEDA toporouter, OpenROAD FlexDR, pcb-rnd) and ~2,600 pages of authoritative texts (Ott, Bogatin, Archambeault, Right the First Time, PEI) distilled into the built-in rules knowledge base — every rule carries a book/page citation (`node ai/pcb.mjs rules`).
+
+## Quick start (AI workflow)
 
 ```bash
-node ai/pcb.mjs schema      # design JSON fields + common mistakes
+node ai/pcb.mjs schema      # design JSON fields + common mistakes (negative documentation)
 node ai/pcb.mjs rules       # routing knowledge base (reliable / conditional / myths) + JLC DFM anchors
-node ai/pcb.mjs spec design.json
-node ai/pcb.mjs autopcb design.json -o placed.json --result result.json --anchor U1,Y1
-node ai/pcb.mjs drc placed.json result.json && node ai/pcb.mjs verify placed.json result.json
-node ai/pcb.mjs render placed.json result.json -o board.png      # look at your own board
+node ai/pcb.mjs spec design.json      # validate + capacity summary; fix all findings before continuing
+node ai/pcb.mjs place design.json -o placed.json
+node ai/pcb.mjs route placed.json -o result.json       # --parallel/--iter-workers/--shape-patch/--blind-vias
+node ai/pcb.mjs drc placed.json result.json            # errors must reach 0
+node ai/pcb.mjs verify placed.json result.json         # export round-trip audit
+node ai/pcb.mjs render placed.json result.json -o board.png   # look at your own board
+node ai/pcb.mjs pour placed.json result.json -o poured.json   # GND pour + stitching
 node ai/pcb.mjs export easyeda placed.json result.json -o jlcpcb-eda.json
+node ai/pcb.mjs deliver placed.json result.json -o 交付目录 --project 板名
+# or the one-shot loop:
+node ai/pcb.mjs autopcb design.json -o placed.json --result result.json
 ```
 
-Tests: `npm test` (162 checks across routing, geometry, CLI, malformed inputs, exports, and optimization). Run `npm run bench` for routing benchmarks. See the [optimization review](docs/optimization-review.md) for measurements and next priorities, or the [Chinese README](README.md) for usage details.
+24 subcommands total (also: `schem`, `device`, `part`, `bom`, `pos`, `erc`, `tune`, `diffz`, `import`, `advise`, `drop`, `pdn`, `export gerber|dsn|ses|svg|ipc356`). Exit 0 + top-level `ok` on success. See the AI manual §1 for the full table.
 
-Development: edit `src/engine.mjs`, `src/ui.js`, and `src/index.template.html`, then run `npm run build`. The generated `index.html` remains self-contained and opens directly. `npm run check` detects stale generated output. Routing and placement run in a cancellable background Worker; the CLI imports the same engine and routing policy.
+## Tests
 
-Optional browser QA: `npm run test:browser` (requires Playwright and Chromium; set `PCB_PLAYWRIGHT_MODULE` to its absolute `index.mjs` path if it is not on the module path). This tests both HTTP and direct-file use, responsiveness, cancellation during optimization, rerouting, automatic placement, imports, and literal-text rendering.
+`npm test` is fully green at 0.14.4: 80 core + 281 node:test + 48 book-knowledge + 17 CLI + 39 fuzz (malformed inputs, zero crashes) + 7 deep-format validations + 22 optimization locks. `npm run check` guards that the standalone `index.html` matches sources (plus a classic-script parse guard and an LF line-ending guard — source-anchor tests read the engine as raw bytes). Browser QA: `npm run test:browser` (needs Playwright; set `PCB_PLAYWRIGHT_MODULE` if not on the module path). Benchmarks: `npm run bench`, plus `tests/bench-*.mjs` micro-benches. Bit-identical A/B harness for engine changes: `.scratch/ab-diff.mjs` pattern (11-case sha256 diff).
 
-Gerber export produces eight files for two-layer boards and ten for four-layer boards, including inner copper. The browser and CLI use the same file list. Routing is limited to 4,000,000 grid states and PNG rendering to 16,000,000 pixels; oversized requests return a clear error before allocation.
+## Development
+
+Edit `src/engine.mjs` (algorithm core, no DOM), `src/ui.js`, `src/index.template.html`, then `npm run build` regenerates the self-contained `index.html`. The CLI and tests import the same engine directly. Routing runs in a cancellable background Worker; the browser falls back to serial when workers are unavailable.
+
+Limits: routing capped at 4,000,000 grid states; PNG render at 16,000,000 pixels (clear errors before allocation). Grid ≥ track width + clearance guarantees inter-net spacing DRC compliance. Known boundaries (diagonal-only shape patch, BGA-64 2-layer saturation, EasyEDA via layer-pair downgrade, etc.) are documented honestly in the Chinese README §已知限制 and per-case "遗留" sections — read them before demanding those scenarios.
+
+MIT licensed (see `LICENSE`); CI runs the line-ending guard, `npm run check`, `npm test`, and headless browser tests on every push.

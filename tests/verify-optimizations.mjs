@@ -441,5 +441,58 @@ t('19b. 薄焊盘板布线全链：连通 100% + DRC 干净', () => {
   assertEq(issues.filter(ii => ii.sev === 'error').length, 0, 'DRC 干净');
 });
 
-console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
+// ===== 20. 载流感知线宽定档（第十一轮后 L47）=====
+// 用户需求：规格书声明载流（nets[].current）后线宽必须自动定档——
+// IPC-2152 锚点插值（w = base × I^1.113）+ −20% 公差 + spec 门拦截 + 投板检查表逐网行。
+t('20a. ampWidthFor 锚点数学：IPC-2152 正反向一致', () => {
+  const d = core.designDefaults();   // 1oz 双面
+  // 正向（投板检查表口径）：I = (w/base_t)^(1/1.113)
+  // 反向（本功能）：w = base_s × I^1.113
+  assertEq(core.ampWidthFor(d, 1).width, 0.5, '1A 建议 0.5mm（s 锚点）');
+  assertEq(core.ampWidthFor(d, 1, {anchor:'t'}).width, 0.4, '1A 理论 0.4mm（t 锚点）');
+  // 3A：s 口径 1.698mm = t 极限 + −20% 公差 1.698mm（自洽：limit_with_tol = t×I^k/0.8 = s×I^k/1）
+  const s3 = core.ampWidthFor(d, 3).width;
+  const t3tol = core.ampWidthFor(d, 3, {anchor:'t', tolerance:0.8}).width;
+  assert(Math.abs(s3 - 1.698) < 0.01, '3A 建议 ≈1.698');
+  assert(Math.abs(s3 - t3tol) < 0.01, 's 口径 ≡ t+公差口径（自洽）');
+  // 2oz 铜厚：1A 建议 0.3mm
+  assertEq(core.ampWidthFor({...d, copperWeight:'2'}, 1).width, 0.3, '2oz 1A 建议 0.3mm');
+  // 4 层 0.5oz 内层：1A 建议 1.6mm（理论 1.5）
+  const d4 = {...core.designDefaults(), layers:4, copperWeight:'0.5'};
+  assertEq(core.ampWidthFor(d4, 1, {layer:'inner'}).width, 1.6, '0.5oz 内层 1A 建议 1.6mm');
+  assertEq(core.ampWidthFor(d4, 1, {layer:'inner', anchor:'t'}).width, 1.5, '0.5oz 内层 1A 理论 1.5mm');
+  // 过孔并联：3A → ≥3 个 0.3mm 过孔
+  assertEq(core.ampWidthFor(d, 3).viaCount, 3, '3A → 3 过孔');
+});
+t('20b. 载流声明 → 投板检查表逐网行（8A → fail 触发）', () => {
+  const d = core.designDefaults();
+  d.width = 60; d.height = 36; d.grid = 0.6; d.trackW = 0.4; d.clearance = 0.2;
+  d.nets = [{id:'batp',name:'BATP',current:8},{id:'sig',name:'SIG'}];
+  d.pads = [
+    {id:'J1-1',netId:'batp',x:8,y:18,w:1.7,h:1.7,shape:'circle',layer:'both',holeR:0.45},
+    {id:'J2-1',netId:'sig',x:52,y:18,w:1.7,h:1.7,shape:'circle',layer:'both',holeR:0.45},
+    {id:'J2-2',netId:'gnd',x:52,y:22,w:1.7,h:1.7,shape:'circle',layer:'both',holeR:0.45}
+  ];
+  const checklist = core.fabChecklist(d, null);
+  const rows = checklist.filter(r => r.group === '载流' && r.item.includes('BATP'));
+  assert(rows.length === 1, '投板检查表应有 BATP 逐网载流行，实际 ' + rows.length);
+  assertEq(rows[0].status, 'fail', '0.4mm 走 8A 应判 fail');
+  assert(rows[0].limit.includes('5.06'), '需求值应 ≈5.06mm');
+});
+t('20c. 薄焊盘格心保障 + 宽线声明共存（L39×L37 协同）', () => {
+  const d = core.designDefaults();
+  d.width = 40; d.height = 24; d.grid = 0.6; d.trackW = 0.4; d.clearance = 0.2;
+  d.nets = [{id:'pwr',name:'PWR',current:2},{id:'sig',name:'SIG'}];
+  const so8 = core.footprintPads('SOIC-8');
+  for (let i = 0; i < 8; i++) {
+    d.pads.push({id:`U1-${i+1}`,netId:i%2?'pwr':'sig',x:12+so8[i].dx,y:12+so8[i].dy,w:so8[i].w,h:so8[i].h,shape:so8[i].shape,layer:'top'});
+  }
+  d.pads.push({id:'J1-1',netId:'pwr',x:34,y:12,w:1.7,h:1.7,shape:'circle',layer:'both',holeR:0.45});
+  core.autoPlace(d, { iterations: 800, restarts: 1 });
+  const m = core.buildModel(d);
+  const zero = d.pads.filter(p => !(m.padCells.get(p.id) || []).length);
+  assertEq(zero.length, 0, '宽线声明后零格焊盘仍应为 0（L39 格心保障 × L37 maxTrackW 协同）');
+});
+
+console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

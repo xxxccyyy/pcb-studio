@@ -11,6 +11,14 @@ const output=read('src/index.template.html')
   .replace('{{UI}}',()=>script('pcb-ui',read('src/ui.js').trim()));
 const target=new URL('../index.html',import.meta.url);
 if(process.argv.includes('--check')){
+  // 行尾守门：read() 的 CRLF 归一化会把源码行尾问题掩盖——7 个源码锚点测试
+  // 直接 readFileSync 原始字节，工作区混入 CRLF 时它们全灭而本检查全绿
+  // （0.14.4 实测教训，见 .gitattributes 头注）。
+  for(const p of ['src/engine.mjs','src/route-worker.js','src/worker-client.js','src/ui.js','src/index.template.html']){
+    if(/\r/.test(readFileSync(new URL('../'+p,import.meta.url),'utf8'))){
+      console.error(`${p} 含 CR 行尾。归一化: python -c "import pathlib;p=pathlib.Path('${p}');p.write_bytes(p.read_bytes().replace(b'\\r\\n',b'\\n'))"`); process.exitCode=1;
+    }
+  }
   if(readFileSync(target,'utf8').replace(/\r\n/g,'\n')!==output){
     console.error('index.html is stale. Run npm run build.'); process.exitCode=1;
   }else console.log('Standalone HTML matches the source files.');

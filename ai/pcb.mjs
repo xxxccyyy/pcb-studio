@@ -505,6 +505,45 @@ async function main(){
   ({args,options}=parseArguments(cmd,rest));
   outPath=options.get('-o');
 switch (cmd) {
+  case 'currents': {
+    // 载流感知线宽定档（规格书 → 线宽）：读取 nets[].current 声明（A, RMS），
+    // 逐网报告 声明值/当前线宽/所需线宽（s 建议 + t 极限含公差）/所需过孔数/判定。
+    // --apply：把 nets[].w 抬到 required（仅抬不降——显式手宽不受罚），并回写 -o。
+    // 输出附带 maxTrackW 全板后果（L37）：新 minimumRoutingGrid 与细节距冲突预警。
+    const d = loadDesign(args[0]);
+    const apply = rest.includes('--apply');   // 裸旗标（无值）
+    const decls = core.netCurrentDecls(d);
+    const rows = [];
+    let under = 0;
+    for (const r of decls) {
+      const okLimit = r.w + 1e-9 >= r.requiredLimit;
+      const okReq = r.w + 1e-9 >= r.required;
+      if (!okReq) under++;
+      rows.push({ net: r.name, current: r.current, width: r.w, required: r.required,
+        limit: r.requiredLimit, vias: r.vias,
+        status: okReq ? 'ok' : (okLimit ? 'warn（低于建议但高于 −20% 公差极限）' : 'under（低于 −20% 公差极限——载流不足）') });
+    }
+    const maxTrack = core.maxTrackW(d);
+    const newGrid = Math.max(d.grid, core.minimumRoutingGrid(d));
+    let appliedN = 0;
+    if (apply) {
+      for (const r of decls) {
+        const net = d.nets.find(x => x.id === r.netId);
+        if (net && (net.w == null || net.w < r.required - 1e-9)) { net.w = r.required; appliedN++; }
+      }
+      // 声明网抬宽后重算 maxTrackW 并同步最小栅格（L37：所见即所得）
+      d.grid = Math.max(d.grid, core.minimumRoutingGrid(d));
+      const outP = outPath || args[0];
+      writeFileSync(outP, JSON.stringify(d, null, 1));
+    }
+    const maxTrack2 = core.maxTrackW(d);
+    out({ ok: true, declared: rows.length, under, rows, applied: apply ? appliedN : null,
+      written: (apply && outPath) || (apply ? args[0] : null),
+      maxTrackW: +maxTrack2.toFixed(3),
+      minimumRoutingGrid: +core.minimumRoutingGrid(d).toFixed(3),
+      pitchWarning: core.minimumRoutingGrid(d) > d.grid ? 'L37：线宽加大 → 栅格/影响区变粗——全板节距需 ≥ 2×(padR + maxTrackW/2 + clearance)，细间距焊盘可能被影响区封死，见手册 L37' : null });
+    break;
+  }
   case 'schema': {
     out({
       ok: true,
@@ -779,6 +818,16 @@ switch (cmd) {
         if (p.w >= g - 1e-9 && p.h >= g - 1e-9) continue;   // 双轴 ≥ grid 必含格心
         if (phaseDist(p.x) <= p.w / 2 + 1e-9 || phaseDist(p.y) <= (p.shape === 'circle' ? p.w : p.h) / 2 + 1e-9) continue;
         problems.push(`焊盘 ${p.id} 零格覆盖（薄于栅格 ${g} 且两轴均不在格心线）——布线器不可达，移到 (i+0.5)*grid 格心线或加大焊盘`);
+      }
+    }
+    // 载流声明校验（规格书 → 线宽）：nets[].current 声明后线宽必须 ≥ IPC-2152 需求
+    {
+      const decls = core.netCurrentDecls(d);
+      for (const r of decls) {
+        if (r.w + 1e-9 < r.requiredLimit)
+          problems.push(`网络 ${r.name} 声明 ${r.current}A 但线宽 ${r.w}mm < 载流需求 ${r.required}mm（−20% 公差极限 ${r.requiredLimit}mm）——用 currents --apply 抬宽或加大声明铜厚/层位`);
+        else if (r.w + 1e-9 < r.required)
+          problems.push(`网络 ${r.name} 线宽 ${r.w}mm 低于建议 ${r.required}mm（满足 −20% 公差极限 ${r.requiredLimit}mm）——可接受但建议加宽`);
       }
     }
     const limit = core.jlcTrackRule(d);

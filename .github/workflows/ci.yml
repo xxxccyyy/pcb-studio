@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 行尾守门：源码锚点测试依赖工作区 LF（.gitattributes 已锁，CI 复核一次——
+      # 0.14.4 实测教训：本地 python 补丁写出 CRLF 时 npm run check 曾全绿而锚点测试全灭）
+      - name: Assert LF line endings in sources
+        run: |
+          if grep -rlP '\r' src/ scripts/ ai/ tests/ 2>/dev/null; then
+            echo "::error::CR line endings found (run the normalization command from build --check)"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build check (standalone HTML sync + classic-script parse guard)
+        run: npm run check
+
+      - name: Full test suite
+        run: npm test
+
+      - name: Browser tests (headless)
+        # playwright 仅 CI 安装（--no-save 不写入 package.json，保持零依赖声明）；
+        # 本机开发按 README 口径自备 playwright（或 PCB_PLAYWRIGHT_MODULE 指向既有安装）
+        run: |
+          npm i --no-save playwright
+          npx playwright install --with-deps chromium
+          npm run test:browser
