@@ -14,8 +14,12 @@
   （保守超集，不可能违规）
 - **seg-pad 按层桶格**：padOnLayer 展开到层号，桶边长 = 最大 _sR 上界，每段
   bbox+margin 覆盖桶收集候选、按 pad 索引升序求值、首违即 break（与原全量序一致）
-- **每次调用重建桶**（O(P) 微秒级）——design.pads 可能被 autoPlace 原地改写，
-  跨调用缓存有失效风险，重建成本可忽略，零失效风险
+- **每次调用重建桶**——design.pads 可能被 autoPlace 原地改写，跨调用缓存有失效
+  风险，重建成本可忽略，零失效风险。【0.14.11 深检修正】桶维度上限 512²
+  （cell' = max(过滤界, 板宽高/512)）：小 _padR2 × 大板时稠密桶数组实测 3.3M 槽/
+  26MB·次调用（81k 焊盘×400×300mm 板），放大 cell 保完备性（cell' ≥ c 时区间论证
+  仍闭合）→ ≤2MB 封顶；密集封顶用例（7373 焊盘 >200 findings）实测 ref 522ms →
+  cur 73ms（7.2×）逐字节一致
 - 收益面：所有 checkDRC 消费方（GUI DRC 面板/CLI drc/deliver 门禁/jointReroute
   计分）——大板单次 144ms → ~20ms 级
 

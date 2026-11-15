@@ -6990,24 +6990,29 @@ function checkDRC(design, result, opts){
   const _padR2=_clrMax+2*_maxPadR+1e-9;
   const _layerList=Array.from({length:design.layers},(_,l)=>l);
   // 0.14.11 深优：pad-pad 桶格加速——原 O(P²) 双循环（剖析：冰拳板 189k 对占 checkDRC
-  // 82%）。桶边长=_padR2（bbox 过滤界）→ 存活对 |dx|,|dy| ≤ _padR2 必落相邻桶；逐 i 收集
-  // 邻桶候选（j>i）按 j 升序求值 → 求值序 = 原 (i,j) 双循环序，findings 逐位一致。
-  // 跳过的对必不过 bbox 过滤（保守超集，不可能违规）。每次调用重建 O(P)（微秒级），
-  // 不做跨调用缓存——design.pads 可能被 autoPlace 原地改写，免失效风险。
+  // 82%）。桶边长 ≥ _padR2（bbox 过滤界）→ 存活对 |dx|,|dy| ≤ _padR2 必落相邻桶；逐 i
+  // 收集邻桶候选（j>i）按 j 升序求值 → 求值序 = 原 (i,j) 双循环序，findings 逐位一致。
+  // 跳过的对必不过 bbox 过滤（保守超集，不可能违规）。
+  // 【0.14.11 深检修正】桶边长取 max(_padR2, 板宽高/512)：_padR2 很小 × 大板时稠密桶
+  // 数组可达 3.3M 槽/26MB·次调用（81k 焊盘×400×300mm 板实测），上限 512² 槽 ≈ 2MB。
+  // 放大 cell 保完备性：cell' ≥ c 时 b∈[a−c,a+c] ⊆ [a−cell',a+cell'] 仍落 ca'±1（区间
+  // 论证），候选仍是保守超集。每次调用重建，不做跨调用缓存——design.pads 可能被
+  // autoPlace 原地改写，免失效风险。
   {
-    const _nbX=Math.max(1,Math.ceil(design.width/_padR2)), _nbY=Math.max(1,Math.ceil(design.height/_padR2));
+    const _cell=Math.max(_padR2, design.width/512, design.height/512, 1e-9);
+    const _nbX=Math.max(1,Math.ceil(design.width/_cell)), _nbY=Math.max(1,Math.ceil(design.height/_cell));
     const _padBuckets=new Array(_nbX*_nbY);
     for(let i=0;i<pads.length;i++){
       const p=pads[i];
-      const bx=Math.min(_nbX-1,Math.max(0,Math.floor(p.x/_padR2)));
-      const by=Math.min(_nbY-1,Math.max(0,Math.floor(p.y/_padR2)));
+      const bx=Math.min(_nbX-1,Math.max(0,Math.floor(p.x/_cell)));
+      const by=Math.min(_nbY-1,Math.max(0,Math.floor(p.y/_cell)));
       const b=by*_nbX+bx;
       (_padBuckets[b]||(_padBuckets[b]=[])).push(i);
     }
     for(let i=0;i<pads.length;i++){
       const a=pads[i];
-      const bx=Math.min(_nbX-1,Math.max(0,Math.floor(a.x/_padR2)));
-      const by=Math.min(_nbY-1,Math.max(0,Math.floor(a.y/_padR2)));
+      const bx=Math.min(_nbX-1,Math.max(0,Math.floor(a.x/_cell)));
+      const by=Math.min(_nbY-1,Math.max(0,Math.floor(a.y/_cell)));
       const cand=[];
       for(let dy=-1;dy<=1;dy++){ const yy=by+dy; if(yy<0||yy>=_nbY) continue;
         for(let dx=-1;dx<=1;dx++){ const xx=bx+dx; if(xx<0||xx>=_nbX) continue;
@@ -7141,7 +7146,8 @@ function checkDRC(design, result, opts){
   // maxTrackW/2+_clrMax+_segMaxPadR → 每段 bbox+margin 覆盖的桶收集候选焊盘，
   // 按 pad 索引升序求值、首违即 break——与原全量序（pad 索引序+break）findings 逐位一致。
   // 桶格每次调用重建 O(P×L)，无跨调用失效风险。
-  const _spCell=Math.max(1e-6, maxTrackW(design)/2+_clrMax+_segMaxPadR);
+  // 深检修正同款：桶维度上限 512²（cell' ≥ 最大 _sR 上界保完备性，区间论证同上）
+  const _spCell=Math.max(1e-6, maxTrackW(design)/2+_clrMax+_segMaxPadR, design.width/512, design.height/512);
   const _spNx=Math.max(1,Math.ceil(design.width/_spCell)), _spNy=Math.max(1,Math.ceil(design.height/_spCell));
   const _spBuckets=Array.from({length:design.layers},()=>new Array(_spNx*_spNy));
   for(let pi=0;pi<pads.length;pi++){
