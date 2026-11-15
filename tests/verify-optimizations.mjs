@@ -1077,5 +1077,103 @@ t('26a. preferredLayer 硬层位约束：规范化/生效/无声明 no-op/越界
   assertEq(core.normalizeDesign(d3).nets[0].preferredLayer, 3, 'bottom → 层 3（4 层板）');
 });
 
+// ===== 43. 0.14.8 A* 热路径深优（位级不变）：堆 hole 法 + 别名化 =====
+// 背景：2026-11-16 真实板剖析（ext-fable-03/ext-icebreaker）astar 自占 ~68%、
+// fillDistanceMap ~13%；堆水位 ≤8k（L2 常驻）筛化仅 ~2%，主要成本在每邻居
+// 访问的 context 槽读。本轮：①astar 局部别名块扩展至全部热数组 ②堆筛化改
+// hole 法（携带元素留寄存器，每层 4读4写→2读2写）③pairBonus 先整判后除
+// ④viaLegal 会话级常量提升。位级等价证据：400 组随机板×配置与冻结参考
+// step/buildResult/snapshot/optimize/restore/rerouteSingle 全流程逐态一致；
+// 真实板结果 SHA-256 一致。
+
+// 43a. 堆 hole 法与 swap 法弹出序逐位一致（算法级锁定——引擎内 heap 不可直接观测，
+//      以独立双实现对拍锁定本优化声称的等价性；50k 混合操作含平手/小数代价/清空）
+t('43a. A* 堆 hole 法筛化 ≡ swap 法（弹出序逐位一致，50k 混合操作）', () => {
+  // swap 法（改动前实现，逐行自引擎）
+  const swapHeap = () => {
+    let hs=[], hc=[], n=0;
+    return {
+      size:()=>n,
+      push(f,i){ hs[n]=i; hc[n]=f; let j=n; n++;
+        while(j>0){ const p=(j-1)>>1; if(hc[p]<=hc[j]) break;
+          const sT=hs[p],cT=hc[p]; hs[p]=hs[j];hc[p]=hc[j];hs[j]=sT;hc[j]=cT; j=p; } },
+      pop(){ const top=hs[0]; n--; const sz=n;
+        if(sz){ const lS=hs[sz],lC=hc[sz]; hs[0]=lS;hc[0]=lC; let j=0;
+          for(;;){ let a=2*j+1,b=a+1,m=j;
+            if(a<sz&&hc[a]<hc[m]) m=a;
+            if(b<sz&&hc[b]<hc[m]) m=b;
+            if(m===j) break;
+            const sT=hs[m],cT=hc[m]; hs[m]=hs[j];hc[m]=hc[j];hs[j]=sT;hc[j]=cT; j=m; } }
+        return top; }
+    };
+  };
+  // hole 法（改动后实现，逐行自引擎 astar push/pop）
+  const holeHeap = () => {
+    let hs=[], hc=[], n=0;
+    return {
+      size:()=>n,
+      push(f,i){ let j=n; n++;
+        while(j>0){ const p=(j-1)>>1; if(hc[p]<=f) break;
+          hs[j]=hs[p]; hc[j]=hc[p]; j=p; }
+        hs[j]=i; hc[j]=f; },
+      pop(){ const top=hs[0]; n--; const sz=n;
+        if(sz){ const lS=hs[sz],lC=hc[sz]; let j=0;
+          for(;;){ const a=2*j+1; if(a>=sz) break;
+            const b=a+1, m=(b<sz&&hc[b]<hc[a])?b:a;
+            if(hc[m]>=lC) break;
+            hs[j]=hs[m]; hc[j]=hc[m]; j=m; }
+          hs[j]=lS; hc[j]=lC; }
+        return top; }
+    };
+  };
+  // 可复现混合操作流：小整数/平手簇/小数代价/排空后重置/单元素
+  let s=0x2545F491; const rng=()=>{ s^=s<<13; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; };
+  const A=swapHeap(), B=holeHeap(); const poppedA=[], poppedB=[];
+  for(let op=0; op<50000; op++){
+    const r=rng();
+    if(r<0.55 || A.size()===0){
+      const tier=rng();
+      // 30% 平手小整数（触发平手选择序）、30% 小数、40% 大数
+      const f=tier<0.3 ? (rng()*5|0) : tier<0.6 ? rng()*1000 : 1000+rng()*1e6;
+      const i=op;
+      A.push(f,i); B.push(f,i);
+    } else {
+      poppedA.push(A.pop()); poppedB.push(B.pop());
+    }
+    assertEq(A.size(), B.size(), '堆大小一致 op='+op);
+  }
+  while(A.size()) { poppedA.push(A.pop()); poppedB.push(B.pop()); }
+  assertEq(poppedA.length, poppedB.length, '弹出总数一致');
+  for(let k=0;k<poppedA.length;k++){
+    if(poppedA[k]!==poppedB[k]) throw new Error(`弹出序不一致 @${k}: ${poppedA[k]} vs ${poppedB[k]}`);
+  }
+  // 平手簇专项：全部同代价 → FIFO 序（引擎依赖此序的确定性）
+  const C=swapHeap(), D=holeHeap();
+  for(let i=0;i<500;i++){ C.push(7, i); D.push(7, i); }
+  for(let i=0;i<500;i++) assertEq(D.pop(), C.pop(), '全平手弹出序 @'+i);
+});
+
+// 43b. 会话确定性：同设计同参数两次全新会话逐位一致（别名化不得引入共享可变状态）
+t('43b. 别名化后会话确定性：双会话 buildResult/snapshot 逐位一致', () => {
+  const d=core.designDefaults();
+  Object.assign(d,{width:40,height:30,grid:0.5,layers:2,trackW:0.3,clearance:0.15});
+  d.nets=[{id:'a',name:'A',w:0.4},{id:'b',name:'B'},{id:'c',name:'C',hs:true}];
+  d.pads=[
+    {id:'a1',netId:'a',x:5,y:5,w:1,h:1,shape:'circle',layer:'top'},
+    {id:'a2',netId:'a',x:35,y:25,w:1,h:1,shape:'circle',layer:'bottom'},
+    {id:'b1',netId:'b',x:5,y:25,w:1,h:1,shape:'rect',layer:'top'},
+    {id:'b2',netId:'b',x:35,y:5,w:1,h:1,shape:'rect',layer:'bottom'},
+    {id:'c1',netId:'c',x:20,y:5,w:0.8,h:0.8,shape:'circle',layer:'top'},
+    {id:'c2',netId:'c',x:20,y:25,w:0.8,h:0.8,shape:'circle',layer:'top'}];
+  const strip=o=>{ if(Array.isArray(o)) return o.map(strip);
+    if(o&&typeof o==='object'){ const r={}; for(const k of Object.keys(o)) if(k!=='timeMs') r[k]=strip(o[k]); return r; }
+    return o; };
+  const run=()=>{ const s=core.createSession(core.normalizeDesign(JSON.parse(JSON.stringify(d))),{maxIter:6});
+    for(;;){ if(s.step().done) break; } s.optimize(2); return {r:strip(s.buildResult()), s:strip(s.snapshot())}; };
+  const X=run(), Y=run();
+  assert(JSON.stringify(Y)===JSON.stringify(X), '两次会话结果与快照必须逐位一致');
+  assert(X.r.stats.connected===X.r.stats.total, '该板应全连通');
+});
+
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

@@ -1,6 +1,45 @@
 # 更新日志
 
-# 更新日志
+## 0.14.8（2026-11-16）—— A* 热路径深优：别名块扩展 + 堆 hole 法（全量位级不变）
+
+上轮（2026-11-15）"按真实板型剖析决定优化几何索引还是搜索开销"的执行轮。
+剖析结论：**搜索开销**——ext-fable-03 astar 自占 ~72%、ext-icebreaker ~68%，
+fillDistanceMap 两板均 12-14%（与 astar 调用 1:1，第九轮缓存 A/B 证伪仍成立）；
+堆水位 ≤8k（L2 常驻）筛化仅 ~2%——堆不是矛盾主体，单邻居访问 ~88ns 才是。
+见 docs/深度优化报告-20261116.md。
+
+### 改动（engine.mjs astar/viaLegal，全部位级不变）
+
+- **astar 局部别名块扩展**：blocked/padOwner/viaInf/cellOwner/fixedOwner（原每邻居
+  `model.fixedOwner` 对象链两跳 IC）/gVal/gStamp/par/dirA/closed/nearPenCache/
+  nearPenStamp/pairBonusTyped/viaRingPenalty/viaRingStamp 全部提升为 astar 入口
+  const——这些数组单次调用内不变（写点均在 commit/rip/hist/patchViaInf，都在
+  astar 之外），每邻居省多次上下文槽读（2026-11-15 同款模式的收尾）
+- **堆筛化 hole 法**：携带元素留寄存器、空洞移动，每层 4 读 4 写 → 2 读 2 写；
+  子选择（平手取左）、终止条件、最终布局与 swap 法逐位一致
+- **pairBonus 折扣先整判后除**：pb=0（绝大多数格）跳过浮点除法；pb≠0 时
+  b=pb/1000 必非零，判定逐位一致
+- **viaLegal 会话级常量提升**：viaOuter/2、viaDrill/2、板宽高、viaHoleBlocked
+  提升为会话 const（design/model 会话内只读既有审计口径，ringR/netMeta 同款先例）
+
+### 验证
+
+- **随机板差分**：冻结改动前引擎为参考，100 固定种子随机板 × 4 配置（1/2/4 层、
+  斜向开合、混合线宽、hs/pair、电压、keepout、手动走线、stitching、盲埋孔、
+  class keepout）——**400 组全流程逐态对拍**（step 逐步/buildResult/snapshot/
+  optimize(2)/restore/rerouteSingle 含报错文本）0 失败
+- **真实板结果 SHA-256 一致**：555/MCU/h2-stm32/ext-fable-03/ext-icebreaker
+  （routeBoard 剔 timeMs 前后逐位一致）
+- 优化锁定 42→**44**（43a 堆 hole≡swap 50k 混合操作弹出序对拍；43b 别名化后
+  双会话确定性）；search-regression SHA-256 搜索基线作为行为漂移第二道门保持通过；
+  两个源码锚点测试（congestion-neighborhood/via-ring-cache）按 0.14.5 先例同步
+  别名绑定（同一数组双名绑定，缓存失效语义不变）
+- **A/B 计时**（交替序 4 轮中位数，单机）：h2-stm32 **1.9%**、ext-fable-03 **4.0%**、
+  ext-icebreaker **5.0%**（555/MCU 小板噪声区间不宣称）；全量回归 exit 0；
+  浏览器四组 16+16+22+6=**60 项**全过（回归自动渲染的截图按惯例恢复原版）
+- 后续方向留档：障碍感知启发式（质量车道，预计砍 30%+ 展开，需重录搜索金标准）、
+  jointReroute 局部化计分（每子集全板 DRC 占 icebreaker 4.4%，需逐家族等价证明）、
+  rmstTasks O(V²) Dijkstra 堆化（prev 平手序非位级不变）
 
 ## 0.14.7（2026-11-16）—— 声明族第二批：孔径/涂层/间距/阻焊 + 交付清零 + 层位探针关闭
 

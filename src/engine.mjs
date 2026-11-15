@@ -643,7 +643,11 @@ function createSession(design, opts){
   // 会话生命周期内只读（fixedOwner/padOwner/blocked 等写点全部在 buildModel 内，
   // 已逐字段审计）；routeBoard 的候选重跑×5 可复用一次构建。
   const model=opts.model||buildModel(design);
-  const {grid,GW,GH,L,NC,TS,blocked,padOwner,padCells,padsByNet}=model;
+  // 0.14.8 深优：fixedOwner/viaHoleBlocked 提升为会话级绑定——astar 每邻居/viaLegal 每孔
+  // 尝试不再走 model 属性链读（IC 两跳→typed 直读）。model 会话内只读（:642-644 审计注），
+  // design 会话内只读已有先例（ringR/netMeta 同批一次性读取）。
+  const {grid,GW,GH,L,NC,TS,blocked,padOwner,padCells,padsByNet,fixedOwner}=model;
+  const viaHoleBlk=model.viaHoleBlocked;
   const viaCost = opts.viaCost!=null?opts.viaCost:15;
   const turnPen = opts.turnPen!=null?opts.turnPen:0.3;
   const histInc = opts.histInc!=null?opts.histInc:1.0;
@@ -711,10 +715,14 @@ function createSession(design, opts){
   const fixedViaHoles=hasFixedVias?manufacturingHoles(design,{nets:manualRouteEntries(design)}).filter(h=>h.hasVia).sort((a,b)=>a.x-b.x):null;
   let fixedViaReach=0;
   if(fixedViaHoles) for(const h of fixedViaHoles) fixedViaReach=Math.max(fixedViaReach,design.viaDrill/2+h.r+JLC.viaEdgeMin);
+  // 0.14.8 深优：viaLegal 每孔尝试的常量提升——viaOuter/2 等在会话内不变（design 只读），
+  // 每次调用省多次属性链读与除法；IEEE 除法结果复用，算式逐位一致
+  const voHalf=design.viaOuter/2, viaDrillHalf=design.viaDrill/2,
+    boardW=design.width, boardH=design.height;
   function viaLegal(net, c, fromL, toL){
     const cx=cxOf(c), cy=cyOf(c);
-    if(cx-design.viaOuter/2<-1e-9 || cx+design.viaOuter/2>design.width+1e-9 ||
-       cy-design.viaOuter/2<-1e-9 || cy+design.viaOuter/2>design.height+1e-9) return false;
+    if(cx-voHalf<-1e-9 || cx+voHalf>boardW+1e-9 ||
+       cy-voHalf<-1e-9 || cy+voHalf>boardH+1e-9) return false;
     // 焊盘阻挡按 span 查（0.13.18 #15b B3）：通孔走列位图快路径（位级不变）；
     // 盲埋孔只查 span 内层——span 外层的异网焊盘无铜相交，不阻挡
     const sa=fromL!=null?fromL:0, sb=toL!=null?toL:L-1;
@@ -733,21 +741,21 @@ function createSession(design, opts){
     // +3 过孔间距）。
     const vOwner=viaInfV[c];
     if(vOwner!==0&&vOwner!==net.i+1) return false;
-    if(model.viaHoleBlocked&&model.viaHoleBlocked[c]) return false;   // 同网 THT 孔边距（DRC 同口径）
-    if(fixedViaHoles&&fixedViaDrillConflict(cx,cy,design.viaDrill/2,net.id,sa,sb,fixedViaHoles,fixedViaReach)) return false;
+    if(viaHoleBlk&&viaHoleBlk[c]) return false;   // 同网 THT 孔边距（DRC 同口径）
+    if(fixedViaHoles&&fixedViaDrillConflict(cx,cy,viaDrillHalf,net.id,sa,sb,fixedViaHoles,fixedViaReach)) return false;
     if(keepoutViaBlocked===null){
       keepoutViaBlocked=new Uint8Array(NC);
       for(const k of design.keepouts||[]){
-        const x0=Math.max(0, Math.floor((k.x-k.w/2-design.viaOuter/2)/grid-0.5));
-        const x1=Math.min(GW-1, Math.ceil((k.x+k.w/2+design.viaOuter/2)/grid-0.5));
-        const y0=Math.max(0, Math.floor((k.y-k.h/2-design.viaOuter/2)/grid-0.5));
-        const y1=Math.min(GH-1, Math.ceil((k.y+k.h/2+design.viaOuter/2)/grid-0.5));
+        const x0=Math.max(0, Math.floor((k.x-k.w/2-voHalf)/grid-0.5));
+        const x1=Math.min(GW-1, Math.ceil((k.x+k.w/2+voHalf)/grid-0.5));
+        const y0=Math.max(0, Math.floor((k.y-k.h/2-voHalf)/grid-0.5));
+        const y1=Math.min(GH-1, Math.ceil((k.y+k.h/2+voHalf)/grid-0.5));
         for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++)
-          if(distToRect((gx+0.5)*grid,(gy+0.5)*grid,k.x,k.y,k.w,k.h)<design.viaOuter/2-1e-9) keepoutViaBlocked[gy*GW+gx]=1;
+          if(distToRect((gx+0.5)*grid,(gy+0.5)*grid,k.x,k.y,k.w,k.h)<voHalf-1e-9) keepoutViaBlocked[gy*GW+gx]=1;
       }
     }
     if(keepoutViaBlocked){ if(keepoutViaBlocked[c]) return false; }
-    else for(const k of design.keepouts||[]) if(distToRect(cx,cy,k.x,k.y,k.w,k.h)<design.viaOuter/2-1e-9) return false;
+    else for(const k of design.keepouts||[]) if(distToRect(cx,cy,k.x,k.y,k.w,k.h)<voHalf-1e-9) return false;
     if(_scopedHit(model,net.cls,c)) return false;   // class keepout 同口径（roadmap #10）
     return true;
   }
@@ -1108,8 +1116,17 @@ function createSession(design, opts){
     // 变写的 let（V8 无法常量化，只能逐次上下文槽读），usage/ownStamp/hist/hMap 是逐邻居
     // 多次访问的 typed 数组引用。全部在本次调用内不变（轮间变化发生在 astar 之外），
     // 逐位一致。netMeta/hMap 在 :1070-1072 已有同款先例。
+    // 0.14.8 深优：别名块扩展——blocked/padOwner/viaInf/cellOwner/gVal/gStamp/par/dirA/
+    // closed/nearPenCache/nearPenStamp/pairBonusTyped/fixedOwner 全部提升为 astar 局部
+    // const（此前仅 usage/ownStamp/hist/hMap 四个）。这些数组在本次调用内不变（写点
+    // 均在 astar 之外：commit/rip/hist 更新/patchViaInf），每邻居省多次上下文槽读。
     const pf=presFac, ldOn=layerDirOn,
-      usageA=usage, ownStampA=ownStamp, histA=hist, hMapA=hMap;
+      usageA=usage, ownStampA=ownStamp, histA=hist, hMapA=hMap,
+      blkA=blocked, poA=padOwner, viA=viaInf, coA=cellOwner, fxO=fixedOwner,
+      gVA=gVal, gSA=gStamp, parA=par, dirAA=dirA, closedA=closed,
+      npC=nearPenCache, npS=nearPenStamp, pbT=pairBonusTyped,
+      vrS=viaRingStamp, vrP=viaRingPenalty;
+    const hScale=netHScale||1;   // push 逐次 `||1` 提升到环外（每次调用内不变）
     if(!goalSet.size) return null;
     computeH(goalSet);
     gen++;
@@ -1119,28 +1136,28 @@ function createSession(design, opts){
     for(const s of net.cells) ownStamp[s]=gen;
     // swap 内联（V8 对捕获多外层变量的闭包常不内联——堆占档案 17.8%）
     // 2026-11-15 深优：堆数组/大小拷贝进局部（heapSize 在筛化期间只读快照 hs——
-    // push/pop 各自入口一次增减后筛化循环内无写入），消除热循环逐层的上下文槽读；
-    // 筛化算法逐行一致 → 弹出序逐位一致
+    // push/pop 各自入口一次增减后筛化循环内无写入），消除热循环逐层的上下文槽读。
+    // 0.14.8 深优：筛化改 hole 法（携带元素留寄存器、空洞下移/上移）——每层 4 读 4 写
+    // → 2 读 2 写；子选择（平手取左）、终止条件与最终布局与 swap 法逐位一致：
+    // 筛上=父>携带元素才下移父；筛下=先取较小子（b 严格小才取 b，同原 m 选择序），
+    // 较小子 ≥ 携带元素即停。堆最终布局逐位一致 → 后续弹出序逐位一致。
     const push=(f,i)=>{
       if(heapSize===heapStates.length) heapGrow();
       const hsA=heapStates, hcA=heapCosts;
-      const sz=heapSize; hsA[sz]=i; hcA[sz]=f; let j=sz; heapSize=sz+1;
-      while(j>0){ const p=(j-1)>>1; if(hcA[p]<=hcA[j]) break;
-        const sT=hsA[p], cT=hcA[p];
-        hsA[p]=hsA[j]; hcA[p]=hcA[j];
-        hsA[j]=sT; hcA[j]=cT; j=p; } };
+      let j=heapSize; heapSize=j+1;
+      while(j>0){ const p=(j-1)>>1; if(hcA[p]<=f) break;
+        hsA[j]=hsA[p]; hcA[j]=hcA[p]; j=p; }
+      hsA[j]=i; hcA[j]=f; };
     const pop=()=>{ const hsA=heapStates, hcA=heapCosts;
       const top=hsA[0]; heapSize--;
       const hs=heapSize;
       if(hs){ const lastS=hsA[hs], lastC=hcA[hs];
-        hsA[0]=lastS; hcA[0]=lastC; let j=0;
-        for(;;){ let a=2*j+1,b=a+1,m=j;
-          if(a<hs&&hcA[a]<hcA[m]) m=a;
-          if(b<hs&&hcA[b]<hcA[m]) m=b;
-          if(m===j) break;
-          const sT=hsA[m], cT=hcA[m];
-          hsA[m]=hsA[j]; hcA[m]=hcA[j];
-          hsA[j]=sT; hcA[j]=cT; j=m; } }
+        let j=0;
+        for(;;){ const a=2*j+1; if(a>=hs) break;
+          const b=a+1, m=(b<hs&&hcA[b]<hcA[a])?b:a;
+          if(hcA[m]>=lastC) break;
+          hsA[j]=hsA[m]; hcA[j]=hcA[m]; j=m; }
+        hsA[j]=lastS; hcA[j]=lastC; }
       return top; };
 
     const own=net.i+1;
@@ -1157,11 +1174,11 @@ function createSession(design, opts){
     const scopedArr=model.scopedBlocked, hasScoped=scopedArr.length>0;
     while(heapSize){
       const cur=pop();
-      if(closed[cur]===gen) continue;
-      closed[cur]=gen;
+      if(closedA[cur]===gen) continue;
+      closedA[cur]=gen;
       if(goalSet.has(cur)){ found=cur; break; }
-      const gc=gStamp[cur]===gen? gVal[cur] : BIG;
-      const pd=dirA[cur];
+      const gc=gSA[cur]===gen? gVA[cur] : BIG;
+      const pd=dirAA[cur];
       const c=cur%NC, l=(cur/NC)|0;
       // 邻居：[状态, 是否过孔, 方向]
       const canL=c%GW>0, canR=c%GW<GW-1, canU=c>=GW, canD=c<GW*(GH-1);
@@ -1188,15 +1205,15 @@ function createSession(design, opts){
         // 在本次 astar 生命周期内恒等（ownStamp 入口自 net.cells 全量置位，调用期间
         // net.cells 不变——commit/rip 均发生在 astar 之外）
         if(pairBand&&!pairBand.has(ns)) continue nbr;
-        if(blocked[ns]) continue nbr;
+        if(blkA[ns]) continue nbr;
         if(hasScoped){ const cc2=ns%NC;
           for(let si=0;si<scopedArr.length;si++){ const sb=scopedArr[si];
             if(net.cls!==sb.cls&&sb.cells[cc2]) continue nbr; } }
-        { const fx=model.fixedOwner[ns]; if(fx!==0&&fx!==own) continue nbr; }
-        { const po=padOwner[ns]; if(po!==0&&po!==own) continue nbr; }
-        { const vi=viaInf[ns]; if(vi!==0&&vi!==own) continue nbr; }
+        { const fx=fxO[ns]; if(fx!==0&&fx!==own) continue nbr; }
+        { const po=poA[ns]; if(po!==0&&po!==own) continue nbr; }
+        { const vi=viA[ns]; if(vi!==0&&vi!==own) continue nbr; }
         if(hard&&usageA[ns]-(ownStampA[ns]===gen?1:0)>0) continue nbr;
-        if(hMapA[ns]>=BIG) continue;
+        const hn=hMapA[ns]; if(hn>=BIG) continue;   // 0.14.8：复用到 push（省一次 typed 读）
         let ec=1+histA[ns];
         if(!hard){
           const o=usageA[ns]-(ownStampA[ns]===gen?1:0);
@@ -1212,7 +1229,7 @@ function createSession(design, opts){
             // Freerouting 拆扇出铜 ×139 软保护同构——差别只在我们按格计价）。
             // 仅 fanoutFirst 开启时生效；缺省 off 路径零改动。
             if(fanoutEff!=='off'){
-              const foi=cellOwner[ns]-1;
+              const foi=coA[ns]-1;
               if(foi>=0&&foi!==net.i&&nets[foi].fanoutRing!=null) ec+=fanoutBorrowPen;
             }
           }
@@ -1230,8 +1247,8 @@ function createSession(design, opts){
             if(!viaLegal(net, cc)) continue;
           }
           let bad=false, rpen=0;
-          if(viaRingStamp&&viaRingStamp[cc]===gen){
-            rpen=viaRingPenalty[cc]; bad=rpen<0;
+          if(vrS&&vrS[cc]===gen){
+            rpen=vrP[cc]; bad=rpen<0;
           }else{
             const gx=cc%GW, gy=(cc-gx)/GW;
             for(const [dx,dy] of ringOffs){
@@ -1246,7 +1263,7 @@ function createSession(design, opts){
               }
               if(bad) break;
             }
-            if(viaRingStamp){ viaRingPenalty[cc]=bad?-1:rpen; viaRingStamp[cc]=gen; }
+            if(vrS){ vrP[cc]=bad?-1:rpen; vrS[cc]=gen; }
           }
           if(bad) continue;
           ec+=viaCost+rpen;
@@ -1257,20 +1274,20 @@ function createSession(design, opts){
             const dd=DIAGD[nd], l0=(cur/NC)|0, c0=cur%NC;
             const s1=l0*NC+(c0+dd[0]), s2=l0*NC+(c0+dd[1]*GW);
             // passable 内联（同 nbr 环口径，passable 段无 pairBand/hard）
-            { if(blocked[s1]) continue;
+            { if(blkA[s1]) continue;
               if(hasScoped){ const c1=s1%NC;
                 for(let si=0;si<scopedArr.length;si++){ const sb=scopedArr[si];
                   if(net.cls!==sb.cls&&sb.cells[c1]) continue nbr; } }
-              const fx1=model.fixedOwner[s1]; if(fx1!==0&&fx1!==own) continue;
-              const po1=padOwner[s1]; if(po1!==0&&po1!==own) continue;
-              const vi1=viaInf[s1]; if(vi1!==0&&vi1!==own) continue; }
-            { if(blocked[s2]) continue;
+              const fx1=fxO[s1]; if(fx1!==0&&fx1!==own) continue;
+              const po1=poA[s1]; if(po1!==0&&po1!==own) continue;
+              const vi1=viA[s1]; if(vi1!==0&&vi1!==own) continue; }
+            { if(blkA[s2]) continue;
               if(hasScoped){ const c2=s2%NC;
                 for(let si=0;si<scopedArr.length;si++){ const sb=scopedArr[si];
                   if(net.cls!==sb.cls&&sb.cells[c2]) continue nbr; } }
-              const fx2=model.fixedOwner[s2]; if(fx2!==0&&fx2!==own) continue;
-              const po2=padOwner[s2]; if(po2!==0&&po2!==own) continue;
-              const vi2=viaInf[s2]; if(vi2!==0&&vi2!==own) continue; }
+              const fx2=fxO[s2]; if(fx2!==0&&fx2!==own) continue;
+              const po2=poA[s2]; if(po2!==0&&po2!==own) continue;
+              const vi2=viA[s2]; if(vi2!==0&&vi2!==own) continue; }
             if(hard){
               if(usageA[s1]-(ownStampA[s1]===gen?1:0)>0) continue;
               if(usageA[s2]-(ownStampA[s2]===gen?1:0)>0) continue;
@@ -1295,7 +1312,7 @@ function createSession(design, opts){
           // 邻近占用罚逐格缓存（gen 戳）：同一格的 nearPen 与入边数无关地重复计算
           // 至 4 次（斜向再多）——每生成格算一次即可，位级同值
           let nearPen;
-          if(nearPenCache && nearPenStamp[ns]===gen) nearPen=nearPenCache[ns];
+          if(npC && npS[ns]===gen) nearPen=npC[ns];
           else{
             const cell2=ns%NC, tc2=cell2%GW, nr2=(cell2-tc2)/GW;
             nearPen=0;
@@ -1312,12 +1329,12 @@ function createSession(design, opts){
                 if(x<0||y<0||x>=GW||y>=GH) continue;
                 const s3=lN*NC+y*GW+x;
                 if(usageA[s3]<=0 || ownStampA[s3]===gen) continue;
-                const oi=cellOwner[s3]-1;
+                const oi=coA[s3]-1;
                 if(myPair && oi>=0 && netMeta[oi] && netMeta[oi].pair===myPair) continue;
                 nearPen+=1;
               }
             }
-            if(nearPenCache){ nearPenCache[ns]=nearPen; nearPenStamp[ns]=gen; }
+            if(npC){ npC[ns]=nearPen; npS[ns]=gen; }
           }
           ec+=nearPen;
         }
@@ -1325,21 +1342,22 @@ function createSession(design, opts){
         // 硬/软两阶段均生效——硬阶段无拥塞代价，正是走廊引导窗口）
         {
           // pairBonusGet 内联（2026-11-15 深优）：逐邻居闭包调用 → typed 直读；
-          // 语义逐位一致（pairBonusTyped 会话内只增不减，非空性可在环外判定）
-          const pb=pairBonusTyped?pairBonusTyped.val[ns]:(pairBonus.get(ns)||0);
-          const b=pb/1000;
-          if(b) ec=Math.max(0.25, ec-b); // 折扣：走廊格实付边权=基础−折扣（地板 0.25）
+          // 语义逐位一致（pairBonusTyped 会话内只增不减，非空性可在环外判定）。
+          // 0.14.8 深优：先整判后除——pb=0（绝大多数格）跳过浮点除法；
+          // pb≠0 时 b=pb/1000 必非零，判定结果与原式逐位一致
+          const pb=pbT?pbT.val[ns]:(pairBonus.get(ns)||0);
+          if(pb){ const b=pb/1000; if(b) ec=Math.max(0.25, ec-b); } // 折扣：走廊格实付边权=基础−折扣（地板 0.25）
         }
         const ng=gc+ec;
-        if(!(gStamp[ns]===gen) || ng<gVal[ns]){
-          gVal[ns]=ng; gStamp[ns]=gen; par[ns]=cur; dirA[ns]=nd;
-          push(ng+hMap[ns]*(netHScale||1), ns);
+        if(!(gSA[ns]===gen) || ng<gVA[ns]){
+          gVA[ns]=ng; gSA[ns]=gen; parA[ns]=cur; dirAA[ns]=nd;
+          push(ng+hn*hScale, ns);
         }
       }
     }
     if(found<0) return null;
     const path=[]; let s=found;
-    while(s!==-1){ path.push(s); s=par[s]; }
+    while(s!==-1){ path.push(s); s=parA[s]; }
     path.reverse();
     return path;
   }

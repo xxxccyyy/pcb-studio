@@ -4,7 +4,7 @@ import test from 'node:test';
 import * as core from '../src/engine.mjs';
 import {engineSource,uncachedEngine,cleanResult} from './via-ring-reference.mjs';
 const direct=await uncachedEngine();
-const start=engineSource.indexOf('          let bad=false, rpen=0;\n          if(viaRingStamp');
+const start=engineSource.indexOf('          let bad=false, rpen=0;\n          if(vrS');
 const end=engineSource.indexOf('          if(bad) continue;',start);
 assert.ok(start>=0&&end>start);
 const scanBody=engineSource.slice(start,end)+'\nreturn {bad,rpen:bad?0:rpen};';
@@ -13,10 +13,13 @@ function ringHarness(cached){
   const usage=new Proxy(raw,{get(target,key){if(/^\d+$/.test(String(key)))reads++;return target[key];}});
   const ownStamp=new Int32Array(NC*L);
   // 0.14.5 深优二段：引擎环扫描区热点名提升为 astar 局部别名（usage→usageA、
-  // ownStamp→ownStampA、presFac→pf），vm 脚手架同步绑定同一对象——语义不变
+  // ownStamp→ownStampA、presFac→pf），vm 脚手架同步绑定同一对象——语义不变。
+  // 0.14.8 深优：别名块扩展（viaRingStamp→vrS、viaRingPenalty→vrP），
+  // 脚手架同款同步绑定同一数组（缓存失效由 gen 戳判定，别名必须指向同一存储）
+  const vrParr=cached?new Float64Array(NC):null, vrSarr=cached?new Int32Array(NC):null;
   const context={GW,GH:9,NC,L,usage,usageA:usage,ownStamp,ownStampA:ownStamp,gen:1,presFac:2,pf:2,
-    ringOffs:[[-1,0],[1,0],[0,-1],[0,1]],viaRingPenalty:cached?new Float64Array(NC):null,
-    viaRingStamp:cached?new Int32Array(NC):null};
+    ringOffs:[[-1,0],[1,0],[0,-1],[0,1]],viaRingPenalty:vrParr,viaRingStamp:vrSarr,
+    vrP:vrParr,vrS:vrSarr};
   const scan=vm.runInNewContext('(function(cc,cur,ns,hard){'+scanBody+'})',context);
   return {context,raw,scan:(cc,from,to,hard)=>cleanResult(scan(cc,from*NC+cc,to*NC+cc,hard)),reads:()=>reads};
 }

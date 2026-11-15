@@ -13,11 +13,16 @@ function harness({cached=true}={}){
   const usage=new Int16Array(TS),ownStamp=new Int32Array(TS),cellOwner=new Int32Array(TS);
   const netMeta=[{pair:'D'},{pair:'D'},{pair:null}];
   const ring2Offs=[];for(let y=-2;y<=2;y++)for(let x=-2;x<=2;x++)if(Math.max(Math.abs(x),Math.abs(y))===2)ring2Offs.push([x,y]);
+  const npCacheArr=cached?new Float32Array(TS):null, npStampArr=cached?new Int32Array(TS):null;
   const context={GW,GH,NC,usage,ownStamp,cellOwner,netMeta,ring2Offs,gen:1,
     // 0.14.5 深优二段：引擎热点名提升为 astar 局部别名（usage→usageA、ownStamp→ownStampA），
-    // vm 脚手架同步绑定同一数组——语义不变
-    usageA:usage,ownStampA:ownStamp,
-    nearPenCache:cached?new Float32Array(TS):null,nearPenStamp:cached?new Int32Array(TS):null,
+    // vm 脚手架同步绑定同一数组——语义不变。
+    // 0.14.8 深优：别名块扩展（nearPenCache→npC、nearPenStamp→npS、cellOwner→coA），
+    // 脚手架同款同步绑定同一对象（npC/npS 与 nearPenCache/nearPenStamp 同一数组——
+    // 测试以 nearPenStamp.fill(0) 失效缓存，别名必须指向同一存储）
+    usageA:usage,ownStampA:ownStamp,coA:cellOwner,
+    nearPenCache:npCacheArr,nearPenStamp:npStampArr,
+    npC:npCacheArr,npS:npStampArr,
     adjPenAt(net,s,pair){
       if(usage[s]<=0||ownStamp[s]===context.gen)return 0;
       if(pair&&cellOwner[s]>0&&netMeta[cellOwner[s]-1].pair===pair&&usage[s]<=2)return 0;
