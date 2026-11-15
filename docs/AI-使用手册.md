@@ -252,7 +252,17 @@
 - **阻抗自动定档（批次3）**：rules.pairs[].z（或 nets[].diffZ）→ diffPairZFor 反查
   耦合间隙 S → 耦合走廊/压实带心/DRC 耦合度全链按此工作。2 层板 90Ω 物理不可达
   （最低 ~137Ω）——spec 门在布线前拦截，检查表如实 warn；用叠层工具算得的间隙
-  可 rules.pairs[].gap 显式覆写（≥clearance）。
+  可 rules.pairs[].gap 显式覆写（≥clearance）。0.14.7：design.solderMask（mm）→
+  阻焊一阶修正（−2Ω/0.0254mm，Bogatin B.43/44），sFor 全链跟随；diffz --mask。
+- **过孔载流按孔径折算（0.14.7 批次1）**：0.3mm→1A 锚点线性（0.4mm→1.33A/孔）——
+  viaCount/thermal parallelAmp/检查表行全链跟随；载流声明网的 ≥3mm² 焊盘也进
+  热设计检查表行。
+- **涂层与类级间距（0.14.7 批次2）**：design.coating:'coated'（三防漆）→ IPC-2221B
+  外层走 B4 档（170V 1.25→0.4mm）；rules.classes[].clr 经 netClass 展开 → netClr
+  第三来源。**DRC 逐对校验已闭环**：声明网与异网导体的间距按 max(两网 netClr)
+  复核（0.14.6 及以前 DRC 只按全局口径——影响区是必要条件、DRC 是充分复核）。
+- **preferredLayer 硬约束慎用（0.14.7 批次5 探针级）**：实测 p05 仅 3 网 →
+  −6 连通 +3 DRC +61% 耗时（顶层容量不足）——密板勿用，详见批次5 探针报告。
 - **禁布区缓冲（第十轮 L35）**- **禁布区缓冲（第十轮 L35）**：禁布阻挡自动外扩 maxTrackW/2——贴禁布边缘 maxTrackW/2 内
   不再有可布格（铜皮不出界保证）。需要跨区连线的电源/地网别被禁布带完全包围，
   预留桥口（n145 教训：分区禁布带会切断跨区电源网，DRC 拦截）。
