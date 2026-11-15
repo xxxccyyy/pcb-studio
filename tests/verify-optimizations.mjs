@@ -464,7 +464,7 @@ t('20a. ampWidthFor 锚点数学：IPC-2152 正反向一致', () => {
   // 过孔并联：3A → ≥3 个 0.3mm 过孔
   assertEq(core.ampWidthFor(d, 3).viaCount, 3, '3A → 3 过孔');
 });
-t('20b. 载流声明 → 投板检查表逐网行（8A → fail 触发）', () => {
+t('20b. 载流声明 → netW 内核自动抬宽 → 检查表确认行', () => {
   const d = core.designDefaults();
   d.width = 60; d.height = 36; d.grid = 0.6; d.trackW = 0.4; d.clearance = 0.2;
   d.nets = [{id:'batp',name:'BATP',current:8},{id:'sig',name:'SIG'}];
@@ -473,11 +473,18 @@ t('20b. 载流声明 → 投板检查表逐网行（8A → fail 触发）', () =
     {id:'J2-1',netId:'sig',x:52,y:18,w:1.7,h:1.7,shape:'circle',layer:'both',holeR:0.45},
     {id:'J2-2',netId:'gnd',x:52,y:22,w:1.7,h:1.7,shape:'circle',layer:'both',holeR:0.45}
   ];
+  // 内核自动抬宽（用户指令：以后都要根据电流大小调整线的粗细）：fabChecklist→
+  // netCurrentDecls→netW 缓存构建时 0.4mm 已被原地抬到 8A 需求 5.06mm。
+  // 检查表语义随之升级：不再暴露 fail（fail 在 spec 门拦截），而是确认最终宽度达标。
   const checklist = core.fabChecklist(d, null);
   const rows = checklist.filter(r => r.group === '载流' && r.item.includes('BATP'));
   assert(rows.length === 1, '投板检查表应有 BATP 逐网载流行，实际 ' + rows.length);
-  assertEq(rows[0].status, 'fail', '0.4mm 走 8A 应判 fail');
+  assertEq(rows[0].status, 'ok', '内核自动抬宽后 5.06mm 应判 ok');
+  assert(rows[0].value.includes('5.06'), '检查表值应为自动抬宽后的 5.06mm，实际 ' + rows[0].value);
   assert(rows[0].limit.includes('5.06'), '需求值应 ≈5.06mm');
+  // 抬宽是原地生效：设计对象里 batp.w 已被内核改写
+  assert(Math.abs(d.nets.find(n=>n.id==='batp').w - 5.06) < 0.05,
+    'netW 内核应把 batp.w 原地抬到 ≈5.06，实际 ' + d.nets.find(n=>n.id==='batp').w);
 });
 t('20c. 薄焊盘格心保障 + 宽线声明共存（L39×L37 协同）', () => {
   const d = core.designDefaults();
@@ -494,5 +501,39 @@ t('20c. 薄焊盘格心保障 + 宽线声明共存（L39×L37 协同）', () => 
   assertEq(zero.length, 0, '宽线声明后零格焊盘仍应为 0（L39 格心保障 × L37 maxTrackW 协同）');
 });
 
-console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
+console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');// ===== 20d. IPC-2221B 电压→安全间距（第十一轮后批次1，L48）=====
+// 用户需求：规格书声明工作电压（nets[].voltage）→ IPC-2221B 自动查安全间距 →
+// per-pad 影响区（高压焊盘推开异网更远）→ checkDRC 间距口径一致。
+t('20d. IPC-2221B 查表 + per-pad 影响区 + 混合电压端到端', () => {
+  const d = core.designDefaults();
+  d.width = 60; d.height = 30; d.grid = 0.4; d.trackW = 0.3; d.clearance = 0.2;
+  d.nets = [{id:'hv',name:'HV_170V',voltage:170},{id:'lv',name:'LV_3V3'},{id:'gnd',name:'GND'}];
+  d.pads = [
+    {id:'HV-1', netId:'hv', x:15, y:10, w:2.0, h:2.0, shape:'circle', layer:'top'},
+    {id:'LV-1', netId:'lv', x:30, y:10, w:1.0, h:1.0, shape:'rect', layer:'top'},
+    {id:'G1-1', netId:'gnd', x:45, y:10, w:1.7, h:1.7, shape:'circle', layer:'both', holeR:0.45}
+  ];
+  // 查表数值校验（IPC-2221B B4 外层无涂层）
+  assertEq(core.ipc2221Clr(170, 'B4'), 1.27, '170V@B4 → 1.27mm');
+  assertEq(core.ipc2221Clr(220, 'B4'), 1.27, '220V@B4 → 1.27mm');
+  assertEq(core.ipc2221Clr(400, 'B4'), 2.5, '400V@B4 → 2.5mm');
+  assertEq(core.ipc2221Clr(5, 'B4'), 0.1, '5V@B4 → 0.1mm');
+  assertEq(core.ipc2221Clr(220, 'B2'), 0.8, '220V@B2（有涂层）→ 0.8mm');
+  // per-net clearance
+  assertEq(core.netClr(d, 'hv'), 1.27, 'HV 170V → 1.27mm');
+  assertEq(core.netClr(d, 'lv'), 0.2, 'LV 无电压声明 → 全局 0.2mm');
+  // per-pad 影响区：HV 焊盘推开异网更远
+  const m = core.buildModel(d);
+  const hvCells = m.padCells.get('HV-1') || [];
+  assert(hvCells.length > 0, 'HV-1 有格');
+  // 端到端：布线 + DRC
+  const sess = core.createSession(d, { maxIter: 60 });
+  for (;;) { if (sess.step().done) break; }
+  sess.optimize(1);
+  const r = sess.buildResult();
+  const issues = core.checkDRC(d, r);
+  assertEq(issues.filter(ii => ii.sev === 'error').length, 0, '混合电压板 DRC 干净');
+});
+
+console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);
