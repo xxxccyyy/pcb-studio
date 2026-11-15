@@ -135,7 +135,7 @@ t('EasyEDA: 结构/字段数/坐标界（对照真实导出格式）', () => {
     const f = sh.split('~');
     if (f[0] === 'TRACK') {
       assert(f.length >= 6, 'TRACK 字段数 ' + f.length);
-      assert(/^\{[\d.,-]+\}$/.test(f[4]), '点列花括号');
+      assert(!f[4].includes('{') && !f[4].includes(',') && /^\d[\d.]* \d[\d.]*( \d[\d.]*)+$/.test(f[4]), '点列空格分隔（官方格式，无花括号）');
       assert(parseFloat(f[1]) > 0, '线宽 > 0');
       assert(['1', '2', '21', '22'].includes(f[2]), '层号合法（' + f[2] + '）');
     } else if (f[0] === 'PAD') {

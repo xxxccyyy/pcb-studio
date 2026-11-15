@@ -1,0 +1,151 @@
+{
+ "ok": true,
+ "project": "BG2208-4G",
+ "generatedBy": "pcb-autorouter@0.14.4",
+ "design": {
+  "nets": 101,
+  "pads": 563,
+  "components": 182,
+  "layers": 2,
+  "width": 120,
+  "height": 80,
+  "external": false
+ },
+ "result": {
+  "nets": 101,
+  "total": 491,
+  "connectedSum": 491,
+  "vias": 316
+ },
+ "gates": {
+  "verify": {
+   "ok": true,
+   "findings": []
+  },
+  "drc": {
+   "errors": 70,
+   "warnings": 2,
+   "fabFail": 0,
+   "detail": [
+    "(53.25, 25.95) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(56.25, 45.75) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(57.88, 27.28) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(57.88, 27.28) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(57.88, 27.28) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(83.25, 30.15) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(82.91, 27.75) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(86.76, 29.34) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(86.76, 29.34) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(86.76, 29.34) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(87.90, 31.65) mm 附近，第 2 层不同网络走线/过孔重叠",
+    "(87.90, 31.65) mm 附近，第 2 层不同网络走线/过孔重叠"
+   ]
+  },
+  "connectivity": {
+   "total": 491,
+   "connected": 491,
+   "ok": true
+  }
+ },
+ "override": {
+  "forced": true,
+  "reason": "--force"
+ },
+ "evidenceLevels": {
+  "roundtrip-verified": "写后回读对账通过（最强自证）",
+  "deterministic": "工具几何/文件生成（可机器复算）",
+  "datasheet-backed": "厂商参数表口径（BOM/检查表——人工复核 C 编号与封装）"
+ },
+ "artifacts": [
+  {
+   "file": "BG2208-4G.嘉立创EDA.json",
+   "kind": "easyeda-pcb",
+   "bytes": 197920,
+   "evidence": "roundtrip-verified"
+  },
+  {
+   "file": "gerber\\BG2208-4G-F_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 212989,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\BG2208-4G-B_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 225009,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\BG2208-4G-F_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 5018,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\BG2208-4G-B_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 12509,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\BG2208-4G-F_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 1974,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\BG2208-4G-B_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 2465,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\BG2208-4G-Edge_Cuts.gbr",
+   "kind": "gerber",
+   "bytes": 138,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\BG2208-4G.drl",
+   "kind": "gerber",
+   "bytes": 5188,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "BG2208-4G.ipc356.txt",
+   "kind": "ipc-d-356a",
+   "bytes": 45356,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "BG2208-4G.svg",
+   "kind": "svg",
+   "bytes": 513415,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "BG2208-4G.BOM.csv",
+   "kind": "bom",
+   "bytes": 1384,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "BG2208-4G.贴片坐标.csv",
+   "kind": "pos",
+   "bytes": 3596,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "BG2208-4G.渲染.png",
+   "kind": "render-png",
+   "bytes": 63579,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "BG2208-4G.投板检查表.json",
+   "kind": "fab-checklist",
+   "bytes": 4237,
+   "evidence": "datasheet-backed"
+  }
+ ]
+}

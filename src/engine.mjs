@@ -5285,12 +5285,12 @@ function exportEasyEdaPcb(design, nets, pour){
         if(path[k].l===path[k-1].l) run.push(path[k]);
         else{
           if(run.length>1)
-            shapes.push(`TRACK~${u(netW(design, n.netId))}~${layerOf(run[0].l)}~${net}~{${run.map(pt=>`${u(pt.x)},${u(pt.y)}`).join(',')}}~${nid()}~0`);
+            shapes.push(`TRACK~${u(netW(design, n.netId))}~${layerOf(run[0].l)}~${net}~${run.map(pt=>`${u(pt.x)} ${u(pt.y)}`).join(' ')}~${nid()}~0`);   // 官方格式：空格分隔点串（2026-11-15 修正：花括号+逗号格式 Pro 导入不识别）
           run=[path[k]];
         }
       }
       if(run.length>1)
-        shapes.push(`TRACK~${u(netW(design, n.netId))}~${layerOf(run[0].l)}~${net}~{${run.map(pt=>`${u(pt.x)},${u(pt.y)}`).join(',')}}~${nid()}~0`);
+        shapes.push(`TRACK~${u(netW(design, n.netId))}~${layerOf(run[0].l)}~${net}~${run.map(pt=>`${u(pt.x)} ${u(pt.y)}`).join(' ')}~${nid()}~0`);   // 官方格式：空格分隔点串（2026-11-15 修正：花括号+逗号格式 Pro 导入不识别）
     }
     for(const v of n.vias||[])
       shapes.push(`VIA~${u(v.x)}~${u(v.y)}~${u(design.viaOuter)}~${net}~${u(design.viaDrill/2)}~${nid()}~0`);

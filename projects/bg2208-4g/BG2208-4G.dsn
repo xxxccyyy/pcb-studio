@@ -1,0 +1,1946 @@
+(pcb "design.dsn"
+  (parser (string_quote ") (space_in_quoted_tokens on) (host_cad "PCB自动布线工具"))
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer Top (type signal))
+    (layer Bottom (type signal))
+    (boundary (path pcb 0 0 0 120000 0 120000 80000 0 80000 0 0))
+    (via VIA_DEFAULT)
+    (rule (width 150) (clearance 150))
+  )
+  (placement
+    (component U5
+      (place U5 0 0 front 0)
+    )
+    (component FB1
+      (place FB1 0 0 front 0)
+    )
+    (component C21
+      (place C21 0 0 front 0)
+    )
+    (component C22
+      (place C22 0 0 front 0)
+    )
+    (component C23
+      (place C23 0 0 front 0)
+    )
+    (component C24
+      (place C24 0 0 front 0)
+    )
+    (component C25
+      (place C25 0 0 front 0)
+    )
+    (component X1
+      (place X1 0 0 front 0)
+    )
+    (component "R_ANT"
+      (place "R_ANT" 0 0 front 0)
+    )
+    (component CON2
+      (place CON2 0 0 front 0)
+    )
+    (component "R_SIM1"
+      (place "R_SIM1" 0 0 front 0)
+    )
+    (component "R_SIM2"
+      (place "R_SIM2" 0 0 front 0)
+    )
+    (component "R_SIM3"
+      (place "R_SIM3" 0 0 front 0)
+    )
+    (component "R_SIM4"
+      (place "R_SIM4" 0 0 front 0)
+    )
+    (component C31
+      (place C31 0 0 front 0)
+    )
+    (component C32
+      (place C32 0 0 front 0)
+    )
+    (component C33
+      (place C33 0 0 front 0)
+    )
+    (component C34
+      (place C34 0 0 front 0)
+    )
+    (component C35
+      (place C35 0 0 front 0)
+    )
+    (component "R_DIV1"
+      (place "R_DIV1" 0 0 front 0)
+    )
+    (component "R_DIV2"
+      (place "R_DIV2" 0 0 front 0)
+    )
+    (component "R_B1"
+      (place "R_B1" 0 0 front 0)
+    )
+    (component Q1
+      (place Q1 0 0 front 0)
+    )
+    (component "R_C1"
+      (place "R_C1" 0 0 front 0)
+    )
+    (component "R_PWR"
+      (place "R_PWR" 0 0 front 0)
+    )
+    (component Q2
+      (place Q2 0 0 front 0)
+    )
+    (component "C_PWR"
+      (place "C_PWR" 0 0 front 0)
+    )
+    (component "R_NL1"
+      (place "R_NL1" 0 0 front 0)
+    )
+    (component Q4
+      (place Q4 0 0 front 0)
+    )
+    (component "R_NL2"
+      (place "R_NL2" 0 0 front 0)
+    )
+    (component D77
+      (place D77 0 0 front 0)
+    )
+    (component U6
+      (place U6 0 0 front 0)
+    )
+    (component C41
+      (place C41 0 0 front 0)
+    )
+    (component C42
+      (place C42 0 0 front 0)
+    )
+    (component "R_RST"
+      (place "R_RST" 0 0 front 0)
+    )
+    (component C51
+      (place C51 0 0 front 0)
+    )
+    (component C52
+      (place C52 0 0 front 0)
+    )
+    (component U7
+      (place U7 0 0 front 0)
+    )
+    (component C43
+      (place C43 0 0 front 0)
+    )
+    (component SW1
+      (place SW1 0 0 front 0)
+    )
+    (component SW2
+      (place SW2 0 0 front 0)
+    )
+    (component SW3
+      (place SW3 0 0 front 0)
+    )
+    (component SW4
+      (place SW4 0 0 front 0)
+    )
+    (component D1
+      (place D1 0 0 front 0)
+    )
+    (component D2
+      (place D2 0 0 front 0)
+    )
+    (component D3
+      (place D3 0 0 front 0)
+    )
+    (component D4
+      (place D4 0 0 front 0)
+    )
+    (component D5
+      (place D5 0 0 front 0)
+    )
+    (component D6
+      (place D6 0 0 front 0)
+    )
+    (component D7
+      (place D7 0 0 front 0)
+    )
+    (component D8
+      (place D8 0 0 front 0)
+    )
+    (component D9
+      (place D9 0 0 front 0)
+    )
+    (component D10
+      (place D10 0 0 front 0)
+    )
+    (component D11
+      (place D11 0 0 front 0)
+    )
+    (component D12
+      (place D12 0 0 front 0)
+    )
+    (component D13
+      (place D13 0 0 front 0)
+    )
+    (component D14
+      (place D14 0 0 front 0)
+    )
+    (component D15
+      (place D15 0 0 front 0)
+    )
+    (component D16
+      (place D16 0 0 front 0)
+    )
+    (component D17
+      (place D17 0 0 front 0)
+    )
+    (component D18
+      (place D18 0 0 front 0)
+    )
+    (component D19
+      (place D19 0 0 front 0)
+    )
+    (component D20
+      (place D20 0 0 front 0)
+    )
+    (component D21
+      (place D21 0 0 front 0)
+    )
+    (component D22
+      (place D22 0 0 front 0)
+    )
+    (component D23
+      (place D23 0 0 front 0)
+    )
+    (component D24
+      (place D24 0 0 front 0)
+    )
+    (component D25
+      (place D25 0 0 front 0)
+    )
+    (component D26
+      (place D26 0 0 front 0)
+    )
+    (component D27
+      (place D27 0 0 front 0)
+    )
+    (component D28
+      (place D28 0 0 front 0)
+    )
+    (component D29
+      (place D29 0 0 front 0)
+    )
+    (component D30
+      (place D30 0 0 front 0)
+    )
+    (component D31
+      (place D31 0 0 front 0)
+    )
+    (component D32
+      (place D32 0 0 front 0)
+    )
+    (component D33
+      (place D33 0 0 front 0)
+    )
+    (component D34
+      (place D34 0 0 front 0)
+    )
+    (component D35
+      (place D35 0 0 front 0)
+    )
+    (component D36
+      (place D36 0 0 front 0)
+    )
+    (component D37
+      (place D37 0 0 front 0)
+    )
+    (component D38
+      (place D38 0 0 front 0)
+    )
+    (component D39
+      (place D39 0 0 front 0)
+    )
+    (component D40
+      (place D40 0 0 front 0)
+    )
+    (component D41
+      (place D41 0 0 front 0)
+    )
+    (component D42
+      (place D42 0 0 front 0)
+    )
+    (component D43
+      (place D43 0 0 front 0)
+    )
+    (component D44
+      (place D44 0 0 front 0)
+    )
+    (component D45
+      (place D45 0 0 front 0)
+    )
+    (component D46
+      (place D46 0 0 front 0)
+    )
+    (component D47
+      (place D47 0 0 front 0)
+    )
+    (component D48
+      (place D48 0 0 front 0)
+    )
+    (component D49
+      (place D49 0 0 front 0)
+    )
+    (component D50
+      (place D50 0 0 front 0)
+    )
+    (component D51
+      (place D51 0 0 front 0)
+    )
+    (component D52
+      (place D52 0 0 front 0)
+    )
+    (component D53
+      (place D53 0 0 front 0)
+    )
+    (component D54
+      (place D54 0 0 front 0)
+    )
+    (component D55
+      (place D55 0 0 front 0)
+    )
+    (component D56
+      (place D56 0 0 front 0)
+    )
+    (component D57
+      (place D57 0 0 front 0)
+    )
+    (component D58
+      (place D58 0 0 front 0)
+    )
+    (component D59
+      (place D59 0 0 front 0)
+    )
+    (component D60
+      (place D60 0 0 front 0)
+    )
+    (component D61
+      (place D61 0 0 front 0)
+    )
+    (component D62
+      (place D62 0 0 front 0)
+    )
+    (component D63
+      (place D63 0 0 front 0)
+    )
+    (component D64
+      (place D64 0 0 front 0)
+    )
+    (component D65
+      (place D65 0 0 front 0)
+    )
+    (component D66
+      (place D66 0 0 front 0)
+    )
+    (component D67
+      (place D67 0 0 front 0)
+    )
+    (component D68
+      (place D68 0 0 front 0)
+    )
+    (component D69
+      (place D69 0 0 front 0)
+    )
+    (component D70
+      (place D70 0 0 front 0)
+    )
+    (component D71
+      (place D71 0 0 front 0)
+    )
+    (component D72
+      (place D72 0 0 front 0)
+    )
+    (component F1
+      (place F1 0 0 front 0)
+    )
+    (component U2
+      (place U2 0 0 front 0)
+    )
+    (component L2
+      (place L2 0 0 front 0)
+    )
+    (component "D_LM"
+      (place "D_LM" 0 0 front 0)
+    )
+    (component C61
+      (place C61 0 0 front 0)
+    )
+    (component C62
+      (place C62 0 0 front 0)
+    )
+    (component C63
+      (place C63 0 0 front 0)
+    )
+    (component C64
+      (place C64 0 0 front 0)
+    )
+    (component "R_FU"
+      (place "R_FU" 0 0 front 0)
+    )
+    (component "R_FD"
+      (place "R_FD" 0 0 front 0)
+    )
+    (component U1
+      (place U1 0 0 front 0)
+    )
+    (component "C_BST"
+      (place "C_BST" 0 0 front 0)
+    )
+    (component L1
+      (place L1 0 0 front 0)
+    )
+    (component D73
+      (place D73 0 0 front 0)
+    )
+    (component C71
+      (place C71 0 0 front 0)
+    )
+    (component C72
+      (place C72 0 0 front 0)
+    )
+    (component C73
+      (place C73 0 0 front 0)
+    )
+    (component C74
+      (place C74 0 0 front 0)
+    )
+    (component "R_FU2"
+      (place "R_FU2" 0 0 front 0)
+    )
+    (component "R_FD2"
+      (place "R_FD2" 0 0 front 0)
+    )
+    (component "R_EN1"
+      (place "R_EN1" 0 0 front 0)
+    )
+    (component "R_EN2"
+      (place "R_EN2" 0 0 front 0)
+    )
+    (component U8
+      (place U8 0 0 front 0)
+    )
+    (component C81
+      (place C81 0 0 front 0)
+    )
+    (component C82
+      (place C82 0 0 front 0)
+    )
+    (component C83
+      (place C83 0 0 front 0)
+    )
+    (component "R_GP"
+      (place "R_GP" 0 0 front 0)
+    )
+    (component "R_PD1"
+      (place "R_PD1" 0 0 front 0)
+    )
+    (component U3
+      (place U3 0 0 front 0)
+    )
+    (component D74
+      (place D74 0 0 front 0)
+    )
+    (component "R_GV"
+      (place "R_GV" 0 0 front 0)
+    )
+    (component "R_PDV"
+      (place "R_PDV" 0 0 front 0)
+    )
+    (component U4
+      (place U4 0 0 front 0)
+    )
+    (component D75
+      (place D75 0 0 front 0)
+    )
+    (component CON1
+      (place CON1 0 0 front 0)
+    )
+    (component J2
+      (place J2 0 0 front 0)
+    )
+    (component J3
+      (place J3 0 0 front 0)
+    )
+    (component "R_SWH"
+      (place "R_SWH" 0 0 front 0)
+    )
+    (component "R_SWHU"
+      (place "R_SWHU" 0 0 front 0)
+    )
+    (component "R_SWL"
+      (place "R_SWL" 0 0 front 0)
+    )
+    (component "R_SWLU"
+      (place "R_SWLU" 0 0 front 0)
+    )
+    (component "R_PRB"
+      (place "R_PRB" 0 0 front 0)
+    )
+    (component "R_PRBU"
+      (place "R_PRBU" 0 0 front 0)
+    )
+    (component J4
+      (place J4 0 0 front 0)
+    )
+    (component J5
+      (place J5 0 0 front 0)
+    )
+    (component "R_TA1"
+      (place "R_TA1" 0 0 front 0)
+    )
+    (component "R_TB1"
+      (place "R_TB1" 0 0 front 0)
+    )
+    (component "R_TA2"
+      (place "R_TA2" 0 0 front 0)
+    )
+    (component "R_TB2"
+      (place "R_TB2" 0 0 front 0)
+    )
+    (component "R_DP1"
+      (place "R_DP1" 0 0 front 0)
+    )
+    (component "R_DP2"
+      (place "R_DP2" 0 0 front 0)
+    )
+    (component "C_ADC1"
+      (place "C_ADC1" 0 0 front 0)
+    )
+    (component "R_DT1"
+      (place "R_DT1" 0 0 front 0)
+    )
+    (component "R_DT2"
+      (place "R_DT2" 0 0 front 0)
+    )
+    (component "R_TPU"
+      (place "R_TPU" 0 0 front 0)
+    )
+    (component "C_ADC2"
+      (place "C_ADC2" 0 0 front 0)
+    )
+    (component "R_HD1"
+      (place "R_HD1" 0 0 front 0)
+    )
+    (component "R_HD2"
+      (place "R_HD2" 0 0 front 0)
+    )
+    (component J1
+      (place J1 0 0 front 0)
+    )
+    (component "R_BB"
+      (place "R_BB" 0 0 front 0)
+    )
+    (component Q3
+      (place Q3 0 0 front 0)
+    )
+    (component "R_BUZ"
+      (place "R_BUZ" 0 0 front 0)
+    )
+    (component BUZ
+      (place BUZ 0 0 front 0)
+    )
+    (component D76
+      (place D76 0 0 front 0)
+    )
+    (component TP1
+      (place TP1 0 0 front 0)
+    )
+    (component TP2
+      (place TP2 0 0 front 0)
+    )
+    (component TP3
+      (place TP3 0 0 front 0)
+    )
+  )
+  (library
+    (image U5
+      (pin "PAD_0" "109" 94200 26150)
+      (pin "PAD_0" "108" 93000 26150)
+      (pin "PAD_0" "107" 91800 26150)
+      (pin "PAD_0" "106" 89400 16050)
+      (pin "PAD_0" "105" 96600 16050)
+      (pin "PAD_1" "104" 98000 16000)
+      (pin "PAD_1" "103" 98000 28000)
+      (pin "PAD_0" "102" 96600 27950)
+      (pin "PAD_0" "101" 89400 27950)
+      (pin "PAD_1" "100" 88000 28000)
+      (pin "PAD_1" "99" 88000 16000)
+      (pin "PAD_2" "98" 87500 13550)
+      (pin "PAD_2" "97" 98500 13550)
+      (pin "PAD_2" "96" 98500 30450)
+      (pin "PAD_2" "95" 87500 30450)
+      (pin "PAD_3" "94" 93900 20200)
+      (pin "PAD_3" "93" 93900 22000)
+      (pin "PAD_3" "92" 93900 23800)
+      (pin "PAD_3" "91" 92100 23800)
+      (pin "PAD_3" "90" 92100 22000)
+      (pin "PAD_3" "89" 92100 20200)
+      (pin "PAD_1" "88" 96200 17800)
+      (pin "PAD_1" "87" 96200 19000)
+      (pin "PAD_1" "86" 96200 20200)
+      (pin "PAD_1" "85" 96200 21400)
+      (pin "PAD_1" "84" 96200 22600)
+      (pin "PAD_1" "83" 96200 23800)
+      (pin "PAD_1" "82" 96200 25000)
+      (pin "PAD_1" "81" 96200 26200)
+      (pin "PAD_1" "80" 89800 26200)
+      (pin "PAD_1" "79" 89800 25000)
+      (pin "PAD_1" "78" 89800 23800)
+      (pin "PAD_1" "77" 89800 22600)
+      (pin "PAD_1" "76" 89800 21400)
+      (pin "PAD_1" "75" 89800 20200)
+      (pin "PAD_1" "74" 89800 19000)
+      (pin "PAD_1" "73" 89800 17800)
+      (pin "PAD_0" "72" 90600 16050)
+      (pin "PAD_0" "71" 91800 16050)
+      (pin "PAD_0" "70" 93000 16050)
+      (pin "PAD_0" "69" 94200 16050)
+      (pin "PAD_0" "68" 95400 16050)
+      (pin "PAD_1" "67" 98000 17200)
+      (pin "PAD_1" "66" 98000 18400)
+      (pin "PAD_1" "65" 98000 19600)
+      (pin "PAD_1" "64" 98000 20800)
+      (pin "PAD_1" "63" 98000 22000)
+      (pin "PAD_1" "62" 98000 23200)
+      (pin "PAD_1" "61" 98000 24400)
+      (pin "PAD_1" "60" 98000 25600)
+      (pin "PAD_1" "59" 98000 26800)
+      (pin "PAD_0" "58" 95400 27950)
+      (pin "PAD_0" "57" 94200 27950)
+      (pin "PAD_0" "56" 93000 27950)
+      (pin "PAD_0" "55" 91800 27950)
+      (pin "PAD_0" "54" 90600 27950)
+      (pin "PAD_1" "53" 88000 26800)
+      (pin "PAD_1" "52" 88000 25600)
+      (pin "PAD_1" "51" 88000 24400)
+      (pin "PAD_1" "50" 88000 23200)
+      (pin "PAD_1" "49" 88000 22000)
+      (pin "PAD_1" "48" 88000 20800)
+      (pin "PAD_1" "47" 88000 19600)
+      (pin "PAD_1" "46" 88000 18400)
+      (pin "PAD_1" "45" 88000 17200)
+      (pin "PAD_2" "44" 88600 13550)
+      (pin "PAD_2" "43" 89700 13550)
+      (pin "PAD_2" "42" 90800 13550)
+      (pin "PAD_2" "41" 91900 13550)
+      (pin "PAD_2" "40" 93000 13550)
+      (pin "PAD_2" "39" 94100 13550)
+      (pin "PAD_2" "38" 95200 13550)
+      (pin "PAD_2" "37" 96300 13550)
+      (pin "PAD_2" "36" 97400 13550)
+      (pin "PAD_4" "35" 100500 15400)
+      (pin "PAD_4" "34" 100500 16500)
+      (pin "PAD_4" "33" 100500 17600)
+      (pin "PAD_4" "32" 100500 18700)
+      (pin "PAD_4" "31" 100500 19800)
+      (pin "PAD_4" "30" 100500 20900)
+      (pin "PAD_4" "29" 100500 22000)
+      (pin "PAD_4" "28" 100500 23100)
+      (pin "PAD_4" "27" 100500 24200)
+      (pin "PAD_4" "26" 100500 25300)
+      (pin "PAD_4" "25" 100500 26400)
+      (pin "PAD_4" "24" 100500 27500)
+      (pin "PAD_4" "23" 100500 28600)
+      (pin "PAD_2" "22" 97400 30450)
+      (pin "PAD_2" "21" 96300 30450)
+      (pin "PAD_2" "20" 95200 30450)
+      (pin "PAD_2" "19" 94100 30450)
+      (pin "PAD_2" "18" 93000 30450)
+      (pin "PAD_2" "17" 91900 30450)
+      (pin "PAD_2" "16" 90800 30450)
+      (pin "PAD_2" "15" 89700 30450)
+      (pin "PAD_2" "14" 88600 30450)
+      (pin "PAD_4" "13" 85500 28600)
+      (pin "PAD_4" "12" 85500 27500)
+      (pin "PAD_4" "11" 85500 26400)
+      (pin "PAD_4" "10" 85500 25300)
+      (pin "PAD_4" "9" 85500 24200)
+      (pin "PAD_4" "8" 85500 23100)
+      (pin "PAD_4" "7" 85500 22000)
+      (pin "PAD_4" "6" 85500 20900)
+      (pin "PAD_4" "5" 85500 19800)
+      (pin "PAD_4" "4" 85500 18700)
+      (pin "PAD_4" "3" 85500 17600)
+      (pin "PAD_4" "2" 85500 16500)
+      (pin "PAD_4" "1" 85500 15400)
+    )
+    (image FB1
+      (pin "PAD_5" "1" 91625 8000)
+      (pin "PAD_5" "2" 93375 8000)
+    )
+    (image C21
+      (pin "PAD_6" "1" 74300 7000)
+      (pin "PAD_6" "2" 79700 7000)
+    )
+    (image C22
+      (pin "PAD_6" "1" 83300 7000)
+      (pin "PAD_6" "2" 88700 7000)
+    )
+    (image C23
+      (pin "PAD_7" "1" 96700 7000)
+      (pin "PAD_7" "2" 99300 7000)
+    )
+    (image C24
+      (pin "PAD_5" "1" 103125 6000)
+      (pin "PAD_5" "2" 104875 6000)
+    )
+    (image C25
+      (pin "PAD_5" "1" 109125 6000)
+      (pin "PAD_5" "2" 110875 6000)
+    )
+    (image X1
+      (pin "PAD_8" "3" 113475 12525)
+      (pin "PAD_8" "2" 110525 12525)
+      (pin "PAD_9" "1" 112000 14050)
+    )
+    (image "R_ANT"
+      (pin "PAD_5" "1" 104125 10000)
+      (pin "PAD_5" "2" 105875 10000)
+    )
+    (image CON2
+      (pin "PAD_10" "8" 95387 54495)
+      (pin "PAD_10" "7" 95387 33505)
+      (pin "PAD_11" "6" 117413 40850)
+      (pin "PAD_11" "5" 117413 42120)
+      (pin "PAD_11" "4" 117413 43390)
+      (pin "PAD_11" "3" 117413 44660)
+      (pin "PAD_11" "2" 117413 45930)
+      (pin "PAD_11" "1" 117413 47200)
+    )
+    (image "R_SIM1"
+      (pin "PAD_5" "1" 99125 36000)
+      (pin "PAD_5" "2" 100875 36000)
+    )
+    (image "R_SIM2"
+      (pin "PAD_5" "1" 99125 38000)
+      (pin "PAD_5" "2" 100875 38000)
+    )
+    (image "R_SIM3"
+      (pin "PAD_5" "1" 99125 40000)
+      (pin "PAD_5" "2" 100875 40000)
+    )
+    (image "R_SIM4"
+      (pin "PAD_5" "1" 99125 42000)
+      (pin "PAD_5" "2" 100875 42000)
+    )
+    (image C31
+      (pin "PAD_5" "1" 104125 37000)
+      (pin "PAD_5" "2" 105875 37000)
+    )
+    (image C32
+      (pin "PAD_5" "1" 104125 41000)
+      (pin "PAD_5" "2" 105875 41000)
+    )
+    (image C33
+      (pin "PAD_5" "1" 104125 45000)
+      (pin "PAD_5" "2" 105875 45000)
+    )
+    (image C34
+      (pin "PAD_5" "1" 104125 33000)
+      (pin "PAD_5" "2" 105875 33000)
+    )
+    (image C35
+      (pin "PAD_7" "1" 108700 33000)
+      (pin "PAD_7" "2" 111300 33000)
+    )
+    (image "R_DIV1"
+      (pin "PAD_5" "1" 69125 34000)
+      (pin "PAD_5" "2" 70875 34000)
+    )
+    (image "R_DIV2"
+      (pin "PAD_12" "1" 70000 36125)
+      (pin "PAD_12" "2" 70000 37875)
+    )
+    (image "R_B1"
+      (pin "PAD_5" "1" 75125 32000)
+      (pin "PAD_5" "2" 76875 32000)
+    )
+    (image Q1
+      (pin "PAD_13" "1" 80050 31100)
+      (pin "PAD_13" "2" 81000 31100)
+      (pin "PAD_13" "3" 81950 31100)
+    )
+    (image "R_C1"
+      (pin "PAD_12" "1" 76000 26125)
+      (pin "PAD_12" "2" 76000 27875)
+    )
+    (image "R_PWR"
+      (pin "PAD_5" "1" 73125 20000)
+      (pin "PAD_5" "2" 74875 20000)
+    )
+    (image Q2
+      (pin "PAD_13" "1" 77050 23100)
+      (pin "PAD_13" "2" 78000 23100)
+      (pin "PAD_13" "3" 78950 23100)
+    )
+    (image "C_PWR"
+      (pin "PAD_12" "1" 82000 25125)
+      (pin "PAD_12" "2" 82000 26875)
+    )
+    (image "R_NL1"
+      (pin "PAD_5" "1" 73125 14000)
+      (pin "PAD_5" "2" 74875 14000)
+    )
+    (image Q4
+      (pin "PAD_13" "1" 78950 10900)
+      (pin "PAD_13" "2" 78000 10900)
+      (pin "PAD_13" "3" 77050 10900)
+    )
+    (image "R_NL2"
+      (pin "PAD_5" "1" 97125 11000)
+      (pin "PAD_5" "2" 98875 11000)
+    )
+    (image D77
+      (pin "PAD_5" "1" 109125 26000)
+      (pin "PAD_5" "2" 110875 26000)
+    )
+    (image U6
+      (pin "PAD_14" "1" 53550 41873)
+      (pin "PAD_14" "2" 53550 42508)
+      (pin "PAD_14" "3" 53550 43142)
+      (pin "PAD_14" "4" 53550 43778)
+      (pin "PAD_14" "5" 53550 44413)
+      (pin "PAD_14" "6" 53550 45047)
+      (pin "PAD_14" "7" 53550 45682)
+      (pin "PAD_14" "8" 53550 46318)
+      (pin "PAD_14" "9" 53550 46953)
+      (pin "PAD_14" "10" 53550 47587)
+      (pin "PAD_14" "11" 53550 48222)
+      (pin "PAD_14" "12" 53550 48858)
+      (pin "PAD_14" "13" 53550 49492)
+      (pin "PAD_14" "14" 53550 50127)
+      (pin "PAD_14" "15" 58450 50127)
+      (pin "PAD_14" "16" 58450 49492)
+      (pin "PAD_14" "17" 58450 48858)
+      (pin "PAD_14" "18" 58450 48222)
+      (pin "PAD_14" "19" 58450 47587)
+      (pin "PAD_14" "20" 58450 46953)
+      (pin "PAD_14" "21" 58450 46318)
+      (pin "PAD_14" "22" 58450 45682)
+      (pin "PAD_14" "23" 58450 45047)
+      (pin "PAD_14" "24" 58450 44413)
+      (pin "PAD_14" "25" 58450 43778)
+      (pin "PAD_14" "26" 58450 43142)
+      (pin "PAD_14" "27" 58450 42508)
+      (pin "PAD_14" "28" 58450 41873)
+    )
+    (image C41
+      (pin "PAD_12" "1" 63000 39125)
+      (pin "PAD_12" "2" 63000 40875)
+    )
+    (image C42
+      (pin "PAD_7" "1" 66700 43000)
+      (pin "PAD_7" "2" 69300 43000)
+    )
+    (image "R_RST"
+      (pin "PAD_5" "1" 46125 41000)
+      (pin "PAD_5" "2" 47875 41000)
+    )
+    (image C51
+      (pin "PAD_5" "1" 63125 52000)
+      (pin "PAD_5" "2" 64875 52000)
+    )
+    (image C52
+      (pin "PAD_7" "1" 67700 52000)
+      (pin "PAD_7" "2" 70300 52000)
+    )
+    (image U7
+      (pin "PAD_15" "1" 51872 24717)
+      (pin "PAD_15" "2" 52508 24717)
+      (pin "PAD_15" "3" 53143 24717)
+      (pin "PAD_15" "4" 53778 24717)
+      (pin "PAD_15" "5" 54413 24717)
+      (pin "PAD_15" "6" 55048 24717)
+      (pin "PAD_15" "7" 55683 24717)
+      (pin "PAD_15" "8" 56317 24717)
+      (pin "PAD_15" "9" 56952 24717)
+      (pin "PAD_15" "10" 57587 24717)
+      (pin "PAD_15" "11" 58222 24717)
+      (pin "PAD_15" "12" 58857 24717)
+      (pin "PAD_15" "13" 59492 24717)
+      (pin "PAD_15" "14" 60128 24717)
+      (pin "PAD_15" "28" 51872 19283)
+      (pin "PAD_15" "27" 52508 19283)
+      (pin "PAD_15" "26" 53143 19283)
+      (pin "PAD_15" "25" 53778 19283)
+      (pin "PAD_15" "24" 54413 19283)
+      (pin "PAD_15" "23" 55048 19283)
+      (pin "PAD_15" "22" 55683 19283)
+      (pin "PAD_15" "21" 56317 19283)
+      (pin "PAD_15" "20" 56952 19283)
+      (pin "PAD_15" "19" 57587 19283)
+      (pin "PAD_15" "18" 58222 19283)
+      (pin "PAD_15" "17" 58857 19283)
+      (pin "PAD_15" "16" 59492 19283)
+      (pin "PAD_15" "15" 60128 19283)
+    )
+    (image C43
+      (pin "PAD_12" "1" 63000 21125)
+      (pin "PAD_12" "2" 63000 22875)
+    )
+    (image SW1
+      (pin "PAD_16" "1" 20000 70000)
+    )
+    (image SW2
+      (pin "PAD_16" "1" 47000 70000)
+    )
+    (image SW3
+      (pin "PAD_16" "1" 74000 70000)
+    )
+    (image SW4
+      (pin "PAD_16" "1" 101000 70000)
+    )
+    (image D1
+      (pin "PAD_5" "1" 20125 14500)
+      (pin "PAD_5" "2" 21875 14500)
+    )
+    (image D2
+      (pin "PAD_12" "1" 24100 16375)
+      (pin "PAD_12" "2" 24100 18125)
+    )
+    (image D3
+      (pin "PAD_12" "1" 24100 21875)
+      (pin "PAD_12" "2" 24100 23625)
+    )
+    (image D4
+      (pin "PAD_5" "1" 20125 25500)
+      (pin "PAD_5" "2" 21875 25500)
+    )
+    (image D5
+      (pin "PAD_12" "1" 17900 21875)
+      (pin "PAD_12" "2" 17900 23625)
+    )
+    (image D6
+      (pin "PAD_12" "1" 17900 16375)
+      (pin "PAD_12" "2" 17900 18125)
+    )
+    (image D7
+      (pin "PAD_5" "1" 20125 20000)
+      (pin "PAD_5" "2" 21875 20000)
+    )
+    (image D8
+      (pin "PAD_5" "1" 24625 25500)
+      (pin "PAD_5" "2" 26375 25500)
+    )
+    (image D9
+      (pin "PAD_5" "1" 31125 14500)
+      (pin "PAD_5" "2" 32875 14500)
+    )
+    (image D10
+      (pin "PAD_12" "1" 35100 16375)
+      (pin "PAD_12" "2" 35100 18125)
+    )
+    (image D11
+      (pin "PAD_12" "1" 35100 21875)
+      (pin "PAD_12" "2" 35100 23625)
+    )
+    (image D12
+      (pin "PAD_5" "1" 31125 25500)
+      (pin "PAD_5" "2" 32875 25500)
+    )
+    (image D13
+      (pin "PAD_12" "1" 28900 21875)
+      (pin "PAD_12" "2" 28900 23625)
+    )
+    (image D14
+      (pin "PAD_12" "1" 28900 16375)
+      (pin "PAD_12" "2" 28900 18125)
+    )
+    (image D15
+      (pin "PAD_5" "1" 31125 20000)
+      (pin "PAD_5" "2" 32875 20000)
+    )
+    (image D16
+      (pin "PAD_5" "1" 35625 25500)
+      (pin "PAD_5" "2" 37375 25500)
+    )
+    (image D17
+      (pin "PAD_5" "1" 42125 14500)
+      (pin "PAD_5" "2" 43875 14500)
+    )
+    (image D18
+      (pin "PAD_12" "1" 46100 16375)
+      (pin "PAD_12" "2" 46100 18125)
+    )
+    (image D19
+      (pin "PAD_12" "1" 46100 21875)
+      (pin "PAD_12" "2" 46100 23625)
+    )
+    (image D20
+      (pin "PAD_5" "1" 42125 25500)
+      (pin "PAD_5" "2" 43875 25500)
+    )
+    (image D21
+      (pin "PAD_12" "1" 39900 21875)
+      (pin "PAD_12" "2" 39900 23625)
+    )
+    (image D22
+      (pin "PAD_12" "1" 39900 16375)
+      (pin "PAD_12" "2" 39900 18125)
+    )
+    (image D23
+      (pin "PAD_5" "1" 42125 20000)
+      (pin "PAD_5" "2" 43875 20000)
+    )
+    (image D24
+      (pin "PAD_5" "1" 46625 25500)
+      (pin "PAD_5" "2" 48375 25500)
+    )
+    (image D25
+      (pin "PAD_5" "1" 53125 14500)
+      (pin "PAD_5" "2" 54875 14500)
+    )
+    (image D26
+      (pin "PAD_12" "1" 57100 16375)
+      (pin "PAD_12" "2" 57100 18125)
+    )
+    (image D27
+      (pin "PAD_12" "1" 57100 21875)
+      (pin "PAD_12" "2" 57100 23625)
+    )
+    (image D28
+      (pin "PAD_5" "1" 53125 25500)
+      (pin "PAD_5" "2" 54875 25500)
+    )
+    (image D29
+      (pin "PAD_12" "1" 50900 21875)
+      (pin "PAD_12" "2" 50900 23625)
+    )
+    (image D30
+      (pin "PAD_12" "1" 50900 16375)
+      (pin "PAD_12" "2" 50900 18125)
+    )
+    (image D31
+      (pin "PAD_5" "1" 53125 20000)
+      (pin "PAD_5" "2" 54875 20000)
+    )
+    (image D32
+      (pin "PAD_5" "1" 57625 25500)
+      (pin "PAD_5" "2" 59375 25500)
+    )
+    (image D33
+      (pin "PAD_5" "1" 64125 14500)
+      (pin "PAD_5" "2" 65875 14500)
+    )
+    (image D34
+      (pin "PAD_12" "1" 68100 16375)
+      (pin "PAD_12" "2" 68100 18125)
+    )
+    (image D35
+      (pin "PAD_12" "1" 68100 21875)
+      (pin "PAD_12" "2" 68100 23625)
+    )
+    (image D36
+      (pin "PAD_5" "1" 64125 25500)
+      (pin "PAD_5" "2" 65875 25500)
+    )
+    (image D37
+      (pin "PAD_12" "1" 61900 21875)
+      (pin "PAD_12" "2" 61900 23625)
+    )
+    (image D38
+      (pin "PAD_12" "1" 61900 16375)
+      (pin "PAD_12" "2" 61900 18125)
+    )
+    (image D39
+      (pin "PAD_5" "1" 64125 20000)
+      (pin "PAD_5" "2" 65875 20000)
+    )
+    (image D40
+      (pin "PAD_5" "1" 68625 25500)
+      (pin "PAD_5" "2" 70375 25500)
+    )
+    (image D41
+      (pin "PAD_5" "1" 75125 14500)
+      (pin "PAD_5" "2" 76875 14500)
+    )
+    (image D42
+      (pin "PAD_12" "1" 79100 16375)
+      (pin "PAD_12" "2" 79100 18125)
+    )
+    (image D43
+      (pin "PAD_12" "1" 79100 21875)
+      (pin "PAD_12" "2" 79100 23625)
+    )
+    (image D44
+      (pin "PAD_5" "1" 75125 25500)
+      (pin "PAD_5" "2" 76875 25500)
+    )
+    (image D45
+      (pin "PAD_12" "1" 72900 21875)
+      (pin "PAD_12" "2" 72900 23625)
+    )
+    (image D46
+      (pin "PAD_12" "1" 72900 16375)
+      (pin "PAD_12" "2" 72900 18125)
+    )
+    (image D47
+      (pin "PAD_5" "1" 75125 20000)
+      (pin "PAD_5" "2" 76875 20000)
+    )
+    (image D48
+      (pin "PAD_5" "1" 79625 25500)
+      (pin "PAD_5" "2" 81375 25500)
+    )
+    (image D49
+      (pin "PAD_5" "1" 86125 14500)
+      (pin "PAD_5" "2" 87875 14500)
+    )
+    (image D50
+      (pin "PAD_12" "1" 90100 16375)
+      (pin "PAD_12" "2" 90100 18125)
+    )
+    (image D51
+      (pin "PAD_12" "1" 90100 21875)
+      (pin "PAD_12" "2" 90100 23625)
+    )
+    (image D52
+      (pin "PAD_5" "1" 86125 25500)
+      (pin "PAD_5" "2" 87875 25500)
+    )
+    (image D53
+      (pin "PAD_12" "1" 83900 21875)
+      (pin "PAD_12" "2" 83900 23625)
+    )
+    (image D54
+      (pin "PAD_12" "1" 83900 16375)
+      (pin "PAD_12" "2" 83900 18125)
+    )
+    (image D55
+      (pin "PAD_5" "1" 86125 20000)
+      (pin "PAD_5" "2" 87875 20000)
+    )
+    (image D56
+      (pin "PAD_5" "1" 90625 25500)
+      (pin "PAD_5" "2" 92375 25500)
+    )
+    (image D57
+      (pin "PAD_5" "1" 97125 14500)
+      (pin "PAD_5" "2" 98875 14500)
+    )
+    (image D58
+      (pin "PAD_12" "1" 101100 16375)
+      (pin "PAD_12" "2" 101100 18125)
+    )
+    (image D59
+      (pin "PAD_12" "1" 101100 21875)
+      (pin "PAD_12" "2" 101100 23625)
+    )
+    (image D60
+      (pin "PAD_5" "1" 97125 25500)
+      (pin "PAD_5" "2" 98875 25500)
+    )
+    (image D61
+      (pin "PAD_12" "1" 94900 21875)
+      (pin "PAD_12" "2" 94900 23625)
+    )
+    (image D62
+      (pin "PAD_12" "1" 94900 16375)
+      (pin "PAD_12" "2" 94900 18125)
+    )
+    (image D63
+      (pin "PAD_5" "1" 97125 20000)
+      (pin "PAD_5" "2" 98875 20000)
+    )
+    (image D64
+      (pin "PAD_5" "1" 101625 25500)
+      (pin "PAD_5" "2" 103375 25500)
+    )
+    (image D65
+      (pin "PAD_5" "1" 20125 31500)
+      (pin "PAD_5" "2" 21875 31500)
+    )
+    (image D66
+      (pin "PAD_5" "1" 31125 31500)
+      (pin "PAD_5" "2" 32875 31500)
+    )
+    (image D67
+      (pin "PAD_5" "1" 42125 31500)
+      (pin "PAD_5" "2" 43875 31500)
+    )
+    (image D68
+      (pin "PAD_5" "1" 53125 31500)
+      (pin "PAD_5" "2" 54875 31500)
+    )
+    (image D69
+      (pin "PAD_5" "1" 64125 31500)
+      (pin "PAD_5" "2" 65875 31500)
+    )
+    (image D70
+      (pin "PAD_5" "1" 75125 31500)
+      (pin "PAD_5" "2" 76875 31500)
+    )
+    (image D71
+      (pin "PAD_5" "1" 86125 31500)
+      (pin "PAD_5" "2" 87875 31500)
+    )
+    (image D72
+      (pin "PAD_5" "1" 97125 31500)
+      (pin "PAD_5" "2" 98875 31500)
+    )
+    (image F1
+      (pin "PAD_17" "1" 7500 13800)
+      (pin "PAD_17" "2" 7500 18200)
+    )
+    (image U2
+      (pin "PAD_18" "5" 11760 16086)
+      (pin "PAD_18" "4" 11760 14384)
+      (pin "PAD_18" "2" 11760 10981)
+      (pin "PAD_18" "3" 11760 12683)
+      (pin "PAD_18" "1" 11760 9279)
+      (pin "PAD_19" "6" 21776 13000)
+    )
+    (image L2
+      (pin "PAD_20" "1" 28600 12000)
+      (pin "PAD_20" "2" 35400 12000)
+    )
+    (image "D_LM"
+      (pin "PAD_21" "1" 22650 5000)
+      (pin "PAD_21" "2" 27350 5000)
+    )
+    (image C61
+      (pin "PAD_5" "1" 32125 5000)
+      (pin "PAD_5" "2" 33875 5000)
+    )
+    (image C62
+      (pin "PAD_7" "1" 36700 5000)
+      (pin "PAD_7" "2" 39300 5000)
+    )
+    (image C63
+      (pin "PAD_22" "1" 30500 20000)
+      (pin "PAD_22" "2" 35500 20000)
+    )
+    (image C64
+      (pin "PAD_23" "1" 3750 10000)
+      (pin "PAD_23" "2" 7250 10000)
+    )
+    (image "R_FU"
+      (pin "PAD_5" "1" 8625 21000)
+      (pin "PAD_5" "2" 10375 21000)
+    )
+    (image "R_FD"
+      (pin "PAD_12" "1" 13000 22125)
+      (pin "PAD_12" "2" 13000 23875)
+    )
+    (image U1
+      (pin "PAD_24" "1" 14050 32150)
+      (pin "PAD_24" "2" 15000 32150)
+      (pin "PAD_24" "3" 15950 32150)
+      (pin "PAD_24" "4" 15950 29850)
+      (pin "PAD_24" "5" 15000 29850)
+      (pin "PAD_24" "6" 14050 29850)
+    )
+    (image "C_BST"
+      (pin "PAD_5" "1" 16125 35000)
+      (pin "PAD_5" "2" 17875 35000)
+    )
+    (image L1
+      (pin "PAD_25" "1" 19850 31000)
+      (pin "PAD_25" "2" 24150 31000)
+    )
+    (image D73
+      (pin "PAD_21" "1" 19650 25000)
+      (pin "PAD_21" "2" 24350 25000)
+    )
+    (image C71
+      (pin "PAD_26" "1" 7950 26000)
+      (pin "PAD_26" "2" 11050 26000)
+    )
+    (image C72
+      (pin "PAD_26" "1" 7950 31000)
+      (pin "PAD_26" "2" 11050 31000)
+    )
+    (image C73
+      (pin "PAD_26" "1" 27950 26000)
+      (pin "PAD_26" "2" 31050 26000)
+    )
+    (image C74
+      (pin "PAD_26" "1" 27950 31000)
+      (pin "PAD_26" "2" 31050 31000)
+    )
+    (image "R_FU2"
+      (pin "PAD_5" "1" 7125 36000)
+      (pin "PAD_5" "2" 8875 36000)
+    )
+    (image "R_FD2"
+      (pin "PAD_12" "1" 8000 38125)
+      (pin "PAD_12" "2" 8000 39875)
+    )
+    (image "R_EN1"
+      (pin "PAD_5" "1" 11125 36000)
+      (pin "PAD_5" "2" 12875 36000)
+    )
+    (image "R_EN2"
+      (pin "PAD_12" "1" 12000 38125)
+      (pin "PAD_12" "2" 12000 39875)
+    )
+    (image U8
+      (pin "PAD_27" "1" 39450 63850)
+      (pin "PAD_28" "2" 41000 62150)
+      (pin "PAD_27" "3" 42550 63850)
+    )
+    (image C81
+      (pin "PAD_5" "1" 39125 56000)
+      (pin "PAD_5" "2" 40875 56000)
+    )
+    (image C82
+      (pin "PAD_5" "1" 39125 68000)
+      (pin "PAD_5" "2" 40875 68000)
+    )
+    (image C83
+      (pin "PAD_29" "1" 47000 60700)
+      (pin "PAD_29" "2" 47000 63300)
+    )
+    (image "R_GP"
+      (pin "PAD_5" "1" 25125 44000)
+      (pin "PAD_5" "2" 26875 44000)
+    )
+    (image "R_PD1"
+      (pin "PAD_5" "1" 25125 46000)
+      (pin "PAD_5" "2" 26875 46000)
+    )
+    (image U3
+      (pin "PAD_30" "1" 16454 44030)
+      (pin "PAD_30" "2" 16454 44680)
+      (pin "PAD_30" "3" 16454 45330)
+      (pin "PAD_30" "4" 16454 45980)
+      (pin "PAD_31" "8" 19521 44030)
+      (pin "PAD_31" "7" 19521 44680)
+      (pin "PAD_31" "6" 19521 45330)
+      (pin "PAD_31" "5" 19521 45980)
+      (pin "PAD_32" "9" 18321 45000)
+    )
+    (image D74
+      (pin "PAD_21" "1" 24650 41000)
+      (pin "PAD_21" "2" 29350 41000)
+    )
+    (image "R_GV"
+      (pin "PAD_5" "1" 25125 55000)
+      (pin "PAD_5" "2" 26875 55000)
+    )
+    (image "R_PDV"
+      (pin "PAD_5" "1" 25125 57000)
+      (pin "PAD_5" "2" 26875 57000)
+    )
+    (image U4
+      (pin "PAD_30" "1" 16454 55030)
+      (pin "PAD_30" "2" 16454 55680)
+      (pin "PAD_30" "3" 16454 56330)
+      (pin "PAD_30" "4" 16454 56980)
+      (pin "PAD_31" "8" 19521 55030)
+      (pin "PAD_31" "7" 19521 55680)
+      (pin "PAD_31" "6" 19521 56330)
+      (pin "PAD_31" "5" 19521 56980)
+      (pin "PAD_32" "9" 18321 56000)
+    )
+    (image D75
+      (pin "PAD_21" "1" 25650 60000)
+      (pin "PAD_21" "2" 30350 60000)
+    )
+    (image CON1
+      (pin "PAD_33" "1" 5500 24030)
+      (pin "PAD_33" "2" 5500 26570)
+      (pin "PAD_33" "3" 5500 29110)
+      (pin "PAD_33" "4" 5500 31650)
+      (pin "PAD_33" "5" 5500 34190)
+      (pin "PAD_33" "6" 5500 36730)
+      (pin "PAD_33" "7" 5500 39270)
+      (pin "PAD_33" "8" 5500 41810)
+      (pin "PAD_33" "9" 5500 44350)
+      (pin "PAD_33" "10" 5500 46890)
+      (pin "PAD_33" "11" 5500 49430)
+      (pin "PAD_33" "12" 5500 51970)
+    )
+    (image J2
+      (pin "PAD_33" "1" 5500 57190)
+      (pin "PAD_33" "2" 5500 59730)
+      (pin "PAD_33" "3" 5500 62270)
+      (pin "PAD_33" "4" 5500 64810)
+    )
+    (image J3
+      (pin "PAD_33" "1" 5500 68750)
+      (pin "PAD_33" "2" 5500 71250)
+    )
+    (image "R_SWH"
+      (pin "PAD_5" "1" 9125 70000)
+      (pin "PAD_5" "2" 10875 70000)
+    )
+    (image "R_SWHU"
+      (pin "PAD_12" "1" 10000 72125)
+      (pin "PAD_12" "2" 10000 73875)
+    )
+    (image "R_SWL"
+      (pin "PAD_5" "1" 11125 55000)
+      (pin "PAD_5" "2" 12875 55000)
+    )
+    (image "R_SWLU"
+      (pin "PAD_12" "1" 12000 57125)
+      (pin "PAD_12" "2" 12000 58875)
+    )
+    (image "R_PRB"
+      (pin "PAD_5" "1" 21125 64000)
+      (pin "PAD_5" "2" 22875 64000)
+    )
+    (image "R_PRBU"
+      (pin "PAD_12" "1" 27000 64125)
+      (pin "PAD_12" "2" 27000 65875)
+    )
+    (image J4
+      (pin "PAD_33" "1" 34750 76000)
+      (pin "PAD_33" "2" 37250 76000)
+    )
+    (image J5
+      (pin "PAD_33" "1" 42750 76000)
+      (pin "PAD_33" "2" 45250 76000)
+    )
+    (image "R_TA1"
+      (pin "PAD_5" "1" 51125 55000)
+      (pin "PAD_5" "2" 52875 55000)
+    )
+    (image "R_TB1"
+      (pin "PAD_5" "1" 51125 57000)
+      (pin "PAD_5" "2" 52875 57000)
+    )
+    (image "R_TA2"
+      (pin "PAD_5" "1" 51125 59000)
+      (pin "PAD_5" "2" 52875 59000)
+    )
+    (image "R_TB2"
+      (pin "PAD_5" "1" 51125 61000)
+      (pin "PAD_5" "2" 52875 61000)
+    )
+    (image "R_DP1"
+      (pin "PAD_5" "1" 30125 63000)
+      (pin "PAD_5" "2" 31875 63000)
+    )
+    (image "R_DP2"
+      (pin "PAD_5" "1" 30125 66500)
+      (pin "PAD_5" "2" 31875 66500)
+    )
+    (image "C_ADC1"
+      (pin "PAD_5" "1" 35625 61000)
+      (pin "PAD_5" "2" 37375 61000)
+    )
+    (image "R_DT1"
+      (pin "PAD_5" "1" 28125 70000)
+      (pin "PAD_5" "2" 29875 70000)
+    )
+    (image "R_DT2"
+      (pin "PAD_5" "1" 48125 67000)
+      (pin "PAD_5" "2" 49875 67000)
+    )
+    (image "R_TPU"
+      (pin "PAD_5" "1" 34125 67000)
+      (pin "PAD_5" "2" 35875 67000)
+    )
+    (image "C_ADC2"
+      (pin "PAD_5" "1" 32125 70000)
+      (pin "PAD_5" "2" 33875 70000)
+    )
+    (image "R_HD1"
+      (pin "PAD_5" "1" 23125 70000)
+      (pin "PAD_5" "2" 24875 70000)
+    )
+    (image "R_HD2"
+      (pin "PAD_5" "1" 21125 73000)
+      (pin "PAD_5" "2" 22875 73000)
+    )
+    (image J1
+      (pin "PAD_33" "1" 25460 73000)
+      (pin "PAD_33" "2" 28000 73000)
+      (pin "PAD_33" "3" 30540 73000)
+    )
+    (image "R_BB"
+      (pin "PAD_5" "1" 79125 64000)
+      (pin "PAD_5" "2" 80875 64000)
+    )
+    (image Q3
+      (pin "PAD_13" "1" 83050 67100)
+      (pin "PAD_13" "2" 84000 67100)
+      (pin "PAD_13" "3" 84950 67100)
+    )
+    (image "R_BUZ"
+      (pin "PAD_7" "1" 90700 62000)
+      (pin "PAD_7" "2" 93300 62000)
+    )
+    (image BUZ
+      (pin "PAD_34" "1" 92500 68000)
+      (pin "PAD_34" "2" 99500 68000)
+    )
+    (image D76
+      (pin "PAD_35" "1" 94400 74000)
+      (pin "PAD_35" "2" 97600 74000)
+    )
+    (image TP1
+      (pin "PAD_36" "1" 51000 38000)
+    )
+    (image TP2
+      (pin "PAD_36" "1" 92000 38000)
+    )
+    (image TP3
+      (pin "PAD_36" "1" 84000 34000)
+    )
+    (padstack PAD_0
+      (shape (rect Bottom -350 -500 350 500))
+      (attach off)
+    )
+    (padstack PAD_1
+      (shape (rect Bottom -500 -350 500 350))
+      (attach off)
+    )
+    (padstack PAD_2
+      (shape (rect Bottom -350 -900 350 900))
+      (attach off)
+    )
+    (padstack PAD_3
+      (shape (rect Bottom -650 -650 650 650))
+      (attach off)
+    )
+    (padstack PAD_4
+      (shape (rect Bottom -900 -350 900 350))
+      (attach off)
+    )
+    (padstack PAD_5
+      (shape (rect Bottom -425 -450 425 450))
+      (attach off)
+    )
+    (padstack PAD_6
+      (shape (rect Bottom -1200 -1200 1200 1200))
+      (attach off)
+    )
+    (padstack PAD_7
+      (shape (rect Bottom -525 -600 525 600))
+      (attach off)
+    )
+    (padstack PAD_8
+      (shape (rect Bottom -525 -1100 525 1100))
+      (attach off)
+    )
+    (padstack PAD_9
+      (shape (rect Bottom -500 -525 500 525))
+      (attach off)
+    )
+    (padstack PAD_10
+      (shape (rect Bottom -1500 -900 1500 900))
+      (attach off)
+    )
+    (padstack PAD_11
+      (shape (rect Bottom -700 -400 700 400))
+      (attach off)
+    )
+    (padstack PAD_12
+      (shape (rect Bottom -450 -425 450 425))
+      (attach off)
+    )
+    (padstack PAD_13
+      (shape (rect Bottom -350 -625 350 625))
+      (attach off)
+    )
+    (padstack PAD_14
+      (shape (rect Bottom -750 -200 750 200))
+      (attach off)
+    )
+    (padstack PAD_15
+      (shape (rect Bottom -178 -967 178 968))
+      (attach off)
+    )
+    (padstack PAD_16
+      (shape (circle signal 8000))
+      (attach off)
+    )
+    (padstack PAD_17
+      (shape (rect Bottom -800 -1000 800 1000))
+      (attach off)
+    )
+    (padstack PAD_18
+      (shape (rect Bottom -1600 -575 1600 575))
+      (attach off)
+    )
+    (padstack PAD_19
+      (shape (rect Bottom -4064 -5461 4064 5461))
+      (attach off)
+    )
+    (padstack PAD_20
+      (shape (rect Bottom -1300 -1700 1300 1700))
+      (attach off)
+    )
+    (padstack PAD_21
+      (shape (rect Bottom -1050 -850 1050 850))
+      (attach off)
+    )
+    (padstack PAD_22
+      (shape (rect Bottom -1300 -1500 1300 1500))
+      (attach off)
+    )
+    (padstack PAD_23
+      (shape (circle signal 2400))
+      (attach off)
+    )
+    (padstack PAD_24
+      (shape (rect Bottom -325 -625 325 625))
+      (attach off)
+    )
+    (padstack PAD_25
+      (shape (rect Bottom -1100 -1400 1100 1400))
+      (attach off)
+    )
+    (padstack PAD_26
+      (shape (rect Bottom -600 -750 600 750))
+      (attach off)
+    )
+    (padstack PAD_27
+      (shape (rect Bottom -375 -1000 375 1000))
+      (attach off)
+    )
+    (padstack PAD_28
+      (shape (rect Bottom -750 -1300 750 1300))
+      (attach off)
+    )
+    (padstack PAD_29
+      (shape (rect Bottom -600 -525 600 525))
+      (attach off)
+    )
+    (padstack PAD_30
+      (shape (rect Bottom -375 -200 375 200))
+      (attach off)
+    )
+    (padstack PAD_31
+      (shape (rect Bottom -400 -200 400 200))
+      (attach off)
+    )
+    (padstack PAD_32
+      (shape (rect Bottom -1000 -1300 1000 1300))
+      (attach off)
+    )
+    (padstack PAD_33
+      (shape (circle signal 1700))
+      (attach off)
+    )
+    (padstack PAD_34
+      (shape (rect Bottom -1100 -800 1100 800))
+      (attach off)
+    )
+    (padstack PAD_35
+      (shape (rect Bottom -600 -575 600 575))
+      (attach off)
+    )
+    (padstack PAD_36
+      (shape (circle signal 1600))
+      (attach off)
+    )
+    (padstack VIA_DEFAULT
+      (shape (circle signal 800))
+      (attach off)
+    )
+  )
+  (network
+    (net V24IN 1
+      (pins F1-1 CON1-1)
+    )
+    (net V24 1
+      (pins F1-2 U2-1 C64-1 U1-6 C71-1 C72-1 R_EN1-1 U8-1 C81-1 D74-2 D75-2 CON1-7 CON1-9 CON1-11)
+    )
+    (net GND 1
+      (pins U5-95 U5-94 U5-93 U5-92 U5-91 U5-90 U5-89 U5-88 U5-72 U5-71 U5-70 U5-41 U5-40 U5-37 U5-36 U5-34 U5-27 U5-23 U5-22 U5-21 U5-20 U5-19 U5-10 U5-1 C21-2 C22-2 C23-2 C24-2 C25-2 X1-3 X1-2 CON2-8 CON2-7 CON2-6 CON2-5 C31-2 C32-2 C33-2 C34-2 C35-2 R_DIV2-2 Q2-2 C_PWR-2 Q4-2 U6-13 C41-2 C42-2 C51-2 C52-2 U7-6 C43-2 U2-5 U2-3 U2-6 D_LM-1 C61-2 C62-2 C63-2 C64-2 R_FD-2 U1-2 D73-1 C71-2 C72-2 C73-2 C74-2 R_FD2-2 R_EN2-2 U8-2 C81-2 C82-2 C83-2 R_PD1-2 U3-1 U3-2 U3-3 R_PDV-2 U4-1 U4-2 U4-3 CON1-2 CON1-4 CON1-6 J2-2 J3-2 R_DP2-2 C_ADC1-2 R_DT2-2 C_ADC2-2 J1-3 Q3-2)
+    )
+    (net V4V0 1
+      (pins FB1-1 R_NL2-1 L2-2 C61-1 C62-1 C63-1 R_FU-1)
+    )
+    (net "M_VBAT" 1
+      (pins U5-43 U5-42 FB1-2 C21-1 C22-1 C23-1 C24-1 C25-1)
+    )
+    (net SW2596 1
+      (pins U2-2 L2-1 D_LM-2)
+    )
+    (net FB2596 1
+      (pins U2-4 R_FU-2 R_FD-1)
+    )
+    (net V3V8 1
+      (pins R_C1-2 U6-14 C41-1 C42-1 R_RST-1 U7-17 C43-1 L1-2 C73-1 C74-1 R_FU2-1 R_SWHU-2 R_SWLU-2 R_PRBU-2)
+    )
+    (net SW2451 1
+      (pins U1-5 C_BST-2 L1-1 D73-2)
+    )
+    (net FB2451 1
+      (pins U1-3 R_FU2-2 R_FD2-1)
+    )
+    (net "BST_C" 1
+      (pins U1-1 C_BST-1)
+    )
+    (net EN2451 1
+      (pins U1-4 R_EN1-2 R_EN2-1)
+    )
+    (net V5V0 1
+      (pins U8-3 C82-1 C83-1 J2-1 R_TPU-1)
+    )
+    (net "M_TXD" 1
+      (pins U5-18 R_B1-1)
+    )
+    (net "PNP_B" 1
+      (pins R_B1-2 Q1-1)
+    )
+    (net "VDD_EXT" 1
+      (pins U5-24 Q1-2)
+    )
+    (net "MCU_RXD" 1
+      (pins Q1-3 R_C1-1 U6-1 R_HD2-1)
+    )
+    (net "MCU_TXD" 1
+      (pins R_DIV1-1 U6-2 R_HD1-1)
+    )
+    (net "M_RXD" 1
+      (pins U5-17 R_DIV1-2 R_DIV2-1)
+    )
+    (net "M_PWR" 1
+      (pins U5-7 Q2-3 C_PWR-1)
+    )
+    (net "MCU_PWR" 1
+      (pins R_PWR-1 U6-24)
+    )
+    (net "Q2_B" 1
+      (pins R_PWR-2 Q2-1)
+    )
+    (net "M_SIM_PWR" 1
+      (pins U5-14 R_SIM1-1)
+    )
+    (net "SIM_VCC" 1
+      (pins CON2-1 R_SIM1-2 C34-1 C35-1)
+    )
+    (net "M_SIM_RST" 1
+      (pins U5-12 R_SIM2-1)
+    )
+    (net "SIM_RST" 1
+      (pins CON2-2 R_SIM2-2 C31-1)
+    )
+    (net "M_SIM_CLK" 1
+      (pins U5-13 R_SIM3-1)
+    )
+    (net "SIM_CLK" 1
+      (pins CON2-3 R_SIM3-2 C32-1)
+    )
+    (net "M_SIM_DATA" 1
+      (pins U5-11 R_SIM4-1)
+    )
+    (net "SIM_DATA" 1
+      (pins CON2-4 R_SIM4-2 C33-1)
+    )
+    (net "M_ANT" 1
+      (pins U5-35 R_ANT-1)
+    )
+    (net "M_ANT_F" 1
+      (pins X1-1 R_ANT-2)
+    )
+    (net "M_NL" 1
+      (pins U5-16 R_NL1-1)
+    )
+    (net "NL_B" 1
+      (pins R_NL1-2 Q4-1)
+    )
+    (net "NL_C" 1
+      (pins Q4-3 D77-2)
+    )
+    (net "NL_A" 1
+      (pins R_NL2-2 D77-1)
+    )
+    (net DIN 1
+      (pins U6-20 U7-7)
+    )
+    (net SCLK 1
+      (pins U6-19 U7-8)
+    )
+    (net "ADC_PRESS" 1
+      (pins U6-10 R_DP1-2 R_DP2-1 C_ADC1-1)
+    )
+    (net "SENS_P" 1
+      (pins J2-3 R_DP1-1)
+    )
+    (net "ADC_TEMP" 1
+      (pins U6-28 R_DT1-2 R_DT2-1 C_ADC2-1)
+    )
+    (net "SENS_T" 1
+      (pins J2-4 R_DT1-1 R_TPU-2)
+    )
+    (net "PUMP_G" 1
+      (pins U6-9 R_GP-1)
+    )
+    (net "PUMP_GATE" 1
+      (pins R_GP-2 R_PD1-1 U3-4)
+    )
+    (net "PUMP_D" 1
+      (pins U3-8 U3-7 U3-6 U3-5 U3-9 D74-1 CON1-8 CON1-10)
+    )
+    (net "VALVE_G" 1
+      (pins U6-3 R_GV-1)
+    )
+    (net "VALVE_GATE" 1
+      (pins R_GV-2 R_PDV-1 U4-4)
+    )
+    (net "VALVE_D" 1
+      (pins U4-8 U4-7 U4-6 U4-5 U4-9 D75-1 CON1-12)
+    )
+    (net BEEP 1
+      (pins U6-4 R_BB-1)
+    )
+    (net "BEEP_B" 1
+      (pins R_BB-2 Q3-1)
+    )
+    (net "BEEP_C" 1
+      (pins Q3-3 BUZ-2 D76-1)
+    )
+    (net "BEEP_V24" 1
+      (pins R_BUZ-1 D76-2)
+    )
+    (net "BEEP_P" 1
+      (pins R_BUZ-2 BUZ-1)
+    )
+    (net "RST_MC" 1
+      (pins U6-22 R_RST-2 TP1-1)
+    )
+    (net CTKVDD 1
+      (pins U6-23 C51-1 C52-1)
+    )
+    (net "RST_MDU" 1
+      (pins U5-15 TP3-1)
+    )
+    (net "BOOT_MDU" 1
+      (pins U5-82 TP2-1)
+    )
+    (net "HD_TX" 1
+      (pins R_HD1-2 J1-1)
+    )
+    (net "HD_RX" 1
+      (pins R_HD2-2 J1-2)
+    )
+    (net TKEY1 1
+      (pins U6-5 SW1-1)
+    )
+    (net TKEY2 1
+      (pins U6-6 SW2-1)
+    )
+    (net TKEY3 1
+      (pins U6-7 SW3-1)
+    )
+    (net TKEY4 1
+      (pins U6-8 SW4-1)
+    )
+    (net "TDS1_A" 1
+      (pins U6-18 R_TA1-1)
+    )
+    (net "TDS1_B" 1
+      (pins U6-17 R_TB1-1)
+    )
+    (net "TDS1_EA" 1
+      (pins U6-12 J4-1 R_TA1-2)
+    )
+    (net "TDS1_EB" 1
+      (pins J4-2 R_TB1-2)
+    )
+    (net "TDS2_A" 1
+      (pins U6-16 R_TA2-1)
+    )
+    (net "TDS2_B" 1
+      (pins U6-15 R_TB2-1)
+    )
+    (net "TDS2_EA" 1
+      (pins U6-11 J5-1 R_TA2-2)
+    )
+    (net "TDS2_EB" 1
+      (pins J5-2 R_TB2-2)
+    )
+    (net SEG1 1
+      (pins U7-9 D1-1 D9-1 D17-1 D25-1 D33-1 D41-1 D49-1 D57-1 D65-1 D66-1 D67-1 D68-1 D69-1 D70-1 D71-1 D72-1)
+    )
+    (net SEG2 1
+      (pins U7-10 D2-1 D10-1 D18-1 D26-1 D34-1 D42-1 D50-1 D58-1)
+    )
+    (net SEG3 1
+      (pins U7-11 D3-1 D11-1 D19-1 D27-1 D35-1 D43-1 D51-1 D59-1)
+    )
+    (net SEG4 1
+      (pins U7-12 D4-1 D12-1 D20-1 D28-1 D36-1 D44-1 D52-1 D60-1)
+    )
+    (net SEG5 1
+      (pins U7-13 D5-1 D13-1 D21-1 D29-1 D37-1 D45-1 D53-1 D61-1)
+    )
+    (net SEG6 1
+      (pins U7-14 D6-1 D14-1 D22-1 D30-1 D38-1 D46-1 D54-1 D62-1)
+    )
+    (net SEG7 1
+      (pins U7-15 D7-1 D15-1 D23-1 D31-1 D39-1 D47-1 D55-1 D63-1)
+    )
+    (net SEG8 1
+      (pins U7-16 D8-1 D16-1 D24-1 D32-1 D40-1 D48-1 D56-1 D64-1)
+    )
+    (net GRID1 1
+      (pins U7-18 D1-2 D2-2 D3-2 D4-2 D5-2 D6-2 D7-2 D8-2)
+    )
+    (net GRID2 1
+      (pins U7-19 D9-2 D10-2 D11-2 D12-2 D13-2 D14-2 D15-2 D16-2)
+    )
+    (net GRID3 1
+      (pins U7-20 D17-2 D18-2 D19-2 D20-2 D21-2 D22-2 D23-2 D24-2)
+    )
+    (net GRID4 1
+      (pins U7-21 D25-2 D26-2 D27-2 D28-2 D29-2 D30-2 D31-2 D32-2)
+    )
+    (net GRID5 1
+      (pins U7-22 D33-2 D34-2 D35-2 D36-2 D37-2 D38-2 D39-2 D40-2)
+    )
+    (net GRID6 1
+      (pins U7-23 D41-2 D42-2 D43-2 D44-2 D45-2 D46-2 D47-2 D48-2)
+    )
+    (net GRID7 1
+      (pins U7-24 D49-2 D50-2 D51-2 D52-2 D53-2 D54-2 D55-2 D56-2)
+    )
+    (net GRID8 1
+      (pins U7-25 D57-2 D58-2 D59-2 D60-2 D61-2 D62-2 D63-2 D64-2)
+    )
+    (net GRID9 1
+      (pins U7-26 D65-2)
+    )
+    (net GRID10 1
+      (pins U7-27 D66-2)
+    )
+    (net GRID11 1
+      (pins U7-28 D67-2)
+    )
+    (net GRID12 1
+      (pins U7-1 D68-2)
+    )
+    (net GRID13 1
+      (pins U7-2 D69-2)
+    )
+    (net GRID14 1
+      (pins U7-3 D70-2)
+    )
+    (net GRID15 1
+      (pins U7-4 D71-2)
+    )
+    (net GRID16 1
+      (pins U7-5 D72-2)
+    )
+    (net "SWH_IN" 1
+      (pins J3-1 R_SWH-2)
+    )
+    (net "SWL_IN" 1
+      (pins CON1-5 R_SWL-2)
+    )
+    (net "PRB_IN" 1
+      (pins CON1-3 R_PRB-2)
+    )
+    (net "SW_HIGH" 1
+      (pins U6-26 R_SWH-1 R_SWHU-1)
+    )
+    (net "SW_LOW" 1
+      (pins U6-25 R_SWL-1 R_SWLU-1)
+    )
+    (net PROBE 1
+      (pins U6-27 R_PRB-1 R_PRBU-1)
+    )
+  )
+)

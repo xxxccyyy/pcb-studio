@@ -1,0 +1,209 @@
+{
+ "R10K": {
+  "query": "10K 0603",
+  "name": "TNPU060310K0AZEN00",
+  "lcsc": "C2073738",
+  "footprintName": "R0603",
+  "symbolName": "TNPU060310K0AZEN00",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "21a2ae69fad84d58846a58109b4c69e0"
+ },
+ "R1K": {
+  "query": "1K 0603",
+  "name": "CRCW06031K00JNTA",
+  "lcsc": "C4003905",
+  "footprintName": "R0603",
+  "symbolName": "CRCW06031K00JNTA",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "be13c91018af47f782915c64323cd5a2"
+ },
+ "R124K": {
+  "query": "124K 0603",
+  "name": "AC0603FR-07124KL",
+  "lcsc": "C227568",
+  "footprintName": "R0603",
+  "symbolName": "AC0603FR-07124KL",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "8294e8f9f18b4f49b967c775a1301bc5"
+ },
+ "R32K4": {
+  "query": "32.4K 0603",
+  "name": "RMC060332.4K1%N",
+  "lcsc": "C325650",
+  "footprintName": "R0603",
+  "symbolName": "RMC060332.4K1%N",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "23c82210bc054c97bf7abdab9a0cc6f5"
+ },
+ "R22K6": {
+  "query": "22.6K 0603",
+  "name": "RMC060322.6K1%N",
+  "lcsc": "C269477",
+  "footprintName": "R0603",
+  "symbolName": "RMC060322.6K1%N",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "9b1f2c58aaae435db03827ff6a3d082f"
+ },
+ "R910": {
+  "query": "910R 0603",
+  "name": "RT0603BRB07910RL",
+  "lcsc": "C860544",
+  "footprintName": "R0603",
+  "symbolName": "RT0603BRB07910RL",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "20e041204987401ea9f428a3cb4031db"
+ },
+ "R100K": {
+  "query": "100K 0603",
+  "name": "TNPW0603100KDHEA",
+  "lcsc": "C2131754",
+  "footprintName": "R0603",
+  "symbolName": "TNPW0603100KDHEA",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "4fdac04ecf0e4103b48b74fcafc53f87"
+ },
+ "R10": {
+  "query": "10R 0603",
+  "name": "cr1812j510re04z",
+  "lcsc": "C9900022046",
+  "footprintName": "R1812",
+  "symbolName": "CR1812J510RE04Z",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "4f7d67bbb34a45bbb00f7a2c1226a8b4"
+ },
+ "R220": {
+  "query": "220R 0805",
+  "name": "RMCF0805JT220R",
+  "lcsc": "C2484149",
+  "footprintName": "R0805",
+  "symbolName": "RMCF0805JT220R",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "d14e5a03459c4c4b8f39e627da339a20"
+ },
+ "C100N": {
+  "query": "100nF 0603",
+  "name": "100nF/0603/50V",
+  "lcsc": "C9900013340",
+  "footprintName": "C0603",
+  "symbolName": "100NF/0603/50V",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "811c5a69fad14dfa85c1af699a12c275"
+ },
+ "C33P": {
+  "query": "33pF 0603",
+  "name": "0603N330J101CT",
+  "lcsc": "C77447",
+  "footprintName": "C0603",
+  "symbolName": "0603N330J101",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "74da494577d04a9bb2aa424f8ea48d93"
+ },
+ "C1U": {
+  "query": "1uF 0603",
+  "name": "CAPCER0.1UF16VX5R0603,CAPCER0.1UF25VX5R0603,CAPCER0.1UF16VX7R0603",
+  "lcsc": "C9900012833",
+  "footprintName": "C0603",
+  "symbolName": "CAPCER0.1UF16VX5R0603,CAPCER0.1UF25VX5R0603,CAPCER0.1UF16VX7R0603",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "e0e973ec61644e21bf519288e30b6940"
+ },
+ "C22U": {
+  "query": "22uF 1206",
+  "name": "1206X226K250CT",
+  "lcsc": "C105213",
+  "footprintName": "C1206",
+  "symbolName": "1206X226K250",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "3fa24cfa67454d80b13b5ac161be2fb8"
+ },
+ "C10U": {
+  "query": "10uF 0805",
+  "name": "CAPCER10UF25VX5R0805",
+  "lcsc": "C9900012828",
+  "footprintName": "C0805",
+  "symbolName": "CAPCER10UF25VX5R0805",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "10d64c167f5444958d3df43138306622"
+ },
+ "C10U50": {
+  "query": "10uF 50V 1206",
+  "name": "10UF50VC110GL",
+  "lcsc": "C46867109",
+  "footprintName": "CAP-TH_BD5.0-P2.00-D0.8-FD-10UF50VC110GL",
+  "symbolName": "10UF50VC110GL",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "ceaa843651fb48618244f33e00240af7"
+ },
+ "LED0603": {
+  "query": "LED 0603 红",
+  "name": "LED灯,0603,红色",
+  "lcsc": "C9900011153",
+  "footprintName": "LED0603-RD_RED",
+  "symbolName": "LED灯,0603,红色",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "8f7f23578b944bbfa09b958efdb612e1"
+ },
+ "TANT220": {
+  "query": "220uF 钽电容 D",
+  "name": "贴片电解电容220UF+-20%6.3VSMD直径6.3MM高度5.4MM",
+  "lcsc": "C9900014617",
+  "footprintName": "CAP-SMD_BD6.3-L6.6-W6.6-LS7.2-FD-1",
+  "symbolName": "贴片电解电容220UF+-20%6.3VSMD直径6.3MM高度5.4MM",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "fb320d9807a646b6b5eb76ced3b87bd5"
+ },
+ "SVP220": {
+  "query": "220uF 固态电容 6.3",
+  "name": "固态电容220uF/10V6.3*5.4",
+  "lcsc": "C9900001736",
+  "footprintName": "CAP-SMD_BD6.3-L6.6-W6.6-LS7.2-FD",
+  "symbolName": "固态电容220UF/10V6.3*5.4",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "4941f1dd7a2948e3b6d08a626e1c06bd"
+ },
+ "RAD470": {
+  "query": "470uF 50V 电解",
+  "name": "RAD104J250V",
+  "lcsc": "C9900014931",
+  "footprintName": "CAP-TH_L12.0-W5.0-P10.00-D0.6",
+  "symbolName": "RAD104J250V",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "a1be2c23caae4399bfaa7a5ff8d6cdf0"
+ },
+ "L33U": {
+  "query": "33uH 功率电感",
+  "name": "Inductor_33uH/功率电感",
+  "lcsc": "C9900013585",
+  "footprintName": "IND-SMD_L13.4-W12.6",
+  "symbolName": "INDUCTOR_33UH/功率电感",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "662e564fc6dd47869d4ac31b0bac6bb9"
+ },
+ "L6U8": {
+  "query": "6.8uH 功率电感",
+  "name": "功率电感(贴片),CKST0502-10uH/M,10uH,±20%,3A,封装5.7mm*5.1mm*2.0mm,岑科,RoHS",
+  "lcsc": "C9900015114",
+  "footprintName": "IND-SMD_L5.7-W5.1",
+  "symbolName": "功率电感(贴片),CKST0502-10UH/M,10UH,±20%,3A,封装5.7MM*5.1MM*2.0MM,岑科,ROHS",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "70064afff7a24b0ca09f576b54ed848e"
+ },
+ "CON12P": {
+  "query": "XHB2.54 12P 卧贴",
+  "name": "WAFER-XHB2.54-12PWT-W1-P_C22448646",
+  "lcsc": "C22448646",
+  "footprintName": "CONN-SMD_12P-P2.50_WAFER-XHB2.54-12PWT-W1-P",
+  "symbolName": "WAFER-XHB2.54-12PWT-W1-P_C22448646",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "e450e9cec2b04687aefad4016caacfb3"
+ },
+ "HDR3P": {
+  "query": "2.54 排针 1x3P",
+  "name": "排母2.54mm 1X3pin",
+  "lcsc": "C9900016709",
+  "footprintName": "HDR-TH_3P-P2.54_CS-1165SDIG",
+  "symbolName": "排母2.54MM 1X3PIN",
+  "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+  "uuid": "a7415bb46c204efe91e1b40370ea127c"
+ }
+}

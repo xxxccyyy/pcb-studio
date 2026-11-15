@@ -1,0 +1,265 @@
+{"playbookSha256":"99013532fad37de1cd266ae23aabd312de8a7ecd12ca5afa17c089e1e671c372","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:17:55+08:00"}
+{"idx":1,"id":"p1","status":"ok","ms":2194}
+{"idx":2,"id":"p2","status":"ok","ms":1584}
+{"idx":3,"id":"p3","status":"ok","ms":1931}
+{"idx":4,"id":"p4","status":"ok","ms":1772}
+{"idx":5,"id":"p5","status":"ok","ms":2646}
+{"idx":6,"id":"p6","status":"ok","ms":1175}
+{"idx":7,"id":"p7","status":"ok","ms":2194}
+{"idx":8,"id":"p8","status":"ok","ms":1758}
+{"idx":9,"id":"p9","status":"ok","ms":1484}
+{"idx":10,"id":"p10","status":"ok","ms":1502}
+{"idx":11,"id":"p11","status":"ok","ms":1977}
+{"idx":12,"id":"p12","status":"ok","ms":1668}
+{"idx":13,"id":"p13","status":"ok","ms":1408}
+{"idx":14,"id":"p14","status":"ok","ms":1918}
+{"idx":15,"id":"p15","status":"ok","ms":1694}
+{"idx":16,"id":"p16","status":"ok","ms":1609}
+{"idx":17,"id":"p17","status":"ok","ms":1828}
+{"idx":18,"id":"p18","status":"ok","ms":2075}
+{"idx":19,"id":"p19","status":"ok","ms":2236}
+{"idx":20,"id":"p20","status":"ok","ms":2138}
+{"idx":21,"id":"p21","status":"ok","ms":1869}
+{"idx":22,"id":"p22","status":"ok","ms":1657}
+{"idx":23,"id":"p23","status":"ok","ms":2095}
+{"idx":24,"id":"p24","status":"ok","ms":2245}
+{"idx":25,"id":"p25","status":"ok","ms":2011}
+{"idx":26,"id":"p26","status":"ok","ms":2645}
+{"idx":27,"id":"p27","status":"ok","ms":1282}
+{"idx":28,"id":"p28","status":"ok","ms":1868}
+{"idx":29,"id":"p29","status":"ok","ms":1324}
+{"idx":30,"id":"p30","status":"ok","ms":1909}
+{"idx":31,"id":"p31","status":"ok","ms":1822}
+{"idx":32,"id":"p32","status":"ok","ms":2200}
+{"idx":33,"id":"p33","status":"ok","ms":2917}
+{"idx":34,"id":"p34","status":"fail","ms":2338,"error":"schematic.component.place: schematic geometry guard failed (readback) — New invalid geometry observed after write. Repair the measured state; API success is not validation success. zero-length-wire: wire contains a zero-length segment; zero-length-wire: wire contains a zero-length segment"}
+{"playbookSha256":"e1d9f88b7d20bdee26ed7f3288337ec9430958d1c536609573be76361e25446d","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:19:51+08:00"}
+{"idx":34,"id":"p34","status":"ok","ms":2139}
+{"idx":35,"id":"p35","status":"ok","ms":1769}
+{"idx":36,"id":"p36","status":"ok","ms":2203}
+{"idx":37,"id":"p37","status":"ok","ms":2192}
+{"idx":38,"id":"p38","status":"ok","ms":2055}
+{"idx":39,"id":"p39","status":"ok","ms":1749}
+{"idx":40,"id":"p40","status":"ok","ms":2249}
+{"idx":41,"id":"p41","status":"ok","ms":1951}
+{"idx":42,"id":"p42","status":"ok","ms":2972}
+{"idx":43,"id":"p43","status":"ok","ms":1904}
+{"idx":44,"id":"p44","status":"ok","ms":2283}
+{"idx":45,"id":"p45","status":"ok","ms":2842}
+{"idx":46,"id":"p46","status":"ok","ms":2220}
+{"idx":47,"id":"p47","status":"fail","ms":1628,"error":"schematic.component.place: schematic geometry guard failed (readback) — New invalid geometry observed after write. Repair the measured state; API success is not validation success. zero-length-wire: wire contains a zero-length segment"}
+{"playbookSha256":"e1d9f88b7d20bdee26ed7f3288337ec9430958d1c536609573be76361e25446d","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:21:42+08:00"}
+{"idx":47,"id":"p47","status":"fail","ms":1909,"error":"schematic.component.place: schematic geometry guard failed (readback) — New invalid geometry observed after write. Repair the measured state; API success is not validation success. zero-length-wire: wire contains a zero-length segment"}
+{"playbookSha256":"e1d9f88b7d20bdee26ed7f3288337ec9430958d1c536609573be76361e25446d","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:22:08+08:00"}
+{"idx":47,"id":"p47","status":"ok","ms":2297}
+{"idx":48,"id":"p48","status":"fail","ms":1969,"error":"schematic.component.place: schematic geometry guard failed (readback) — New invalid geometry observed after write. Repair the measured state; API success is not validation success. zero-length-wire: wire contains a zero-length segment"}
+{"playbookSha256":"35ce0550a8f9cf1f37e1395b56d2a3bb725f520073438413bfa1a8a1f4e3f6d6","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:22:29+08:00"}
+{"idx":48,"id":"p49","status":"ok","ms":2217}
+{"idx":49,"id":"p50","status":"ok","ms":3094}
+{"idx":50,"id":"p51","status":"ok","ms":2880}
+{"idx":51,"id":"p52","status":"ok","ms":2096}
+{"idx":52,"id":"p53","status":"ok","ms":1856}
+{"idx":53,"id":"p54","status":"ok","ms":2270}
+{"idx":54,"id":"p55","status":"ok","ms":2629}
+{"idx":55,"id":"p56","status":"ok","ms":2032}
+{"idx":56,"id":"p57","status":"ok","ms":2284}
+{"idx":57,"id":"p58","status":"ok","ms":2794}
+{"idx":58,"id":"p59","status":"ok","ms":2066}
+{"idx":59,"id":"p60","status":"ok","ms":2551}
+{"idx":60,"id":"p61","status":"ok","ms":2680}
+{"idx":61,"id":"p62","status":"ok","ms":2269}
+{"idx":62,"id":"p63","status":"ok","ms":2546}
+{"idx":63,"id":"p64","status":"ok","ms":2498}
+{"idx":64,"id":"p65","status":"ok","ms":2568}
+{"idx":65,"id":"p66","status":"ok","ms":3353}
+{"idx":66,"id":"p67","status":"ok","ms":1963}
+{"idx":67,"id":"p68","status":"ok","ms":2694}
+{"idx":68,"id":"p69","status":"ok","ms":2698}
+{"idx":69,"id":"p70","status":"ok","ms":2306}
+{"idx":70,"id":"p71","status":"ok","ms":2620}
+{"idx":71,"id":"p72","status":"ok","ms":2412}
+{"idx":72,"id":"p73","status":"ok","ms":3354}
+{"idx":73,"id":"p74","status":"ok","ms":2922}
+{"idx":74,"id":"p75","status":"ok","ms":2604}
+{"idx":75,"id":"p76","status":"ok","ms":2582}
+{"idx":76,"id":"p77","status":"ok","ms":2794}
+{"idx":77,"id":"p78","status":"ok","ms":2664}
+{"idx":78,"id":"p79","status":"ok","ms":3070}
+{"idx":79,"id":"p80","status":"ok","ms":4591}
+{"idx":80,"id":"p81","status":"ok","ms":1922}
+{"idx":81,"id":"p82","status":"ok","ms":2333}
+{"idx":82,"id":"p83","status":"ok","ms":3046}
+{"idx":83,"id":"p84","status":"ok","ms":2060}
+{"idx":84,"id":"p85","status":"ok","ms":2644}
+{"idx":85,"id":"p86","status":"ok","ms":2407}
+{"idx":86,"id":"p87","status":"ok","ms":3231}
+{"idx":87,"id":"p88","status":"ok","ms":3236}
+{"idx":88,"id":"p89","status":"ok","ms":2647}
+{"idx":89,"id":"p90","status":"ok","ms":3714}
+{"idx":90,"id":"p91","status":"ok","ms":2445}
+{"idx":91,"id":"p92","status":"ok","ms":2477}
+{"idx":92,"id":"p93","status":"ok","ms":2251}
+{"idx":93,"id":"p94","status":"ok","ms":3342}
+{"idx":94,"id":"p95","status":"fail","ms":728,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"48693efc34a5e7f7ea6b0947b92de74b95b059a8a238cc5812713b98c88fe210","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:25:12+08:00"}
+{"idx":94,"id":"p96","status":"fail","ms":6,"error":"schematic.component.place: no connected window for project \"BG2208-4G 商用净水机控制板\" — open the project in EasyEDA (connector enabled), or run `easyeda health`"}
+{"playbookSha256":"2df3cf24d77e423c154f8ef73e7252c3a1753e8f4bb6da386260876e71bff07f","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:25:21+08:00"}
+{"idx":94,"id":"p96","status":"fail","ms":51,"error":"schematic.component.place: schematic geometry guard failed (preflight) — geometry read failed: EDA_CALL_FAILED: Failed to list schematic components."}
+{"playbookSha256":"200b0dd696a23baffcca22d03d1b1206d237a1d5e2432c55a207b36ad417e38e","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:26:00+08:00"}
+{"idx":94,"id":"p97","status":"fail","ms":4,"error":"schematic.component.place: no connected window for project \"BG2208-4G 商用净水机控制板\" — open the project in EasyEDA (connector enabled), or run `easyeda health`"}
+{"playbookSha256":"d56ae04984541fb9dd76041757ae0c334d82b5f257448a2e9b9f885d7d9f793f","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:26:09+08:00"}
+{"idx":94,"id":"p97","status":"fail","ms":618,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"6a6ebc3daf4c7b5768e1b0b65c70bf3a355b8dd1ca2b7433c99a88e58543f660","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:26:50+08:00"}
+{"idx":94,"id":"p98","status":"ok","ms":3866}
+{"idx":95,"id":"p99","status":"ok","ms":3740}
+{"idx":96,"id":"p100","status":"fail","ms":2987,"error":"schematic.component.place: schematic geometry guard failed (readback) — New invalid geometry observed after write. Repair the measured state; API success is not validation success. zero-length-wire: wire contains a zero-length segment"}
+{"playbookSha256":"71a7e7b4dc69c0df1c61308af00c8c3cf1a2c11d31f52895ade507769ee1db2a","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:27:26+08:00"}
+{"idx":96,"id":"p100","status":"fail","ms":653,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"0d910541b3b2f6e63f41028efbb8c07523b334f798ffab078c8999525a23649e","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:28:04+08:00"}
+{"idx":96,"id":"p100","status":"fail","ms":679,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"ae8c480dfc5a4dc11c10c9620d0d3730cc2fd42585c59dacf804cb520d3e50b1","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:28:45+08:00"}
+{"idx":96,"id":"p100","status":"fail","ms":178,"error":"schematic.component.place: schematic geometry guard failed (preflight) — geometry read failed: EDA_CALL_FAILED: Failed to list schematic components."}
+{"playbookSha256":"329eac75a3e027629d6a8b0caf30968bff638425481ad2a4d93afd7ae0f01fbc","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:29:25+08:00"}
+{"idx":96,"id":"p100","status":"fail","ms":139,"error":"schematic.component.place: schematic geometry guard failed (preflight) — geometry read failed: EDA_CALL_FAILED: Failed to list schematic components."}
+{"playbookSha256":"6e7c8789f4e0acb551587b19d20907bdd7277173274e324bffa4d5428681c504","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:30:40+08:00"}
+{"idx":96,"id":"p101","status":"fail","ms":5,"error":"schematic.component.place: the connector's action queue is blocked by document.open (req_324) for 6s — this action was NOT sent; do NOT re-issue the write (the wedged handler is still running and its effect may land later) — proof: a light QUEUED read (project.current, normally ~3ms) has been unanswered for 5.8s, while a recent BYPASS read document.current succeeded. Queued reads remain stalled after document.open (req_324). Next step: wait — the daemon re-checks by itself and this refusal stops the moment the queue drains. If it never drains, bring the EasyEDA window to the FOREGROUND (background windows are where handlers wedge) and restart EasyEDA; then verify what actually landed with a read before re-issuing anything."}
+{"playbookSha256":"c71a7941ac8435e55a150f0340e92bd9211bdc545718e28b6ce143c1a8446ba9","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:31:18+08:00"}
+{"idx":96,"id":"p102","status":"fail","ms":5,"error":"schematic.component.place: no connected window for project \"BG2208-4G 商用净水机控制板\" — open the project in EasyEDA (connector enabled), or run `easyeda health`"}
+{"playbookSha256":"6d0ea0cbd3f600b3e50414ed8f4e1b0cc2d02811add4f4a62724287ad943f7ff","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:31:28+08:00"}
+{"idx":96,"id":"p102","status":"fail","ms":51,"error":"schematic.component.place: schematic geometry guard failed (preflight) — geometry read failed: EDA_CALL_FAILED: Failed to list schematic components."}
+{"playbookSha256":"70fb52a54235dfb9d43f61c22937fd9924892d0a77b760c8d5de3fecf9e5c122","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:32:07+08:00"}
+{"idx":96,"id":"p103","status":"fail","ms":6,"error":"schematic.component.place: the connector's action queue is blocked by document.open (req_340) for 6s — this action was NOT sent; do NOT re-issue the write (the wedged handler is still running and its effect may land later) — proof: a light QUEUED read (project.current, normally ~3ms) has been unanswered for 5.8s, while a recent BYPASS read document.current succeeded. Queued reads remain stalled after document.open (req_340). Next step: wait — the daemon re-checks by itself and this refusal stops the moment the queue drains. If it never drains, bring the EasyEDA window to the FOREGROUND (background windows are where handlers wedge) and restart EasyEDA; then verify what actually landed with a read before re-issuing anything."}
+{"playbookSha256":"2e7dc1e59928e463b6ba8dd0235c3df3ff94071a9d3b663c818d1872584d998d","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:32:48+08:00"}
+{"idx":96,"id":"p103","status":"fail","ms":150,"error":"schematic.component.place: schematic geometry guard failed (preflight) — geometry read failed: EDA_CALL_FAILED: Failed to list schematic components."}
+{"playbookSha256":"3f2e7ff2c2a5bda7e8a695b2a9a886b5351447b803537fb9a583dbdd037a9721","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:33:27+08:00"}
+{"idx":96,"id":"p103","status":"fail","ms":149,"error":"schematic.component.place: schematic geometry guard failed (preflight) — geometry read failed: EDA_CALL_FAILED: Failed to list schematic components."}
+{"playbookSha256":"c7fb694f5799f7f17c32858e7589096578ef8233fb2842e7b91d1bfe779d79f3","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:34:06+08:00"}
+{"idx":96,"id":"p104","status":"fail","ms":7,"error":"schematic.component.place: no connected window for project \"BG2208-4G 商用净水机控制板\" — open the project in EasyEDA (connector enabled), or run `easyeda health`"}
+{"playbookSha256":"937ad9abe9a2c6199747363dbb01bd02ba14ad74feae2a5f82fb34bae4d065f4","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:34:15+08:00"}
+{"idx":96,"id":"p104","status":"fail","ms":627,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"2052cd90edba53c681a764cbf66c2b1b353b852640278e3c21f4b1ab81ef2bf6","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:34:55+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":5,"error":"schematic.component.place: the connector's action queue is blocked by document.open (req_376) for 6s — this action was NOT sent; do NOT re-issue the write (the wedged handler is still running and its effect may land later) — proof: a light QUEUED read (project.current, normally ~3ms) has been unanswered for 5.8s, while a recent BYPASS read document.current succeeded. Queued reads remain stalled after document.open (req_376). Next step: wait — the daemon re-checks by itself and this refusal stops the moment the queue drains. If it never drains, bring the EasyEDA window to the FOREGROUND (background windows are where handlers wedge) and restart EasyEDA; then verify what actually landed with a read before re-issuing anything."}
+{"playbookSha256":"d608749403cee771fa39b9e3e68043013e94a75b80ae6b5f3ed5a9fd888efa63","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:35:38+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":1299,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"7cdeeb7413a01042013fb4d75d5747addafe3dd60c4d2caad160aaaf10e30f35","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:36:19+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":756,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"04ec5b993289b5e98bb5b44680050363b05413907daa00c9160d0ba3dfff2d5d","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:37:01+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":629,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"194f7eefb3a1462558800a847779b104bfb8da3ae66dc2986d759a0481e855e1","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:37:29+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":590,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"3e90a5e7925c3f49219180a8da912f87582d8b04680cf2489caf1213e420d2b8","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:38:02+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":940,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"a5640c19f8f1cadba89a7341dc766cb0ee1e18642f2286da0ca3f433d20b5e07","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:38:35+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":616,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"7fddc39b5a9576e240db8aae2459ec8c5e4d6f6a13311094c2ee91a8fde7c419","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:38:54+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":716,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"abbb2bfc832b821a8ddcfc78f71163dd327d5eeee0700eb6afb0a2a9c1b37a4b","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:39:14+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":657,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"832829790d20c9b3548cdf8cef97795bbf7921e26b0f364f7296e1971178186f","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:39:39+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":617,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"7c453f93c8b8986596df4103cc2c3b0867a6fb4090987b64603ec6bb98c58ff6","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:40:02+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":521,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"65abcc21002ed0c54a7e4d8bdfbd72c376cd6ea782c75a9e376051d076628f9f","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:40:43+08:00"}
+{"idx":96,"id":"p105","status":"fail","ms":234,"error":"schematic.component.place: schematic geometry guard failed (preflight) — geometry read failed: EDA_CALL_FAILED: Failed to list schematic components."}
+{"playbookSha256":"d67fdd6962e0570e489487ec6d654d3a25ab5dfd44d53c3f1ffbdbd8a8451d8d","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:41:24+08:00"}
+{"idx":96,"id":"p106","status":"fail","ms":7,"error":"schematic.component.place: the connector's action queue is blocked by document.open (req_554) for 6s — this action was NOT sent; do NOT re-issue the write (the wedged handler is still running and its effect may land later) — proof: a light QUEUED read (project.current, normally ~3ms) has been unanswered for 6s, while a recent BYPASS read document.current succeeded. Queued reads remain stalled after document.open (req_554). Next step: wait — the daemon re-checks by itself and this refusal stops the moment the queue drains. If it never drains, bring the EasyEDA window to the FOREGROUND (background windows are where handlers wedge) and restart EasyEDA; then verify what actually landed with a read before re-issuing anything."}
+{"playbookSha256":"517e827d822bdde66976fa3124c5e6ce7fa9af4a57b9a558ca3d0ddf7e094512","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:42:05+08:00"}
+{"idx":96,"id":"p106","status":"fail","ms":758,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"5338f94971e792c0b56291dc73a32b4faf25feae60a81d8a2ce1f88c95790aa3","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:42:49+08:00"}
+{"idx":96,"id":"p107","status":"fail","ms":4,"error":"schematic.component.place: no connected window for project \"BG2208-4G 商用净水机控制板\" — open the project in EasyEDA (connector enabled), or run `easyeda health`"}
+{"playbookSha256":"f48b290d691801c5e92f142ed15629727200248f56c417f2d17dd5d18dcca657","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:43:29+08:00"}
+{"idx":96,"id":"p108","status":"fail","ms":4,"error":"schematic.component.place: no connected window for project \"BG2208-4G 商用净水机控制板\" — open the project in EasyEDA (connector enabled), or run `easyeda health`"}
+{"playbookSha256":"a47fe6653c9d7155c7edb86ef66f35dec7f7f2761f7c52a27b810dab8a1b9960","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:43:39+08:00"}
+{"idx":96,"id":"p108","status":"fail","ms":630,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"c6d308973f763f7159d020444ecaec033edf7c73c1a0fe2b691ad89ca7b58abb","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:44:20+08:00"}
+{"idx":96,"id":"p108","status":"fail","ms":619,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"1eb68f780454811d690aac966057aefc85c5e04c228a9b4176ff9e1a113b3fcf","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:45:00+08:00"}
+{"idx":96,"id":"p109","status":"fail","ms":4,"error":"schematic.component.place: the connector's action queue is blocked by document.open (req_606) for 6s — this action was NOT sent; do NOT re-issue the write (the wedged handler is still running and its effect may land later) — proof: a light QUEUED read (project.current, normally ~3ms) has been unanswered for 5.8s, while a recent BYPASS read document.current succeeded. Queued reads remain stalled after document.open (req_606). Next step: wait — the daemon re-checks by itself and this refusal stops the moment the queue drains. If it never drains, bring the EasyEDA window to the FOREGROUND (background windows are where handlers wedge) and restart EasyEDA; then verify what actually landed with a read before re-issuing anything."}
+{"playbookSha256":"cfde6a370484993c0dddc02d93c3bd2b983f931f1d7f32b620dbfdbd3ab27600","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:45:40+08:00"}
+{"idx":96,"id":"p110","status":"fail","ms":5,"error":"schematic.component.place: the connector's action queue is blocked by document.open (req_616) for 6s — this action was NOT sent; do NOT re-issue the write (the wedged handler is still running and its effect may land later) — proof: a light QUEUED read (project.current, normally ~3ms) has been unanswered for 5.8s, while a recent BYPASS read document.current succeeded. Queued reads remain stalled after document.open (req_616). Next step: wait — the daemon re-checks by itself and this refusal stops the moment the queue drains. If it never drains, bring the EasyEDA window to the FOREGROUND (background windows are where handlers wedge) and restart EasyEDA; then verify what actually landed with a read before re-issuing anything."}
+{"playbookSha256":"30375a392fcc33b9e05f28fc28724ee1e7bf179ca100235ac514d71f3fd13741","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:46:13+08:00"}
+{"idx":96,"id":"p110","status":"fail","ms":531,"error":"schematic.component.place: Missing required number field \"x\"."}
+{"playbookSha256":"99013532fad37de1cd266ae23aabd312de8a7ecd12ca5afa17c089e1e671c372","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:50:46+08:00"}
+{"idx":48,"id":"p48","status":"fail","ms":3116,"error":"schematic.component.place: schematic geometry guard failed (readback) — New invalid geometry observed after write. Repair the measured state; API success is not validation success. zero-length-wire: wire contains a zero-length segment"}
+{"playbookSha256":"358ed2d7cf823959a8ed1fa0bda5d463779bbb3d7a9b2eaaa7a40637749d978e","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:51:22+08:00"}
+{"idx":94,"id":"p95","status":"ok","ms":2378}
+{"idx":95,"id":"p96","status":"ok","ms":3225}
+{"idx":96,"id":"p97","status":"ok","ms":2401}
+{"idx":97,"id":"p98","status":"fail","ms":2860,"error":"schematic.component.place: schematic geometry guard failed (readback) — New invalid geometry observed after write. Repair the measured state; API success is not validation success. zero-length-wire: wire contains a zero-length segment; zero-length-wire: wire contains a zero-length segment"}
+{"playbookSha256":"407d1ffc29bd98855ea74fdc267bb29205f6a12177ffa3a91f775582867e0403","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:52:05+08:00"}
+{"idx":99,"id":"p100","status":"fail","ms":2775,"error":"schematic.component.place: schematic geometry guard failed (readback) — New invalid geometry observed after write. Repair the measured state; API success is not validation success. zero-length-wire: wire contains a zero-length segment"}
+{"playbookSha256":"c29b6e52ae32af6bc84eb97458b65b8966403b393dce26af01a031d6fbb5c1be","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:52:39+08:00"}
+{"idx":99,"id":"p100","status":"ok","ms":2816}
+{"idx":100,"id":"p101","status":"ok","ms":2915}
+{"idx":101,"id":"p102","status":"ok","ms":2532}
+{"idx":102,"id":"p103","status":"ok","ms":2624}
+{"idx":103,"id":"p104","status":"ok","ms":3658}
+{"idx":104,"id":"p105","status":"ok","ms":2958}
+{"idx":105,"id":"p106","status":"ok","ms":2574}
+{"idx":106,"id":"p107","status":"ok","ms":2910}
+{"idx":107,"id":"p108","status":"ok","ms":2946}
+{"idx":108,"id":"p109","status":"ok","ms":2708}
+{"idx":109,"id":"p110","status":"ok","ms":2518}
+{"idx":110,"id":"p111","status":"ok","ms":3683}
+{"idx":111,"id":"p112","status":"ok","ms":2329}
+{"idx":112,"id":"p113","status":"ok","ms":2684}
+{"idx":113,"id":"p114","status":"ok","ms":2836}
+{"idx":114,"id":"p115","status":"ok","ms":3002}
+{"idx":115,"id":"p116","status":"ok","ms":3031}
+{"idx":116,"id":"p117","status":"ok","ms":2705}
+{"idx":117,"id":"p118","status":"ok","ms":2816}
+{"idx":118,"id":"p119","status":"ok","ms":3423}
+{"idx":119,"id":"p120","status":"ok","ms":2607}
+{"idx":120,"id":"p121","status":"ok","ms":3189}
+{"idx":121,"id":"p122","status":"ok","ms":3122}
+{"idx":122,"id":"p123","status":"ok","ms":2561}
+{"idx":123,"id":"p124","status":"ok","ms":3525}
+{"idx":124,"id":"p125","status":"ok","ms":3200}
+{"idx":125,"id":"p126","status":"ok","ms":4928}
+{"idx":126,"id":"p127","status":"ok","ms":2818}
+{"idx":127,"id":"p128","status":"ok","ms":2399}
+{"idx":128,"id":"p129","status":"ok","ms":3079}
+{"idx":129,"id":"p130","status":"ok","ms":3034}
+{"idx":130,"id":"p131","status":"ok","ms":2224}
+{"idx":131,"id":"p132","status":"ok","ms":2934}
+{"idx":132,"id":"p133","status":"ok","ms":3272}
+{"idx":133,"id":"p134","status":"ok","ms":2541}
+{"idx":134,"id":"p135","status":"ok","ms":3076}
+{"idx":135,"id":"p136","status":"ok","ms":3024}
+{"idx":136,"id":"p137","status":"ok","ms":2508}
+{"idx":137,"id":"p138","status":"ok","ms":3127}
+{"idx":138,"id":"p139","status":"ok","ms":2816}
+{"idx":139,"id":"p140","status":"ok","ms":3061}
+{"idx":140,"id":"p141","status":"ok","ms":3391}
+{"idx":141,"id":"p142","status":"ok","ms":2875}
+{"idx":142,"id":"p143","status":"ok","ms":2711}
+{"idx":143,"id":"p144","status":"ok","ms":3647}
+{"idx":144,"id":"p145","status":"ok","ms":3666}
+{"idx":145,"id":"p146","status":"ok","ms":2916}
+{"idx":146,"id":"p147","status":"ok","ms":3159}
+{"idx":147,"id":"p148","status":"ok","ms":4849}
+{"idx":148,"id":"p149","status":"fail","ms":58991,"error":"schematic.component.place: connector did not respond — context deadline exceeded"}
+{"playbookSha256":"d3399a366fd69272a7fb0dfcb03e347a419ac888fbf3eff4613d874757ab42fc","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:56:51+08:00"}
+{"idx":148,"id":"p150","status":"fail","ms":3,"error":"schematic.component.place: the connector's action queue is blocked by document.open (req_797) for 6s — this action was NOT sent; do NOT re-issue the write (the wedged handler is still running and its effect may land later) — proof: a light QUEUED read (project.current, normally ~3ms) has been unanswered for 5.8s, while a recent BYPASS read document.current succeeded. Queued reads remain stalled after document.open (req_797). Next step: wait — the daemon re-checks by itself and this refusal stops the moment the queue drains. If it never drains, bring the EasyEDA window to the FOREGROUND (background windows are where handlers wedge) and restart EasyEDA; then verify what actually landed with a read before re-issuing anything."}
+{"playbookSha256":"aa809a3cc584762bf4f937606f19d29ffa49d21aadf0e310817b0134962aec24","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:57:31+08:00"}
+{"idx":148,"id":"p151","status":"fail","ms":4,"error":"schematic.component.place: no connected window for project \"BG2208-4G 商用净水机控制板\" — open the project in EasyEDA (connector enabled), or run `easyeda health`"}
+{"playbookSha256":"53f68a42d1e607e55b8a816d3cc5d69a3b813992b885dbe2a74ab3e3e4a18adc","name":"bg2208-place-all","project":"BG2208-4G 商用净水机控制板","startedAt":"2026-11-15T16:57:41+08:00"}
+{"idx":148,"id":"p151","status":"ok","ms":4274}
+{"idx":149,"id":"p152","status":"ok","ms":2575}
+{"idx":150,"id":"p153","status":"ok","ms":4040}
+{"idx":151,"id":"p154","status":"ok","ms":3581}
+{"idx":152,"id":"p155","status":"ok","ms":4098}
+{"idx":153,"id":"p156","status":"ok","ms":2747}
+{"idx":154,"id":"p157","status":"ok","ms":3326}
+{"idx":155,"id":"p158","status":"ok","ms":2992}
+{"idx":156,"id":"p159","status":"ok","ms":3028}
+{"idx":157,"id":"p160","status":"ok","ms":3559}
+{"idx":158,"id":"p161","status":"ok","ms":3197}
+{"idx":159,"id":"p162","status":"ok","ms":2719}
+{"idx":160,"id":"p163","status":"ok","ms":3774}
+{"idx":161,"id":"p164","status":"ok","ms":3085}
+{"idx":162,"id":"p165","status":"ok","ms":2921}
+{"idx":163,"id":"p166","status":"ok","ms":3606}
+{"idx":164,"id":"p167","status":"ok","ms":3296}
+{"idx":165,"id":"p168","status":"ok","ms":2882}
+{"idx":166,"id":"p169","status":"ok","ms":3430}

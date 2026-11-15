@@ -1,0 +1,2004 @@
+{
+ "version": 1,
+ "meta": {
+  "name": "bg2208-place-all"
+ },
+ "defaults": {
+  "timeoutSec": 60,
+  "continueOnError": false
+ },
+ "steps": [
+  {
+   "id": "p1",
+   "name": "U5 ML307R-DC @(780,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "11813ac514184930b6673b6ceb2007df",
+    "x": 780,
+    "y": 120,
+    "designatorHint": "U5"
+   }
+  },
+  {
+   "id": "p2",
+   "name": "X1 IPEX4 @(1000,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "e2331aae489a4c47900ecb86654d2e90",
+    "x": 1000,
+    "y": 120,
+    "designatorHint": "X1"
+   }
+  },
+  {
+   "id": "p3",
+   "name": "CON2 SIM-114 @(1220,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "0eba088601224bba86af0f4945f651b7",
+    "x": 1220,
+    "y": 120,
+    "designatorHint": "CON2"
+   }
+  },
+  {
+   "id": "p4",
+   "name": "U6 HC89F303C-SOP28-T @(480,360)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "76f8f9c80255455ca17557c21c4edf6d",
+    "x": 480,
+    "y": 360,
+    "designatorHint": "U6"
+   }
+  },
+  {
+   "id": "p5",
+   "name": "U7 HTM1640 @(760,380)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "82661cb23e2741c09cdfd2b1ed7b41a9",
+    "x": 760,
+    "y": 380,
+    "designatorHint": "U7"
+   }
+  },
+  {
+   "id": "p6",
+   "name": "U1 MP2451DT-LF-P @(150,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "89ab535e34fc4b06bdc03ffaf3a5a89c",
+    "x": 150,
+    "y": 120,
+    "designatorHint": "U1"
+   }
+  },
+  {
+   "id": "p7",
+   "name": "U8 78L05 @(370,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "dee713cffa9c482a860fb02fb83a9b32",
+    "x": 370,
+    "y": 120,
+    "designatorHint": "U8"
+   }
+  },
+  {
+   "id": "p8",
+   "name": "Q1 S8550 @(780,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "08b267256dd347caaf75c0a64f7f0fb1",
+    "x": 780,
+    "y": 260,
+    "designatorHint": "Q1"
+   }
+  },
+  {
+   "id": "p9",
+   "name": "Q2 S8050 @(1000,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "19cbdd966f174763acafb09641d60f4c",
+    "x": 1000,
+    "y": 260,
+    "designatorHint": "Q2"
+   }
+  },
+  {
+   "id": "p10",
+   "name": "Q4 S8050 @(1220,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "19cbdd966f174763acafb09641d60f4c",
+    "x": 1220,
+    "y": 260,
+    "designatorHint": "Q4"
+   }
+  },
+  {
+   "id": "p11",
+   "name": "Q3 S8050 @(860,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "19cbdd966f174763acafb09641d60f4c",
+    "x": 860,
+    "y": 560,
+    "designatorHint": "Q3"
+   }
+  },
+  {
+   "id": "p12",
+   "name": "U3 RU3030M2 @(150,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "3713b95edfca4cb9afc5183f1552f6db",
+    "x": 150,
+    "y": 420,
+    "designatorHint": "U3"
+   }
+  },
+  {
+   "id": "p13",
+   "name": "U4 RU3030M2 @(370,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "3713b95edfca4cb9afc5183f1552f6db",
+    "x": 370,
+    "y": 420,
+    "designatorHint": "U4"
+   }
+  },
+  {
+   "id": "p14",
+   "name": "D73 SS14_C9900014631 @(590,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "ba4f3099ffb34c4ea5d40f3459eb21bb",
+    "x": 590,
+    "y": 120,
+    "designatorHint": "D73"
+   }
+  },
+  {
+   "id": "p15",
+   "name": "D74 SS54 @(590,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "619b7c496f4d4db2ae52152809a6d6d0",
+    "x": 590,
+    "y": 420,
+    "designatorHint": "D74"
+   }
+  },
+  {
+   "id": "p16",
+   "name": "D75 SS54 @(150,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "619b7c496f4d4db2ae52152809a6d6d0",
+    "x": 150,
+    "y": 560,
+    "designatorHint": "D75"
+   }
+  },
+  {
+   "id": "p17",
+   "name": "D76 1N5819W @(1080,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "b3e6a924496143b090e4ec658547dfc6",
+    "x": 1080,
+    "y": 560,
+    "designatorHint": "D76"
+   }
+  },
+  {
+   "id": "p18",
+   "name": "CON1 WAFER-XHB2.54-12PWT-W1-P_C22448646 @(120,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "e450e9cec2b04687aefad4016caacfb3",
+    "x": 120,
+    "y": 560,
+    "designatorHint": "CON1"
+   }
+  },
+  {
+   "id": "p19",
+   "name": "J2 XHB2.54-4P @(480,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "11ffb67196ef44319a2b65330548c30e",
+    "x": 480,
+    "y": 560,
+    "designatorHint": "J2"
+   }
+  },
+  {
+   "id": "p20",
+   "name": "J3 XHB2.54(2P) @(700,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "578b3f0c62ea4d54a76d99ca84a7266c",
+    "x": 700,
+    "y": 560,
+    "designatorHint": "J3"
+   }
+  },
+  {
+   "id": "p21",
+   "name": "J4 XHB2.54(2P) @(340,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "578b3f0c62ea4d54a76d99ca84a7266c",
+    "x": 340,
+    "y": 560,
+    "designatorHint": "J4"
+   }
+  },
+  {
+   "id": "p22",
+   "name": "J5 XHB2.54(2P) @(560,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "578b3f0c62ea4d54a76d99ca84a7266c",
+    "x": 560,
+    "y": 560,
+    "designatorHint": "J5"
+   }
+  },
+  {
+   "id": "p23",
+   "name": "J1 排母2.54mm 1X3pin @(120,700)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "a7415bb46c204efe91e1b40370ea127c",
+    "x": 120,
+    "y": 700,
+    "designatorHint": "J1"
+   }
+  },
+  {
+   "id": "p24",
+   "name": "BUZ MLT-8530-5V @(1300,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "1970442189b5416b9a351bc2f6be7770",
+    "x": 1300,
+    "y": 560,
+    "designatorHint": "BUZ"
+   }
+  },
+  {
+   "id": "p25",
+   "name": "F1 JK-mSMD700L-6 @(150,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "85d018c5e6eb47909c8368c22bf48af9",
+    "x": 150,
+    "y": 260,
+    "designatorHint": "F1"
+   }
+  },
+  {
+   "id": "p26",
+   "name": "R_FU TNPU060310K0AZEN00 @(150,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 150,
+    "y": 120,
+    "designatorHint": "R_FU"
+   }
+  },
+  {
+   "id": "p27",
+   "name": "R_FD TNPU060310K0AZEN00 @(240,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 240,
+    "y": 120,
+    "designatorHint": "R_FD"
+   }
+  },
+  {
+   "id": "p28",
+   "name": "R_FU2 TNPU060310K0AZEN00 @(330,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 330,
+    "y": 120,
+    "designatorHint": "R_FU2"
+   }
+  },
+  {
+   "id": "p29",
+   "name": "R_FD2 TNPU060310K0AZEN00 @(420,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 420,
+    "y": 120,
+    "designatorHint": "R_FD2"
+   }
+  },
+  {
+   "id": "p30",
+   "name": "R_EN1 TNPU060310K0AZEN00 @(150,190)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 150,
+    "y": 190,
+    "designatorHint": "R_EN1"
+   }
+  },
+  {
+   "id": "p31",
+   "name": "R_EN2 TNPU060310K0AZEN00 @(240,190)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 240,
+    "y": 190,
+    "designatorHint": "R_EN2"
+   }
+  },
+  {
+   "id": "p32",
+   "name": "L2 Inductor_33uH/功率电感 @(330,190)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "662e564fc6dd47869d4ac31b0bac6bb9",
+    "x": 330,
+    "y": 190,
+    "designatorHint": "L2"
+   }
+  },
+  {
+   "id": "p33",
+   "name": "L1 功率电感(贴片),CKST0502-10uH/M,10uH,±20%,3A,封装5.7mm*5.1mm*2.0mm,岑科,RoHS @(420,190)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "70064afff7a24b0ca09f576b54ed848e",
+    "x": 420,
+    "y": 190,
+    "designatorHint": "L1"
+   }
+  },
+  {
+   "id": "p34",
+   "name": "C_BST 100nF/0603/50V @(150,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "811c5a69fad14dfa85c1af699a12c275",
+    "x": 150,
+    "y": 260,
+    "designatorHint": "C_BST"
+   }
+  },
+  {
+   "id": "p35",
+   "name": "C61 100nF/0603/50V @(240,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "811c5a69fad14dfa85c1af699a12c275",
+    "x": 240,
+    "y": 260,
+    "designatorHint": "C61"
+   }
+  },
+  {
+   "id": "p36",
+   "name": "C62 10UF50VC110GL @(330,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "ceaa843651fb48618244f33e00240af7",
+    "x": 330,
+    "y": 260,
+    "designatorHint": "C62"
+   }
+  },
+  {
+   "id": "p37",
+   "name": "C63 固态电容220uF/10V6.3*5.4 @(420,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4941f1dd7a2948e3b6d08a626e1c06bd",
+    "x": 420,
+    "y": 260,
+    "designatorHint": "C63"
+   }
+  },
+  {
+   "id": "p38",
+   "name": "C71 10UF50VC110GL @(150,330)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "ceaa843651fb48618244f33e00240af7",
+    "x": 150,
+    "y": 330,
+    "designatorHint": "C71"
+   }
+  },
+  {
+   "id": "p39",
+   "name": "C72 10UF50VC110GL @(240,330)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "ceaa843651fb48618244f33e00240af7",
+    "x": 240,
+    "y": 330,
+    "designatorHint": "C72"
+   }
+  },
+  {
+   "id": "p40",
+   "name": "C73 1206X226K250CT @(330,330)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "3fa24cfa67454d80b13b5ac161be2fb8",
+    "x": 330,
+    "y": 330,
+    "designatorHint": "C73"
+   }
+  },
+  {
+   "id": "p41",
+   "name": "C74 1206X226K250CT @(420,330)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "3fa24cfa67454d80b13b5ac161be2fb8",
+    "x": 420,
+    "y": 330,
+    "designatorHint": "C74"
+   }
+  },
+  {
+   "id": "p42",
+   "name": "C81 100nF/0603/50V @(150,400)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "811c5a69fad14dfa85c1af699a12c275",
+    "x": 150,
+    "y": 400,
+    "designatorHint": "C81"
+   }
+  },
+  {
+   "id": "p43",
+   "name": "C82 100nF/0603/50V @(240,400)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "811c5a69fad14dfa85c1af699a12c275",
+    "x": 240,
+    "y": 400,
+    "designatorHint": "C82"
+   }
+  },
+  {
+   "id": "p44",
+   "name": "C83 CAPCER10UF25VX5R0805 @(330,400)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "10d64c167f5444958d3df43138306622",
+    "x": 330,
+    "y": 400,
+    "designatorHint": "C83"
+   }
+  },
+  {
+   "id": "p45",
+   "name": "C21 贴片电解电容220UF+-20%6.3VSMD直径6.3MM高度5.4MM @(780,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "fb320d9807a646b6b5eb76ced3b87bd5",
+    "x": 780,
+    "y": 120,
+    "designatorHint": "C21"
+   }
+  },
+  {
+   "id": "p46",
+   "name": "C22 贴片电解电容220UF+-20%6.3VSMD直径6.3MM高度5.4MM @(870,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "fb320d9807a646b6b5eb76ced3b87bd5",
+    "x": 870,
+    "y": 120,
+    "designatorHint": "C22"
+   }
+  },
+  {
+   "id": "p47",
+   "name": "C23 CAPCER10UF25VX5R0805 @(960,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "10d64c167f5444958d3df43138306622",
+    "x": 960,
+    "y": 120,
+    "designatorHint": "C23"
+   }
+  },
+  {
+   "id": "p49",
+   "name": "C25 0603N330J101CT @(780,190)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "74da494577d04a9bb2aa424f8ea48d93",
+    "x": 780,
+    "y": 190,
+    "designatorHint": "C25"
+   }
+  },
+  {
+   "id": "p50",
+   "name": "FB1 TNPU060310K0AZEN00 @(870,190)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 870,
+    "y": 190,
+    "designatorHint": "FB1"
+   }
+  },
+  {
+   "id": "p51",
+   "name": "R_PWR CRCW06031K00JNTA @(960,190)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 960,
+    "y": 190,
+    "designatorHint": "R_PWR"
+   }
+  },
+  {
+   "id": "p52",
+   "name": "C_PWR 0603N330J101CT @(1050,190)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "74da494577d04a9bb2aa424f8ea48d93",
+    "x": 1050,
+    "y": 190,
+    "designatorHint": "C_PWR"
+   }
+  },
+  {
+   "id": "p53",
+   "name": "R_NL1 CRCW06031K00JNTA @(780,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 780,
+    "y": 260,
+    "designatorHint": "R_NL1"
+   }
+  },
+  {
+   "id": "p54",
+   "name": "R_NL2 CRCW06031K00JNTA @(870,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 870,
+    "y": 260,
+    "designatorHint": "R_NL2"
+   }
+  },
+  {
+   "id": "p55",
+   "name": "C41 100nF/0603/50V @(480,360)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "811c5a69fad14dfa85c1af699a12c275",
+    "x": 480,
+    "y": 360,
+    "designatorHint": "C41"
+   }
+  },
+  {
+   "id": "p56",
+   "name": "C42 CAPCER10UF25VX5R0805 @(570,360)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "10d64c167f5444958d3df43138306622",
+    "x": 570,
+    "y": 360,
+    "designatorHint": "C42"
+   }
+  },
+  {
+   "id": "p57",
+   "name": "R_RST TNPU060310K0AZEN00 @(660,360)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 660,
+    "y": 360,
+    "designatorHint": "R_RST"
+   }
+  },
+  {
+   "id": "p58",
+   "name": "C51 CAPCER0.1UF16VX5R0603,CAPCER0.1UF25VX5R0603,CAPCER0.1UF16VX7R0603 @(750,360)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "e0e973ec61644e21bf519288e30b6940",
+    "x": 750,
+    "y": 360,
+    "designatorHint": "C51"
+   }
+  },
+  {
+   "id": "p59",
+   "name": "C52 CAPCER10UF25VX5R0805 @(480,430)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "10d64c167f5444958d3df43138306622",
+    "x": 480,
+    "y": 430,
+    "designatorHint": "C52"
+   }
+  },
+  {
+   "id": "p60",
+   "name": "R_DIV1 CRCW06031K00JNTA @(960,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 960,
+    "y": 260,
+    "designatorHint": "R_DIV1"
+   }
+  },
+  {
+   "id": "p61",
+   "name": "R_DIV2 RT0603BRB07910RL @(1050,260)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "20e041204987401ea9f428a3cb4031db",
+    "x": 1050,
+    "y": 260,
+    "designatorHint": "R_DIV2"
+   }
+  },
+  {
+   "id": "p62",
+   "name": "R_B1 CRCW06031K00JNTA @(780,330)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 780,
+    "y": 330,
+    "designatorHint": "R_B1"
+   }
+  },
+  {
+   "id": "p63",
+   "name": "R_C1 TNPU060310K0AZEN00 @(870,330)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 870,
+    "y": 330,
+    "designatorHint": "R_C1"
+   }
+  },
+  {
+   "id": "p64",
+   "name": "R_DET TNPU060310K0AZEN00 @(960,330)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 960,
+    "y": 330,
+    "designatorHint": "R_DET"
+   }
+  },
+  {
+   "id": "p65",
+   "name": "R_SIM1 cr1812j510re04z @(1050,330)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4f7d67bbb34a45bbb00f7a2c1226a8b4",
+    "x": 1050,
+    "y": 330,
+    "designatorHint": "R_SIM1"
+   }
+  },
+  {
+   "id": "p66",
+   "name": "R_SIM2 cr1812j510re04z @(780,400)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4f7d67bbb34a45bbb00f7a2c1226a8b4",
+    "x": 780,
+    "y": 400,
+    "designatorHint": "R_SIM2"
+   }
+  },
+  {
+   "id": "p67",
+   "name": "R_SIM3 cr1812j510re04z @(870,400)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4f7d67bbb34a45bbb00f7a2c1226a8b4",
+    "x": 870,
+    "y": 400,
+    "designatorHint": "R_SIM3"
+   }
+  },
+  {
+   "id": "p68",
+   "name": "R_SIM4 cr1812j510re04z @(960,400)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4f7d67bbb34a45bbb00f7a2c1226a8b4",
+    "x": 960,
+    "y": 400,
+    "designatorHint": "R_SIM4"
+   }
+  },
+  {
+   "id": "p69",
+   "name": "C31 0603N330J101CT @(1050,400)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "74da494577d04a9bb2aa424f8ea48d93",
+    "x": 1050,
+    "y": 400,
+    "designatorHint": "C31"
+   }
+  },
+  {
+   "id": "p70",
+   "name": "C32 0603N330J101CT @(780,470)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "74da494577d04a9bb2aa424f8ea48d93",
+    "x": 780,
+    "y": 470,
+    "designatorHint": "C32"
+   }
+  },
+  {
+   "id": "p71",
+   "name": "C33 0603N330J101CT @(870,470)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "74da494577d04a9bb2aa424f8ea48d93",
+    "x": 870,
+    "y": 470,
+    "designatorHint": "C33"
+   }
+  },
+  {
+   "id": "p72",
+   "name": "C34 0603N330J101CT @(960,470)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "74da494577d04a9bb2aa424f8ea48d93",
+    "x": 960,
+    "y": 470,
+    "designatorHint": "C34"
+   }
+  },
+  {
+   "id": "p73",
+   "name": "C35 CAPCER0.1UF16VX5R0603,CAPCER0.1UF25VX5R0603,CAPCER0.1UF16VX7R0603 @(1050,470)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "e0e973ec61644e21bf519288e30b6940",
+    "x": 1050,
+    "y": 470,
+    "designatorHint": "C35"
+   }
+  },
+  {
+   "id": "p74",
+   "name": "R_GP cr1812j510re04z @(150,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4f7d67bbb34a45bbb00f7a2c1226a8b4",
+    "x": 150,
+    "y": 420,
+    "designatorHint": "R_GP"
+   }
+  },
+  {
+   "id": "p75",
+   "name": "R_PD1 TNPW0603100KDHEA @(240,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4fdac04ecf0e4103b48b74fcafc53f87",
+    "x": 240,
+    "y": 420,
+    "designatorHint": "R_PD1"
+   }
+  },
+  {
+   "id": "p76",
+   "name": "R_GV cr1812j510re04z @(330,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4f7d67bbb34a45bbb00f7a2c1226a8b4",
+    "x": 330,
+    "y": 420,
+    "designatorHint": "R_GV"
+   }
+  },
+  {
+   "id": "p77",
+   "name": "R_PDV TNPW0603100KDHEA @(420,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "4fdac04ecf0e4103b48b74fcafc53f87",
+    "x": 420,
+    "y": 420,
+    "designatorHint": "R_PDV"
+   }
+  },
+  {
+   "id": "p78",
+   "name": "R_SWH CRCW06031K00JNTA @(480,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 480,
+    "y": 560,
+    "designatorHint": "R_SWH"
+   }
+  },
+  {
+   "id": "p79",
+   "name": "R_SWHU TNPU060310K0AZEN00 @(570,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 570,
+    "y": 560,
+    "designatorHint": "R_SWHU"
+   }
+  },
+  {
+   "id": "p80",
+   "name": "R_SWL CRCW06031K00JNTA @(660,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 660,
+    "y": 560,
+    "designatorHint": "R_SWL"
+   }
+  },
+  {
+   "id": "p81",
+   "name": "R_SWLU TNPU060310K0AZEN00 @(750,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 750,
+    "y": 560,
+    "designatorHint": "R_SWLU"
+   }
+  },
+  {
+   "id": "p82",
+   "name": "R_PRB CRCW06031K00JNTA @(480,630)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 480,
+    "y": 630,
+    "designatorHint": "R_PRB"
+   }
+  },
+  {
+   "id": "p83",
+   "name": "R_PRBU TNPU060310K0AZEN00 @(570,630)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 570,
+    "y": 630,
+    "designatorHint": "R_PRBU"
+   }
+  },
+  {
+   "id": "p84",
+   "name": "R_DP1 TNPU060310K0AZEN00 @(660,630)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 660,
+    "y": 630,
+    "designatorHint": "R_DP1"
+   }
+  },
+  {
+   "id": "p85",
+   "name": "R_DP2 TNPU060310K0AZEN00 @(750,630)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 750,
+    "y": 630,
+    "designatorHint": "R_DP2"
+   }
+  },
+  {
+   "id": "p86",
+   "name": "C_ADC1 100nF/0603/50V @(480,700)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "811c5a69fad14dfa85c1af699a12c275",
+    "x": 480,
+    "y": 700,
+    "designatorHint": "C_ADC1"
+   }
+  },
+  {
+   "id": "p87",
+   "name": "R_DT1 TNPU060310K0AZEN00 @(570,700)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 570,
+    "y": 700,
+    "designatorHint": "R_DT1"
+   }
+  },
+  {
+   "id": "p88",
+   "name": "R_DT2 TNPU060310K0AZEN00 @(660,700)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 660,
+    "y": 700,
+    "designatorHint": "R_DT2"
+   }
+  },
+  {
+   "id": "p89",
+   "name": "R_TPU TNPU060310K0AZEN00 @(750,700)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "21a2ae69fad84d58846a58109b4c69e0",
+    "x": 750,
+    "y": 700,
+    "designatorHint": "R_TPU"
+   }
+  },
+  {
+   "id": "p90",
+   "name": "C_ADC2 100nF/0603/50V @(480,770)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "811c5a69fad14dfa85c1af699a12c275",
+    "x": 480,
+    "y": 770,
+    "designatorHint": "C_ADC2"
+   }
+  },
+  {
+   "id": "p91",
+   "name": "R_HD1 CRCW06031K00JNTA @(120,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 120,
+    "y": 560,
+    "designatorHint": "R_HD1"
+   }
+  },
+  {
+   "id": "p92",
+   "name": "R_HD2 CRCW06031K00JNTA @(210,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 210,
+    "y": 560,
+    "designatorHint": "R_HD2"
+   }
+  },
+  {
+   "id": "p93",
+   "name": "R_BB CRCW06031K00JNTA @(860,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "be13c91018af47f782915c64323cd5a2",
+    "x": 860,
+    "y": 560,
+    "designatorHint": "R_BB"
+   }
+  },
+  {
+   "id": "p94",
+   "name": "R_BUZ RMCF0805JT220R @(950,560)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "d14e5a03459c4c4b8f39e627da339a20",
+    "x": 950,
+    "y": 560,
+    "designatorHint": "R_BUZ"
+   }
+  },
+  {
+   "id": "p95",
+   "name": "C64 RAD104J250V @(420,400)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "a1be2c23caae4399bfaa7a5ff8d6cdf0",
+    "x": 420,
+    "y": 400,
+    "designatorHint": "C64"
+   }
+  },
+  {
+   "id": "p96",
+   "name": "D_LM SS14_C9900014631 @(150,470)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "ba4f3099ffb34c4ea5d40f3459eb21bb",
+    "x": 150,
+    "y": 470,
+    "designatorHint": "D_LM"
+   }
+  },
+  {
+   "id": "p97",
+   "name": "D1 LED灯,0603,红色 @(700,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 700,
+    "y": 420,
+    "designatorHint": "D1"
+   }
+  },
+  {
+   "id": "p98",
+   "name": "D2 LED灯,0603,红色 @(700,465)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "f21b0f675428469287eff9483140dddf",
+    "x": 700,
+    "y": 465,
+    "designatorHint": "D2"
+   }
+  },
+  {
+   "id": "p99",
+   "name": "D3 LED灯,0603,红色 @(700,510)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 700,
+    "y": 510,
+    "designatorHint": "D3"
+   }
+  },
+  {
+   "id": "p100",
+   "name": "D4 LED灯,0603,红色 @(700,555)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "61856cf7324b4fa3bd973a6ce136e0fb",
+    "x": 700,
+    "y": 555,
+    "designatorHint": "D4"
+   }
+  },
+  {
+   "id": "p101",
+   "name": "D5 LED灯,0603,红色 @(700,600)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 700,
+    "y": 600,
+    "designatorHint": "D5"
+   }
+  },
+  {
+   "id": "p102",
+   "name": "D6 LED灯,0603,红色 @(700,645)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 700,
+    "y": 645,
+    "designatorHint": "D6"
+   }
+  },
+  {
+   "id": "p103",
+   "name": "D7 LED灯,0603,红色 @(700,690)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 700,
+    "y": 690,
+    "designatorHint": "D7"
+   }
+  },
+  {
+   "id": "p104",
+   "name": "D8 LED灯,0603,红色 @(700,735)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 700,
+    "y": 735,
+    "designatorHint": "D8"
+   }
+  },
+  {
+   "id": "p105",
+   "name": "D9 LED灯,0603,红色 @(755,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 420,
+    "designatorHint": "D9"
+   }
+  },
+  {
+   "id": "p106",
+   "name": "D10 LED灯,0603,红色 @(755,465)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 465,
+    "designatorHint": "D10"
+   }
+  },
+  {
+   "id": "p107",
+   "name": "D11 LED灯,0603,红色 @(755,510)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 510,
+    "designatorHint": "D11"
+   }
+  },
+  {
+   "id": "p108",
+   "name": "D12 LED灯,0603,红色 @(755,555)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 555,
+    "designatorHint": "D12"
+   }
+  },
+  {
+   "id": "p109",
+   "name": "D13 LED灯,0603,红色 @(755,600)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 600,
+    "designatorHint": "D13"
+   }
+  },
+  {
+   "id": "p110",
+   "name": "D14 LED灯,0603,红色 @(755,645)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 645,
+    "designatorHint": "D14"
+   }
+  },
+  {
+   "id": "p111",
+   "name": "D15 LED灯,0603,红色 @(755,690)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 690,
+    "designatorHint": "D15"
+   }
+  },
+  {
+   "id": "p112",
+   "name": "D16 LED灯,0603,红色 @(755,735)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 735,
+    "designatorHint": "D16"
+   }
+  },
+  {
+   "id": "p113",
+   "name": "D17 LED灯,0603,红色 @(810,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 420,
+    "designatorHint": "D17"
+   }
+  },
+  {
+   "id": "p114",
+   "name": "D18 LED灯,0603,红色 @(810,465)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 465,
+    "designatorHint": "D18"
+   }
+  },
+  {
+   "id": "p115",
+   "name": "D19 LED灯,0603,红色 @(810,510)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 510,
+    "designatorHint": "D19"
+   }
+  },
+  {
+   "id": "p116",
+   "name": "D20 LED灯,0603,红色 @(810,555)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 555,
+    "designatorHint": "D20"
+   }
+  },
+  {
+   "id": "p117",
+   "name": "D21 LED灯,0603,红色 @(810,600)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 600,
+    "designatorHint": "D21"
+   }
+  },
+  {
+   "id": "p118",
+   "name": "D22 LED灯,0603,红色 @(810,645)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 645,
+    "designatorHint": "D22"
+   }
+  },
+  {
+   "id": "p119",
+   "name": "D23 LED灯,0603,红色 @(810,690)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 690,
+    "designatorHint": "D23"
+   }
+  },
+  {
+   "id": "p120",
+   "name": "D24 LED灯,0603,红色 @(810,735)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 735,
+    "designatorHint": "D24"
+   }
+  },
+  {
+   "id": "p121",
+   "name": "D25 LED灯,0603,红色 @(865,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 420,
+    "designatorHint": "D25"
+   }
+  },
+  {
+   "id": "p122",
+   "name": "D26 LED灯,0603,红色 @(865,465)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 465,
+    "designatorHint": "D26"
+   }
+  },
+  {
+   "id": "p123",
+   "name": "D27 LED灯,0603,红色 @(865,510)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 510,
+    "designatorHint": "D27"
+   }
+  },
+  {
+   "id": "p124",
+   "name": "D28 LED灯,0603,红色 @(865,555)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 555,
+    "designatorHint": "D28"
+   }
+  },
+  {
+   "id": "p125",
+   "name": "D29 LED灯,0603,红色 @(865,600)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 600,
+    "designatorHint": "D29"
+   }
+  },
+  {
+   "id": "p126",
+   "name": "D30 LED灯,0603,红色 @(865,645)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 645,
+    "designatorHint": "D30"
+   }
+  },
+  {
+   "id": "p127",
+   "name": "D31 LED灯,0603,红色 @(865,690)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 690,
+    "designatorHint": "D31"
+   }
+  },
+  {
+   "id": "p128",
+   "name": "D32 LED灯,0603,红色 @(865,735)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 735,
+    "designatorHint": "D32"
+   }
+  },
+  {
+   "id": "p129",
+   "name": "D33 LED灯,0603,红色 @(920,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 420,
+    "designatorHint": "D33"
+   }
+  },
+  {
+   "id": "p130",
+   "name": "D34 LED灯,0603,红色 @(920,465)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 465,
+    "designatorHint": "D34"
+   }
+  },
+  {
+   "id": "p131",
+   "name": "D35 LED灯,0603,红色 @(920,510)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 510,
+    "designatorHint": "D35"
+   }
+  },
+  {
+   "id": "p132",
+   "name": "D36 LED灯,0603,红色 @(920,555)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 555,
+    "designatorHint": "D36"
+   }
+  },
+  {
+   "id": "p133",
+   "name": "D37 LED灯,0603,红色 @(920,600)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 600,
+    "designatorHint": "D37"
+   }
+  },
+  {
+   "id": "p134",
+   "name": "D38 LED灯,0603,红色 @(920,645)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 645,
+    "designatorHint": "D38"
+   }
+  },
+  {
+   "id": "p135",
+   "name": "D39 LED灯,0603,红色 @(920,690)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 690,
+    "designatorHint": "D39"
+   }
+  },
+  {
+   "id": "p136",
+   "name": "D40 LED灯,0603,红色 @(920,735)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 735,
+    "designatorHint": "D40"
+   }
+  },
+  {
+   "id": "p137",
+   "name": "D41 LED灯,0603,红色 @(975,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 420,
+    "designatorHint": "D41"
+   }
+  },
+  {
+   "id": "p138",
+   "name": "D42 LED灯,0603,红色 @(975,465)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 465,
+    "designatorHint": "D42"
+   }
+  },
+  {
+   "id": "p139",
+   "name": "D43 LED灯,0603,红色 @(975,510)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 510,
+    "designatorHint": "D43"
+   }
+  },
+  {
+   "id": "p140",
+   "name": "D44 LED灯,0603,红色 @(975,555)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 555,
+    "designatorHint": "D44"
+   }
+  },
+  {
+   "id": "p141",
+   "name": "D45 LED灯,0603,红色 @(975,600)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 600,
+    "designatorHint": "D45"
+   }
+  },
+  {
+   "id": "p142",
+   "name": "D46 LED灯,0603,红色 @(975,645)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 645,
+    "designatorHint": "D46"
+   }
+  },
+  {
+   "id": "p143",
+   "name": "D47 LED灯,0603,红色 @(975,690)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 690,
+    "designatorHint": "D47"
+   }
+  },
+  {
+   "id": "p144",
+   "name": "D48 LED灯,0603,红色 @(975,735)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 735,
+    "designatorHint": "D48"
+   }
+  },
+  {
+   "id": "p145",
+   "name": "D49 LED灯,0603,红色 @(1030,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1030,
+    "y": 420,
+    "designatorHint": "D49"
+   }
+  },
+  {
+   "id": "p146",
+   "name": "D50 LED灯,0603,红色 @(1030,465)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1030,
+    "y": 465,
+    "designatorHint": "D50"
+   }
+  },
+  {
+   "id": "p147",
+   "name": "D51 LED灯,0603,红色 @(1030,510)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1030,
+    "y": 510,
+    "designatorHint": "D51"
+   }
+  },
+  {
+   "id": "p148",
+   "name": "D52 LED灯,0603,红色 @(1030,555)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1030,
+    "y": 555,
+    "designatorHint": "D52"
+   }
+  },
+  {
+   "id": "p151",
+   "name": "D55 LED灯,0603,红色 @(1030,690)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "dbaab31fda7d4093969f0bc4dd63c598",
+    "x": 1030,
+    "y": 690,
+    "designatorHint": "D55"
+   }
+  },
+  {
+   "id": "p152",
+   "name": "D56 LED灯,0603,红色 @(1030,735)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1030,
+    "y": 735,
+    "designatorHint": "D56"
+   }
+  },
+  {
+   "id": "p153",
+   "name": "D57 LED灯,0603,红色 @(1085,420)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 420,
+    "designatorHint": "D57"
+   }
+  },
+  {
+   "id": "p154",
+   "name": "D58 LED灯,0603,红色 @(1085,465)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 465,
+    "designatorHint": "D58"
+   }
+  },
+  {
+   "id": "p155",
+   "name": "D59 LED灯,0603,红色 @(1085,510)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 510,
+    "designatorHint": "D59"
+   }
+  },
+  {
+   "id": "p156",
+   "name": "D60 LED灯,0603,红色 @(1085,555)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 555,
+    "designatorHint": "D60"
+   }
+  },
+  {
+   "id": "p157",
+   "name": "D61 LED灯,0603,红色 @(1085,600)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 600,
+    "designatorHint": "D61"
+   }
+  },
+  {
+   "id": "p158",
+   "name": "D62 LED灯,0603,红色 @(1085,645)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 645,
+    "designatorHint": "D62"
+   }
+  },
+  {
+   "id": "p159",
+   "name": "D63 LED灯,0603,红色 @(1085,690)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 690,
+    "designatorHint": "D63"
+   }
+  },
+  {
+   "id": "p160",
+   "name": "D64 LED灯,0603,红色 @(1085,735)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 735,
+    "designatorHint": "D64"
+   }
+  },
+  {
+   "id": "p161",
+   "name": "D65 LED灯,0603,红色 @(700,780)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 700,
+    "y": 780,
+    "designatorHint": "D65"
+   }
+  },
+  {
+   "id": "p162",
+   "name": "D66 LED灯,0603,红色 @(755,780)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 755,
+    "y": 780,
+    "designatorHint": "D66"
+   }
+  },
+  {
+   "id": "p163",
+   "name": "D67 LED灯,0603,红色 @(810,780)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 810,
+    "y": 780,
+    "designatorHint": "D67"
+   }
+  },
+  {
+   "id": "p164",
+   "name": "D68 LED灯,0603,红色 @(865,780)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 865,
+    "y": 780,
+    "designatorHint": "D68"
+   }
+  },
+  {
+   "id": "p165",
+   "name": "D69 LED灯,0603,红色 @(920,780)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 920,
+    "y": 780,
+    "designatorHint": "D69"
+   }
+  },
+  {
+   "id": "p166",
+   "name": "D70 LED灯,0603,红色 @(975,780)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 975,
+    "y": 780,
+    "designatorHint": "D70"
+   }
+  },
+  {
+   "id": "p167",
+   "name": "D71 LED灯,0603,红色 @(1030,780)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1030,
+    "y": 780,
+    "designatorHint": "D71"
+   }
+  },
+  {
+   "id": "p168",
+   "name": "D72 LED灯,0603,红色 @(1085,780)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1085,
+    "y": 780,
+    "designatorHint": "D72"
+   }
+  },
+  {
+   "id": "p169",
+   "name": "D77 LED灯,0603,红色 @(1100,120)",
+   "action": "schematic.component.place",
+   "payload": {
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "8f7f23578b944bbfa09b958efdb612e1",
+    "x": 1100,
+    "y": 120,
+    "designatorHint": "D77"
+   }
+  }
+ ]
+}

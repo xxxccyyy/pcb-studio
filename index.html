@@ -5586,12 +5586,12 @@ function exportEasyEdaPcb(design, nets, pour){
         if(path[k].l===path[k-1].l) run.push(path[k]);
         else{
           if(run.length>1)
-            shapes.push(`TRACK~${u(netW(design, n.netId))}~${layerOf(run[0].l)}~${net}~{${run.map(pt=>`${u(pt.x)},${u(pt.y)}`).join(',')}}~${nid()}~0`);
+            shapes.push(`TRACK~${u(netW(design, n.netId))}~${layerOf(run[0].l)}~${net}~${run.map(pt=>`${u(pt.x)} ${u(pt.y)}`).join(' ')}~${nid()}~0`);   // 官方格式：空格分隔点串（2026-11-15 修正：花括号+逗号格式 Pro 导入不识别）
           run=[path[k]];
         }
       }
       if(run.length>1)
-        shapes.push(`TRACK~${u(netW(design, n.netId))}~${layerOf(run[0].l)}~${net}~{${run.map(pt=>`${u(pt.x)},${u(pt.y)}`).join(',')}}~${nid()}~0`);
+        shapes.push(`TRACK~${u(netW(design, n.netId))}~${layerOf(run[0].l)}~${net}~${run.map(pt=>`${u(pt.x)} ${u(pt.y)}`).join(' ')}~${nid()}~0`);   // 官方格式：空格分隔点串（2026-11-15 修正：花括号+逗号格式 Pro 导入不识别）
     }
     for(const v of n.vias||[])
       shapes.push(`VIA~${u(v.x)}~${u(v.y)}~${u(design.viaOuter)}~${net}~${u(design.viaDrill/2)}~${nid()}~0`);
@@ -11558,6 +11558,25 @@ class RoutingWorkerClient{
   resize();
   loadDesign(EXAMPLES[0].build());
   setTimeout(fitView,50);
+  // 自动化/分享入口（只读 URL 参数）：?design=<url>&result=<url>
+  // 供外部工具/会话一键加载工程与布线结果——渲染路径与撤销恢复一致
+  (async()=>{
+    try{
+      const q=new URLSearchParams(location.search);
+      const du=q.get('design'), ru=q.get('result');
+      if(!du) return;
+      const d=JSON.parse(await (await fetch(du)).text());
+      let r=null;
+      if(ru){
+        r=JSON.parse(await (await fetch(ru)).text());
+        if(r&&typeof normalizeResult==='function') r=normalizeResult(r,d);
+      }
+      app.design=d; app.result=r; app.sel=null; app.dragging=null;
+      syncParamInputs(); sbMsg(); renderNets(); renderProps(); renderStats();
+      computeDerived(); fitView(); requestDraw();
+      toast('已通过 URL 载入工程'+(r?'与布线结果':''));
+    }catch(e){ console.warn('URL 参数载入失败', e); }
+  })();
   window.__pcbViewTest=Object.freeze({palette:CAD_PALETTE,renderScene});
   window.__pcbApp=app;   // 调试/自动化钩子（只读使用）
 })();

@@ -1,0 +1,324 @@
+{
+ "U5": {
+  "query": "ML307R-DC",
+  "found": 10,
+  "picks": [
+   {
+    "name": "ML307R-DC",
+    "lcsc": "C9900111530",
+    "footprintName": "LCC-LGA-109_L17.7-W15.8-P1.10_MC661",
+    "symbolName": "ML307R-DC",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "11813ac514184930b6673b6ceb2007df"
+   }
+  ]
+ },
+ "U6": {
+  "query": "HC89F303C",
+  "found": 1,
+  "picks": [
+   {
+    "name": "HC89F303C-SOP28-T",
+    "lcsc": "C5357924",
+    "footprintName": "SOP-28_L18.0-W7.5-P1.27-LS10.3-BL",
+    "symbolName": "HC89F303C-SOP28-T",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "76f8f9c80255455ca17557c21c4edf6d"
+   }
+  ]
+ },
+ "U7": {
+  "query": "TM1640",
+  "found": 10,
+  "picks": [
+   {
+    "name": "HTM1640",
+    "lcsc": "C46683634",
+    "footprintName": "SSOP-28_L9.9-W3.9-P0.64-LS6.0-BL",
+    "symbolName": "HTM1640",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "82661cb23e2741c09cdfd2b1ed7b41a9"
+   }
+  ]
+ },
+ "U3": {
+  "query": "RU3030M2",
+  "found": 3,
+  "picks": [
+   {
+    "name": "RU3030M2",
+    "lcsc": "C180957",
+    "footprintName": "PDFN3333-8_L3.1-W3.2-P0.65-LS3.4-BL",
+    "symbolName": "RU3030M2",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "3713b95edfca4cb9afc5183f1552f6db"
+   },
+   {
+    "name": "RU3030M2-TP",
+    "lcsc": "C41348100",
+    "footprintName": "PDFN3333-8_L3.1-W3.2-P0.65-LS3.4-BL",
+    "symbolName": "RU3030M2-TP",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "02ea00030ada4d6d88839c1be4dd9370"
+   }
+  ]
+ },
+ "U1": {
+  "query": "MP2451",
+  "found": 8,
+  "picks": [
+   {
+    "name": "MP2451DT-LF-P",
+    "lcsc": "C3193116",
+    "footprintName": "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
+    "symbolName": "MP2451DT-LF-P",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "89ab535e34fc4b06bdc03ffaf3a5a89c"
+   }
+  ]
+ },
+ "U8": {
+  "query": "78L05",
+  "found": 10,
+  "picks": [
+   {
+    "name": "78L05",
+    "lcsc": "C2992573",
+    "footprintName": "SOT-89-3_L4.5-W2.5-P1.50-LS4.2-BR",
+    "symbolName": "78L05_C2992573",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "dee713cffa9c482a860fb02fb83a9b32"
+   }
+  ]
+ },
+ "Q1": {
+  "query": "S8550",
+  "found": 10,
+  "picks": [
+   {
+    "name": "S8550",
+    "lcsc": "C2931720",
+    "footprintName": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "symbolName": "S8550_C2931720",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "08b267256dd347caaf75c0a64f7f0fb1"
+   }
+  ]
+ },
+ "Q2": {
+  "query": "S8050",
+  "found": 10,
+  "picks": [
+   {
+    "name": "S8050",
+    "lcsc": "C2931719",
+    "footprintName": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "symbolName": "S8050_C2931719",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "19cbdd966f174763acafb09641d60f4c"
+   },
+   {
+    "name": "S8050_SOT_NPN",
+    "footprintName": "S8050_SOT-23",
+    "symbolName": "NPN",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "eed7fb8cc9f9408d8af789dde927a9da"
+   },
+   {
+    "name": "S8050_C2848178",
+    "lcsc": "C2848178",
+    "footprintName": "SOT-23-3_L2.9-W1.4-P1.91-LS2.6-BR",
+    "symbolName": "S8050_C2848178",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "6d132d456af94ed1b03aa11b9156a615"
+   }
+  ]
+ },
+ "D73": {
+  "query": "SS14",
+  "found": 10,
+  "picks": [
+   {
+    "name": "SS14_C9900014631",
+    "lcsc": "C9900014631",
+    "footprintName": "SMA_L4.3-W2.5-LS5.0-FD",
+    "symbolName": "SS14_C9900014631",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "ba4f3099ffb34c4ea5d40f3459eb21bb"
+   }
+  ]
+ },
+ "D74": {
+  "query": "SS54",
+  "found": 10,
+  "picks": [
+   {
+    "name": "SS54",
+    "lcsc": "C9900023219",
+    "footprintName": "SMA_L4.2-W2.6-LS5.1-RD",
+    "symbolName": "SS54_C9900023219",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "619b7c496f4d4db2ae52152809a6d6d0"
+   }
+  ]
+ },
+ "D76": {
+  "query": "1N5819W",
+  "found": 10,
+  "picks": [
+   {
+    "name": "1N5819W",
+    "lcsc": "C2905650",
+    "footprintName": "SOD-123_L2.7-W1.6-LS3.7-RD-1",
+    "symbolName": "1N5819W_C2905650",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "b3e6a924496143b090e4ec658547dfc6"
+   }
+  ]
+ },
+ "CON1": {
+  "query": "XHB2.54-12P",
+  "picks": [
+   {
+    "name": "WAFER-XHB2.54-12PWT-W1-P_C22448646",
+    "lcsc": "C22448646",
+    "footprintName": "CONN-SMD_12P-P2.50_WAFER-XHB2.54-12PWT-W1-P",
+    "symbolName": "WAFER-XHB2.54-12PWT-W1-P_C22448646",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "e450e9cec2b04687aefad4016caacfb3"
+   }
+  ]
+ },
+ "J2": {
+  "query": "XHB2.54 4P",
+  "found": 10,
+  "picks": [
+   {
+    "name": "XHB2.54-4P",
+    "lcsc": "C9900014704",
+    "footprintName": "CONN-TH_4P-P2.54-XH2.54-LI-4P",
+    "symbolName": "XHB2.54-4P",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "11ffb67196ef44319a2b65330548c30e"
+   }
+  ]
+ },
+ "J3": {
+  "query": "XHB2.54 2P",
+  "found": 10,
+  "picks": [
+   {
+    "name": "XHB2.54(2P)",
+    "lcsc": "C9900095790",
+    "footprintName": "CONN-TH_2P-P2.50_2.54-2P-ZZDK",
+    "symbolName": "XHB2.54(2P)_C9900095790",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "578b3f0c62ea4d54a76d99ca84a7266c"
+   }
+  ]
+ },
+ "J4": {
+  "query": "XHB2.5 2P",
+  "found": 10,
+  "picks": [
+   {
+    "name": "XHB2.54(2P)",
+    "lcsc": "C9900095790",
+    "footprintName": "CONN-TH_2P-P2.50_2.54-2P-ZZDK",
+    "symbolName": "XHB2.54(2P)_C9900095790",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "578b3f0c62ea4d54a76d99ca84a7266c"
+   },
+   {
+    "name": "XHB2.54(2P)_C9900095784",
+    "lcsc": "C9900095784",
+    "footprintName": "CONN-TH_XHB2.54-2P",
+    "symbolName": "XHB2.54(2P)",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "0d83b51c0a48498c8934ae8b87b3657a"
+   }
+  ]
+ },
+ "J1": {
+  "query": "排母 1X3 2.54",
+  "picks": [
+   {
+    "name": "排母2.54mm 1X3pin",
+    "lcsc": "C9900016709",
+    "footprintName": "HDR-TH_3P-P2.54_CS-1165SDIG",
+    "symbolName": "排母2.54MM 1X3PIN",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "a7415bb46c204efe91e1b40370ea127c"
+   }
+  ]
+ },
+ "CON2": {
+  "query": "SIM-114",
+  "found": 10,
+  "picks": [
+   {
+    "name": "SIM-114",
+    "lcsc": "C266627",
+    "footprintName": "SIM-SMD_SIM-114",
+    "symbolName": "SIM-114",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "0eba088601224bba86af0f4945f651b7"
+   }
+  ]
+ },
+ "X1": {
+  "query": "IPEX U.FL",
+  "found": 10,
+  "picks": [
+   {
+    "name": "IPEX4",
+    "lcsc": "C9900016189",
+    "footprintName": "IPEX-SMD_4P-L1.8-W1.7-LS2.0-1",
+    "symbolName": "IPEX4",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "e2331aae489a4c47900ecb86654d2e90"
+   }
+  ]
+ },
+ "BUZ": {
+  "query": "无源蜂鸣器 8530",
+  "found": 10,
+  "picks": [
+   {
+    "name": "MLT-8530-5V",
+    "lcsc": "C9900014013",
+    "footprintName": "BUZ-SMD_4P-L8.5-W8.5-TL",
+    "symbolName": "MLT-8530-5V",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "1970442189b5416b9a351bc2f6be7770"
+   }
+  ]
+ },
+ "F1": {
+  "query": "自恢复保险 1812",
+  "found": 10,
+  "picks": [
+   {
+    "name": "JK-mSMD700L-6",
+    "lcsc": "C5224424",
+    "footprintName": "F1812",
+    "symbolName": "JK-MSMD700L-6",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "85d018c5e6eb47909c8368c22bf48af9"
+   }
+  ]
+ },
+ "U2": {
+  "query": "LM2596S-ADJ",
+  "picks": [
+   {
+    "name": "LM2596S-ADJ",
+    "lcsc": "C10000",
+    "footprintName": "TO-263-5_L10.2-W8.6-P1.70-LS14.4-BL",
+    "symbolName": "LM2596S-ADJ_C10000",
+    "libraryUuid": "0819f05c4eef4c71ace90d822a990e87",
+    "uuid": "0c8897f9e97b4d55861e40b8136a331e"
+   }
+  ]
+ }
+}

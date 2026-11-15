@@ -1118,7 +1118,9 @@ t('EasyEDA PCB JSON 导出：docType/单位/层号/板框/焊盘', () => {
   const trk = j.shape.find(s => s.startsWith('TRACK~'));
   const tf = trk.split('~');
   assertEq(tf[2], '1', '顶层走线 layer=1');
-  assert(tf[4].startsWith('{') && tf[4].endsWith('}'), '点列用花括号');
+  // 官方格式（docs.easyeda.com Document Format）：点列为空格分隔的 x y 对，无花括号
+  // （2026-11-15 实测：花括号+逗号格式嘉立创EDA专业版导入器不识别，走线全部丢失）
+  assert(!tf[4].includes('{') && !tf[4].includes(',') && /\d[\d.]* \d[\d.]*/.test(tf[4]), '点列空格分隔（官方格式）: ' + tf[4]);
   const via = j.shape.find(s => s.startsWith('VIA~'));
   assert(via, '过孔导出');
   const ol = j.shape.find(s => s.startsWith('SOLIDREGION~10'));

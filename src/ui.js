@@ -1620,6 +1620,25 @@
   resize();
   loadDesign(EXAMPLES[0].build());
   setTimeout(fitView,50);
+  // 自动化/分享入口（只读 URL 参数）：?design=<url>&result=<url>
+  // 供外部工具/会话一键加载工程与布线结果——渲染路径与撤销恢复一致
+  (async()=>{
+    try{
+      const q=new URLSearchParams(location.search);
+      const du=q.get('design'), ru=q.get('result');
+      if(!du) return;
+      const d=JSON.parse(await (await fetch(du)).text());
+      let r=null;
+      if(ru){
+        r=JSON.parse(await (await fetch(ru)).text());
+        if(r&&typeof normalizeResult==='function') r=normalizeResult(r,d);
+      }
+      app.design=d; app.result=r; app.sel=null; app.dragging=null;
+      syncParamInputs(); sbMsg(); renderNets(); renderProps(); renderStats();
+      computeDerived(); fitView(); requestDraw();
+      toast('已通过 URL 载入工程'+(r?'与布线结果':''));
+    }catch(e){ console.warn('URL 参数载入失败', e); }
+  })();
   window.__pcbViewTest=Object.freeze({palette:CAD_PALETTE,renderScene});
   window.__pcbApp=app;   // 调试/自动化钩子（只读使用）
 })();
