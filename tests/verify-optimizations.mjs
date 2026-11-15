@@ -662,5 +662,137 @@ t('21d. 热设计检查表行：无孔 warn / 达标 ok / THT 插件孔不误报
   assertEq(row.value, '9 孔', '值=孔数（stitching 计入）');
 });
 
+// ===== 22a-22d. 阻抗自动定档（第十一轮后批次3）=====
+
+t('22a. rules.pairs z → sFor 反查 → pairGapFor 单一事实源', () => {
+  const mk = (layers=4) => {
+    const d = core.designDefaults();
+    d.width = 60; d.height = 40; d.grid = 0.6; d.layers = layers; d.trackW = 0.3; d.clearance = 0.2;
+    d.nets = [{id:'dp',name:'USB_DP'},{id:'dm',name:'USB_DM'},{id:'sig',name:'SIG'},{id:'gnd',name:'GND'}];
+    d.pads = [
+      {id:'U1-1',netId:'dp',x:8,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U1-2',netId:'dm',x:8,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-1',netId:'dp',x:50,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-2',netId:'dm',x:50,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-1',netId:'sig',x:8,y:30,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-2',netId:'sig',x:50,y:30,w:1,h:1,shape:'rect',layer:'top'}
+    ];
+    return d;
+  };
+  const d1 = mk();
+  d1.rules = { pairs: [{ group:'USB', nets:['USB_DP','USB_DM'], z:90 }] };
+  const n1 = core.normalizeDesign(d1);
+  assertEq(n1.nets[0].pair, 'USB', 'pair 展开');
+  assertEq(n1.nets[0].diffZ, 90, 'diffZ 展开');
+  const g1 = core.pairGapFor(n1, n1.nets[0]);
+  assertEq(g1, 0.25, '4 层 0.3mm 90Ω 反查 sFor=0.25');
+  const zi = core.diffPairZFor(n1, 0.3, 90);
+  assert(Math.abs(zi.zdiffAt(g1) - 90) < 1, 'S=0.25 处 Zdiff≈90（奇偶模口径自洽）');
+});
+t('22b. 显式 gap 覆写 + gap≤wEff 拦截 + 冲突报错', () => {
+  const mk = () => {
+    const d = core.designDefaults();
+    d.width = 60; d.height = 40; d.grid = 0.6; d.layers = 4; d.trackW = 0.3; d.clearance = 0.2;
+    d.nets = [{id:'dp',name:'USB_DP'},{id:'dm',name:'USB_DM'},{id:'sig',name:'SIG'},{id:'gnd',name:'GND'}];
+    d.pads = [
+      {id:'U1-1',netId:'dp',x:8,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U1-2',netId:'dm',x:8,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-1',netId:'dp',x:50,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-2',netId:'dm',x:50,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-1',netId:'sig',x:8,y:30,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-2',netId:'sig',x:50,y:30,w:1,h:1,shape:'rect',layer:'top'}
+    ];
+    return d;
+  };
+  const d1 = mk();
+  d1.rules = { pairs: [{ group:'USB', nets:['USB_DP','USB_DM'], z:100, gap:0.4 }] };
+  const n1 = core.normalizeDesign(d1);
+  assertEq(n1.nets[0].pairGap, 0.4, 'gap 展开到两成员网');
+  assertEq(core.pairGapFor(n1, n1.nets[0]), 0.4, '显式 gap 优先于反查');
+  assertEq(n1.nets[1].pairGap, 0.4, '两成员一致');
+  // gap < 间距 → 报错（对内间隙边到边低于全局间距必 DRC 违规；与线宽无关）
+  let threw = false, msg = '';
+  try {
+    const d2 = mk();
+    d2.rules = { pairs: [{ group:'USB', nets:['USB_DP','USB_DM'], gap:0.15 }] };
+    core.normalizeDesign(d2);
+  } catch (e) { threw = true; msg = e.message; }
+  assert(threw, 'gap 0.15 < 间距 0.2 必须报错');
+  assert(msg.includes('间距'), '报错含间距口径：' + msg.slice(0, 60));
+  // gap ≥ 间距但 < 线宽 → 合法（边到边语义）
+  const d4 = mk();
+  d4.rules = { pairs: [{ group:'USB', nets:['USB_DP','USB_DM'], gap:0.25 }] };
+  const n4 = core.normalizeDesign(d4);
+  assertEq(n4.nets[0].pairGap, 0.25, 'gap 0.25 ≥ 间距 → 合法（虽 < w 0.3）');
+  // 负 gap → 报错
+  threw = false;
+  try {
+    const d3 = mk();
+    d3.rules = { pairs: [{ group:'USB', nets:['USB_DP','USB_DM'], gap:-0.1 }] };
+    core.normalizeDesign(d3);
+  } catch (e) { threw = true; }
+  assert(threw, '负 gap 报错');
+});
+t('22c. 2 层 90Ω 不可达 → pairGapFor null + 检查表/spec 门如实 warn', () => {
+  const mk = (layers=2) => {
+    const d = core.designDefaults();
+    d.width = 60; d.height = 40; d.grid = 0.6; d.layers = layers; d.trackW = 0.3; d.clearance = 0.2;
+    d.nets = [{id:'dp',name:'USB_DP'},{id:'dm',name:'USB_DM'},{id:'sig',name:'SIG'},{id:'gnd',name:'GND'}];
+    d.pads = [
+      {id:'U1-1',netId:'dp',x:8,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U1-2',netId:'dm',x:8,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-1',netId:'dp',x:50,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-2',netId:'dm',x:50,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-1',netId:'sig',x:8,y:30,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-2',netId:'sig',x:50,y:30,w:1,h:1,shape:'rect',layer:'top'}
+    ];
+    return d;
+  };
+  const d1 = mk(2);
+  d1.rules = { pairs: [{ group:'USB', nets:['USB_DP','USB_DM'], z:90 }] };
+  const n1 = core.normalizeDesign(d1);
+  assertEq(core.pairGapFor(n1, n1.nets[0]), null, '2 层 90Ω 不可达 → null');
+  const zi = core.diffPairZFor(n1, 0.3, 90);
+  assert(zi.zdiffMinAtSmin > 90, '最低可达 ' + zi.zdiffMinAtSmin + 'Ω > 90Ω（诚实物理）');
+  // 检查表：warn 行含建议路径
+  const cl = core.fabChecklist(n1, null);
+  const row = cl.find(x => x.group === '阻抗' && x.item.includes('USB'));
+  assert(row, '阻抗行存在');
+  assertEq(row.status, 'warn', '不可达 warn');
+  assert(row.note.includes('rules.pairs[].gap'), 'note 指向显式 gap 逃生门');
+  // 显式 gap 后不再 warn（用户定档）
+  const d2 = mk(2);
+  d2.rules = { pairs: [{ group:'USB', nets:['USB_DP','USB_DM'], z:90, gap:0.25 }] };
+  const n2 = core.normalizeDesign(d2);
+  const cl2 = core.fabChecklist(n2, null);
+  const row2 = cl2.find(x => x.group === '阻抗' && x.item.includes('USB'));
+  assertEq(row2.status, 'info', '显式 gap → info（精确控阻须板厂复算）');
+  assert(row2.value.includes('0.25'), '行值含显式间隙');
+});
+t('22d. 阻抗定档端到端：4 层 USB 对布线 + 耦合走廊 + DRC', () => {
+  const d = core.designDefaults();
+  d.width = 60; d.height = 40; d.grid = 0.6; d.layers = 4; d.trackW = 0.3; d.clearance = 0.2;
+  d.nets = [{id:'dp',name:'USB_DP'},{id:'dm',name:'USB_DM'},{id:'sig',name:'SIG'},{id:'gnd',name:'GND'}];
+  d.pads = [
+    {id:'U1-1',netId:'dp',x:8,y:10,w:1,h:1,shape:'rect',layer:'top'},
+    {id:'U1-2',netId:'dm',x:8,y:12.6,w:1,h:1,shape:'rect',layer:'top'},
+    {id:'U2-1',netId:'dp',x:50,y:10,w:1,h:1,shape:'rect',layer:'top'},
+    {id:'U2-2',netId:'dm',x:50,y:12.6,w:1,h:1,shape:'rect',layer:'top'},
+    {id:'U3-1',netId:'sig',x:8,y:30,w:1,h:1,shape:'rect',layer:'top'},
+    {id:'U3-2',netId:'sig',x:50,y:30,w:1,h:1,shape:'rect',layer:'top'}
+  ];
+  d.rules = { pairs: [{ group:'USB', nets:['USB_DP','USB_DM'], z:90 }] };
+  const n = core.normalizeDesign(d);
+  const r = core.routeBoard(n, { maxIter: 30 }).result;
+  assertEq(r.stats.connected, 6, '6/6 布通');
+  const drc = core.checkDRC(n, { ...r, nets: [...r.nets, ...core.manualRouteEntries(n)] }, { dfm: false })
+    .filter(x => x.sev === 'error');
+  assertEq(drc.length, 0, 'DRC 干净');
+  // 耦合占比 ≥60%（走廊已按 S=0.25 建偏置）→ 无差分耦合 warn
+  const warns = core.checkDRC(n, { ...r, nets: [...r.nets, ...core.manualRouteEntries(n)] })
+    .filter(x => x.sev === 'warn' && x.kind === '差分耦合');
+  assertEq(warns.length, 0, '耦合走廊生效（无差分耦合 warn）');
+});
+
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

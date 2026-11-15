@@ -861,6 +861,20 @@ switch (cmd) {
           problems.push(`网络 ${r.name} 线宽 ${r.w}mm 低于建议 ${r.required}mm（满足 −20% 公差极限 ${r.requiredLimit}mm）——可接受但建议加宽`);
       }
     }
+    // 差分对阻抗可达性（规格书 → 定档）：rules.pairs[].z 或 nets[].diffZ 声明后，
+    // 反查不可达即报告建议路径（4 层 / 放宽 / 显式 gap）——spec 阶段拦截而非布线后惊讶
+    {
+      const seen = new Set();
+      for (const n of d.nets || []) {
+        if (!n.pair || seen.has(n.pair)) continue;
+        seen.add(n.pair);
+        if (n.pairGap != null && n.pairGap > 0) continue;   // 显式 gap = 用户已定档
+        const zt = n.diffZ > 0 ? n.diffZ : 90;
+        const zi = core.diffPairZFor(d, core.netW(d, n.id), zt);
+        if (!zi.ok || !zi.achievable)
+          problems.push(`差分对 ${n.pair} 目标 ${zt}Ω 在 ${d.layers} 层叠层不可达（最低 ${zi.zdiffMinAtSmin}Ω @ S=0.1mm）——建议 ${d.layers >= 4 ? '复核线宽或放宽目标' : '升 4 层、放宽目标，或用 rules.pairs[].gap 显式给出叠层工具算得的间隙'}`);
+      }
+    }
     const limit = core.jlcTrackRule(d);
     if (d.trackW < limit.limit) problems.push(`线宽 ${d.trackW} 低于 ${d.copperWeight}oz 工艺极限 ${limit.limit}mm`);
     // rules 约束摘要 + class 工艺极限（roadmap #10：引用/冲突类错误已在 normalize 即抛；

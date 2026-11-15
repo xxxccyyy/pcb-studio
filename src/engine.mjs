@@ -131,6 +131,17 @@ function applyConstraintRules(d){
             throw new Error('网络 '+nm+' 的 diffZ='+n.diffZ+' 与 rules.pairs.'+p.group+'.z='+p.z+' 冲突');
           n.diffZ=p.z;
         }
+        // 显式耦合间隙（批次 3）：用叠层工具算得的 mm 间隙直接覆写反查值——
+        // 成员两网必须一致（差分对单间隙），冲突即错误（幂等安全同 z）
+        if(p.gap!=null){
+          if(!Number.isFinite(p.gap)||p.gap<=0) throw new Error('rules.pairs.'+p.group+'.gap 必须是正数（mm 耦合间隙）');
+          // gap 语义 = 对内边到边间隙（与 sFor 同口径；bandCenter=(wM+wO)/2+gap）。
+          // 下界是 DRC 间距而非线宽（0.3mm 线 0.15mm 缝完全合法），低于间距必 DRC 违规。
+          if(p.gap<d.clearance) throw new Error('rules.pairs.'+p.group+'.gap='+p.gap+' < 间距 '+d.clearance+'（对内间隙边到边，低于全局间距必 DRC 违规）');
+          if(n.pairGap!=null&&Math.abs(n.pairGap-p.gap)>1e-12)
+            throw new Error('网络 '+nm+' 的 pairGap='+n.pairGap+' 与 rules.pairs.'+p.group+'.gap='+p.gap+' 冲突');
+          n.pairGap=p.gap;
+        }
       }
     }
   }
@@ -660,13 +671,7 @@ function createSession(design, opts){
   // pairGapMM：奇偶模阻抗口径的设计间隙（90Ω 默认，nets[].diffZ 可覆写）——
   // 耦合走廊按此间隙带构建（roadmap 阶段一 #3）。
   const netMeta=(design.nets||[]).map(n=>{
-    let pairGapMM=null;
-    if(n.pair){
-      const zt=n.diffZ>0?n.diffZ:90;
-      const r=diffPairZFor(design, netW(design, n.id), zt);
-      if(r.ok&&r.achievable&&r.sFor!=null) pairGapMM=r.sFor;
-    }
-    return { hs:!!n.hs, pair:n.pair||null, pairGapMM };
+    return { hs:!!n.hs, pair:n.pair||null, pairGapMM:pairGapFor(design,n) };
   });
   // 过孔间距环偏移（走线中心距过孔中心须 ≥ viaOuter/2+clearance+trackW/2）
   const ringR=(design.viaOuter/2+design.clearance+maxTrackW(design)/2)/grid;
@@ -2089,13 +2094,12 @@ function createSession(design, opts){
       if(A.connected!==A.total||B.connected!==B.total){
         report.pairs.push({group:gname,action:'skip-unrouted'}); report.skipped++; continue;
       }
-      const zt=A.diffZ>0?A.diffZ:90;
-      const zi=diffPairZFor(design, netW(design,A.id), zt);
-      if(!zi.ok||!zi.achievable||zi.sFor==null){
+      const gEff=pairGapFor(design,A);
+      if(gEff==null){
         report.pairs.push({group:gname,action:'skip-unreachable-impedance'}); report.skipped++; continue;
       }
       const gStep=Math.max(design.grid, 0.25);
-      const bandCenter=(netW(design,A.id)+netW(design,B.id))/2+zi.sFor;
+      const bandCenter=(netW(design,A.id)+netW(design,B.id))/2+gEff;
       const stats=()=>{ let c=0,t=0;
         for(const m of [A,B]){
           const o=m===A?B:A;
@@ -2530,6 +2534,22 @@ function diffPairZFor(design, w, target){
     ?'4 层：微带参考内层平面，h=0.2（与 PDN 平面电容同假设）'
     :'2 层：参考对层铜皮，h≈1.5 core——经典口径下 90Ω 难达成（如实报告）' };
   return r;
+}
+/* 差分对有效耦合间隙（批次 3：阻抗自动定档单一事实源）：
+   显式 rules.pairs[].gap（展开为 nets[].pairGap）优先——用户用叠层工具算得的
+   间隙直接生效；否则 nets[].diffZ（缺省 90Ω）→ diffPairZFor 反查 sFor。
+   不可达（2 层板 90Ω 等）返回 null——调用方按各自口径诚实报告。 */
+function pairGapFor(design, net){
+  if(!net) return null;
+  // 调用方可能传 design.nets 成员（netMeta/fabChecklist/spec 门），也可能传会话
+  // 内部网对象（compactPairs——只有 id/i，无 pair/diffZ 字段）——按 id 归位到
+  // design 网再读声明，两种口径单一事实源。
+  const dn=(design.nets||[]).find(x=>x.id===net.id)||net;
+  if(!dn.pair) return null;
+  if(dn.pairGap!=null&&Number.isFinite(dn.pairGap)&&dn.pairGap>0) return dn.pairGap;
+  const zt=dn.diffZ>0?dn.diffZ:90;
+  const r=diffPairZFor(design, netW(design, dn.id), zt);
+  return (r.ok&&r.achievable&&r.sFor!=null)?r.sFor:null;
 }
 /* 差分对耦合占比（0.13.27 从 checkDRC 逐行等价提取——DRC 与压实器单一事实源）：
    本网各同层段按 gStep 采样中点，到伙伴同层段最近距离落在设计间隙带
@@ -4267,9 +4287,9 @@ function routeBoard(design,opts={}){
           const routes=best.result.nets.filter(n=>ids.has(n.netId));
           const pair={group,action:'skipped',reason:'postroute-score-rollback'};
           if(members.length===2&&routes.length===2){
-            const z=diffPairZFor(design,netW(design,members[0].id),members[0].diffZ>0?members[0].diffZ:90);
-            if(z.ok&&z.achievable&&z.sFor!=null){
-              const center=(netW(design,members[0].id)+netW(design,members[1].id))/2+z.sFor;
+            const gEff=pairGapFor(design,members[0]);
+            if(gEff!=null){
+              const center=(netW(design,members[0].id)+netW(design,members[1].id))/2+gEff;
               let coupled=0,total=0;
               for(let i=0;i<2;i++){
                 const st=pairCoupleStats([routes[i].paths],[routes[1-i].paths],center,Math.max(design.grid,0.25));
@@ -6786,10 +6806,11 @@ function checkDRC(design, result, opts){
         add('warn','差分等长',gkind+' '+g+' 两网长度差 '+dLen.toFixed(1)+'mm 超预算 '+budget.toFixed(1)+'mm（'+basis+'）——长度失配转化为共模（Archambeault：1% 失配即显著抬升共模）；蛇形补偿节距 ≥3H（Altium 教材）');
       // ---- 差分耦合度（roadmap #3，奇偶模口径）：对内平行段处于设计间隙带的长度占比 ----
       if(gkind==='差分对'&&result&&result.nets){
-        const W0=netW(design, members[0].id);
         const zt=members[0].diffZ>0?members[0].diffZ:90;
-        const zi=diffPairZFor(design, W0, zt);
-        if(!zi.ok||!zi.achievable){
+        const zi=diffPairZFor(design, netW(design, members[0].id), zt);
+        const gEff=pairGapFor(design, members[0]);
+        if(gEff==null){
+          // 反查不可达且无显式 gap → 诚实报告（显式 gap = 用户用叠层工具覆写，不拦）
           add('warn','差分耦合','差分对 '+g+' 目标 '+zt+'Ω 在当前叠层不可达（'+zi.stackup.note+'，最低可达 '+zi.zdiffMinAtSmin+'Ω @ S=0.1mm）——建议 4 层或放宽目标/接受不控阻抗');
         }else{
           const gStep=Math.max(design.grid, 0.25);
@@ -6799,14 +6820,14 @@ function checkDRC(design, result, opts){
             const oNets=[...((result&&result.nets)||[]), ...manualRouteEntries(design)].filter(x=>x.netId===other.id);
             const mNets=[...((result&&result.nets)||[]), ...manualRouteEntries(design)].filter(x=>x.netId===m.id);
             const wM=netW(design, m.id), wO=netW(design, other.id);
-            const bandCenter=(wM+wO)/2+zi.sFor;
+            const bandCenter=(wM+wO)/2+(gEff!=null?gEff:zi.sFor);
             // 耦合采样（0.13.27 提取为 pairCoupleStats——DRC 与压实器单一事实源）
             const st=pairCoupleStats(mNets.map(n=>n.paths||[]), oNets.map(n=>n.paths||[]), bandCenter, gStep);
             coupledLen+=st.coupledLen; totalLen+=st.totalLen;
           }
           const ratio=totalLen>0?coupledLen/totalLen:0;
           if(totalLen>0&&ratio<0.6)
-            add('warn','差分耦合','差分对 '+g+' 对内耦合占比 '+Math.round(ratio*100)+'%（目标间隙 S='+zi.sFor+'mm @ '+zt+'Ω，Z0='+zi.z0+'Ω）——未耦合段差模阻抗偏高、抗共模弱（Bogatin ch11）；建议清除对内障碍后重布（耦合走廊已按设计间隙建偏置）');
+            add('warn','差分耦合','差分对 '+g+' 对内耦合占比 '+Math.round(ratio*100)+'%（目标间隙 S='+(gEff!=null?gEff:zi.sFor)+'mm @ '+zt+'Ω，Z0='+zi.z0+'Ω）——未耦合段差模阻抗偏高、抗共模弱（Bogatin ch11）；建议清除对内障碍后重布（耦合走廊已按设计间隙建偏置）');
         }
       }
     }
@@ -8909,6 +8930,32 @@ function fabChecklist(design, result, opts){
     R('载流','高频载流（趋肤效应）', 'δ(1GHz)='+skinDepth(1e9).toFixed(3)+' mm', 'AC 电阻≈ρ/(周长×δ)',
       'info', '发热仍按 DC 载流；信号完整性主要看阻抗与端接（工具 skinDepth/acTraceR 可查）');
   }
+  // 阻抗自动定档（批次 3）：差分对逐组行——目标 Zdiff / 线宽 / 有效耦合间隙 /
+  // 可达性。反查不可达时如实 warn（2 层板 90Ω 经典口径不可达是物理事实）。
+  {
+    const pairsSeen=new Set();
+    for(const n of design.nets||[]){
+      if(!n.pair||pairsSeen.has(n.pair)) continue;
+      pairsSeen.add(n.pair);
+      const members=(design.nets||[]).filter(x=>x.pair===n.pair);
+      if(members.length!==2) continue;
+      const zt=members[0].diffZ>0?members[0].diffZ:90;
+      const zi=diffPairZFor(design, netW(design, members[0].id), zt);
+      const gEff=pairGapFor(design, members[0]);
+      if(gEff==null){
+        R('阻抗','差分对 '+n.pair+'：目标 '+zt+'Ω','w='+netW(design,members[0].id).toFixed(2)+' mm',
+          '当前叠层不可达（最低 '+zi.zdiffMinAtSmin+'Ω @ S=0.1mm）','warn',
+          zi.stackup.note+'——建议 4 层、放宽目标，或用 rules.pairs[].gap 显式给出叠层工具算得的间隙');
+      } else {
+        const st=zi.ok&&Math.abs(zt-zi.zdiffAt(gEff))<=zt*0.1+1e-9?'ok':'info';
+        R('阻抗','差分对 '+n.pair+'：目标 '+zt+'Ω',
+          'w='+netW(design,members[0].id).toFixed(2)+' mm / S='+gEff.toFixed(2)+' mm',
+          'S 处 Zdiff≈'+zi.zdiffAt(gEff)+'Ω（±10%）', st,
+          st==='ok'?'耦合间隙自动定档（奇偶模口径）：显式 gap 或 nets[].diffZ 反查'
+            :'±10% 外——间隙按可达性反查，精确控阻须板厂层压结构复算');
+      }
+    }
+  }
   // 热设计（批次 2）：大铜散热盘（≥6mm² 无孔 SMD）下应有散热过孔阵列——垂直
   // 热通道（DPAK/TO-220/QFN 散热盘）兼作大电流并联路径。阵列经 thermal 命令
   // 生成写入 stitching（路由避让/DRC/Gerber 钻孔全链复用缝合孔通道）。
@@ -9798,4 +9845,4 @@ const EXAMPLES=[
 
 
 
-export { ampWidthFor, netCurrentDecls, thermalViaArray, ipc2221Clr, netClrDecls, netClr, designDefaults, detectBallArrays, fanoutMoveToFront, pairCoupleStats, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };
+export { ampWidthFor, netCurrentDecls, thermalViaArray, pairGapFor, ipc2221Clr, netClrDecls, netClr, designDefaults, detectBallArrays, fanoutMoveToFront, pairCoupleStats, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };
