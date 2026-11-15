@@ -5464,13 +5464,33 @@ function exportEasyEdaSch(design, devices){
   const netName=id=>(design.nets.find(n=>n.id===id)||{}).name||'';
   const shapes=[];
   let gid=1; const nid=()=>'gge'+(gid++);
-  // 布局：按引脚数降序，一行 3 个
+  // 布局：按引脚数降序 + 货架式装箱（2026-11-15 重写：原 3 列网格让 109 脚的
+  // ML307R 符号（高 ~560 单位）压住后续十几行——按符号高度估算分行，行高=行内
+  // 最大符号高，宽度货架推进，页宽 ~1700 上限）
   const list=[...comps.entries()].map(([name,padMap])=>({name, pinNums:[...padMap.keys()], padMap}))
     .sort((a,b)=>b.pinNums.length-a.pinNums.length);
-  const perRow=3, cellW=90, cellH=70;
+  const symSize=c=>{
+    // generic 符号：引脚分两列，高 ≈ ceil(N/2)*10+40，宽 ≈ 80；
+    // 有 symbolBBox 的真符号用实测 bbox
+    const dev=devices[c.name];
+    if(dev&&dev.symbolBBox){
+      const bb=dev.symbolBBox;
+      return {w:Math.max(60,bb.x1-bb.x0), h:Math.max(40,bb.y1-bb.y0)};
+    }
+    return {w:80, h:Math.max(40, Math.ceil(c.pinNums.length/2)*10+40)};
+  };
+  for(const c of list) c.size=symSize(c);
+  // 货架装箱
+  const shelfW=1700, marginX=40, marginY=40, gapX=30, gapY=36;
+  let curX=marginX, curY=marginY, rowH=0;
+  for(const c of list){
+    if(curX+c.size.w>shelfW){ curX=marginX; curY+=rowH+gapY; rowH=0; }
+    c.ox=curX; c.oy=curY;
+    curX+=c.size.w+gapX; rowH=Math.max(rowH,c.size.h);
+  }
+  const pageW=Math.max(shelfW, curX)+marginX, pageH=curY+rowH+marginY;
   list.forEach((c, idx)=>{
-    const col=idx%perRow, row=Math.floor(idx/perRow);
-    const ox=20+col*cellW, oy=20+row*cellH;   // EasyEDA 单位
+    const ox=c.ox, oy=c.oy;   // EasyEDA 单位
     const dev=devices[c.name];
     let libShapes=[], pins=[];
     if(dev&&dev.pins&&dev.pins.length){
@@ -5521,7 +5541,7 @@ function exportEasyEdaSch(design, devices){
     head:{docType:'1', editorVersion:'6.4.25', x:0, y:0, title:'schematic'},
     canvas:'CA~1000~1000~#FFFFFF~yes~#CCCCCC~5~1000~1000~line~5~pixel~5~0~0',
     shape:shapes,
-    BBox:{x:0, y:0, w:20+perRow*cellW+40, h:20+Math.ceil(list.length/perRow)*cellH+40}
+    BBox:{x:0, y:0, w:pageW, h:pageH}
   });
 }
 
