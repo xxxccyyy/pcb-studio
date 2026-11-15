@@ -4,8 +4,10 @@
 
 0.14.8 报告留档方向①的执行轮。机制：computeH 每次调用构建本网"无条件可通行"掩码
 （判定链与 passable/enterOK 逐字段同源：prefL→blocked→scoped→fixedOwner→padOwner→
-viaInf→pairBand→hard-usage），fillDistanceMap 只松弛掩码内格——h 可采纳+一致且逐点
-支配盲口径 → A* 展开集不增、每边代价仍最优。**实测权衡（完整表见
+viaInf→pairBand→hard-usage），fillDistanceMap 只松弛掩码内格——h 可采纳+逐点支配盲
+口径（探针 410 组 0 违反）；【深检修正】非一致场：跨层掩码不对称处平面 Lipschitz 失效
+（探针 40 板掩码场 43240 处/最大超出 76.5 格，盲场 0）——first-pop 终止下 obstacleH
+模式可能接受轻度次优路径 = 硬板质量偏移的第二机制候选（默认盲口径不受影响）。**实测权衡（完整表见
 docs/深度优化报告-20261116b.md）**：协商重搜索 2.2-2.5×（icebreaker 180.9→71.5s、
 fable-03 1.64×、h2 1.34×）；保证可解板质量持平偏好（h2-stm32 DRC 错误 39→**25**），
 但截断态硬板协商不动点变差（fable-03 −1、icebreaker −11 连通；@60 与 @30 输出全同
