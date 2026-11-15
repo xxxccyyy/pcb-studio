@@ -14,6 +14,9 @@ function harness({cached=true}={}){
   const netMeta=[{pair:'D'},{pair:'D'},{pair:null}];
   const ring2Offs=[];for(let y=-2;y<=2;y++)for(let x=-2;x<=2;x++)if(Math.max(Math.abs(x),Math.abs(y))===2)ring2Offs.push([x,y]);
   const context={GW,GH,NC,usage,ownStamp,cellOwner,netMeta,ring2Offs,gen:1,
+    // 0.14.5 深优二段：引擎热点名提升为 astar 局部别名（usage→usageA、ownStamp→ownStampA），
+    // vm 脚手架同步绑定同一数组——语义不变
+    usageA:usage,ownStampA:ownStamp,
     nearPenCache:cached?new Float32Array(TS):null,nearPenStamp:cached?new Int32Array(TS):null,
     adjPenAt(net,s,pair){
       if(usage[s]<=0||ownStamp[s]===context.gen)return 0;

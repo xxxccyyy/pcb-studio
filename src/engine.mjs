@@ -438,15 +438,21 @@ function buildModel(design){
   const viaPadOwnerL=new Int16Array(TS);   // 层感知版（0.13.18 #15b B3）：盲埋孔只查 span 内层的异网焊盘
   const fixedOwner=new Int16Array(TS);
   const halfClr=design.clearance+maxTrackW(design)/2;
+  // 逐网电压间距（第十一轮后批次1，L48）：声明 nets[].voltage 的网 → IPC-2221B 安全间距
+  // 半径 = netClr(design, netId) + maxTrackW/2（影响区扩展到安全间距覆盖范围）
+  const _vMap=new Map();
+  for(const n of (design.nets||[])) if(n.voltage!=null&&Number.isFinite(+n.voltage)&&+n.voltage>0) _vMap.set(n.id, Math.max(design.clearance, ipc2221Clr(+n.voltage)));
+  const padClr=p=>{ const v=_vMap.get(p.netId); return v!=null ? v + maxTrackW(design)/2 : halfClr; };
 
   for(const p of (design.pads||[])){
     const ni=(p.netId!=null && netIdx.has(p.netId)) ? netIdx.get(p.netId) : -1;
     const ls = p.layer==='top' ? [0] : (p.layer==='bottom'&&L>1 ? [L-1] : Array.from({length:L},(_,k)=>k));
     const hw=p.w/2, hh=(p.shape==='circle'?p.w/2:p.h/2), r=p.w/2;
-    const iLo=Math.max(0, Math.ceil((p.x-hw-halfClr)/grid-0.5));
-    const iHi=Math.min(GW-1, Math.floor((p.x+hw+halfClr)/grid-0.5));
-    const jLo=Math.max(0, Math.ceil((p.y-hh-halfClr)/grid-0.5));
-    const jHi=Math.min(GH-1, Math.floor((p.y+hh+halfClr)/grid-0.5));
+    const pClr=padClr(p);   // 该焊盘的影响区半径（= per-net clearance + maxTrackW/2）
+    const iLo=Math.max(0, Math.ceil((p.x-hw-pClr)/grid-0.5));
+    const iHi=Math.min(GW-1, Math.floor((p.x+hw+pClr)/grid-0.5));
+    const jLo=Math.max(0, Math.ceil((p.y-hh-pClr)/grid-0.5));
+    const jHi=Math.min(GH-1, Math.floor((p.y+hh+pClr)/grid-0.5));
     const states=[];
     for(let j=jLo;j<=jHi;j++)for(let i=iLo;i<=iHi;i++){
       const cx=(i+0.5)*grid, cy=(j+0.5)*grid;
@@ -457,7 +463,7 @@ function buildModel(design){
       const dCircle=(p.shape==='circle') ? Math.max(0, Math.hypot(cx-p.x,cy-p.y)-r) : 0;
       const d=(p.shape==='circle') ? distToRect(cx,cy,p.x,p.y,p.w,p.w)
                                    : distToRect(cx,cy,p.x,p.y,p.w,p.h);
-      if(d>=halfClr) continue;               // 影响区之外
+      if(d>=pClr) continue;               // 影响区之外（per-net clearance，批次1 L48）
       const own=(ni>=0? ni+1 : -1);
       for(const l of ls){
         const s=l*NC+j*GW+i,previous=padOwner[s];
@@ -1070,6 +1076,12 @@ function createSession(design, opts){
     const netHScale=(netMeta[net.i]&&netMeta[net.i].pair)?0.25:1;
     const myPair=netMeta[net.i] ? netMeta[net.i].pair : null;    // 热循环外提取（每邻居不再读对象）
     const myHs=netMeta[net.i] ? netMeta[net.i].hs : false;
+    // 2026-11-15 深优二段：热点名提升为 astar 局部别名——presFac/layerDirOn 是轮边界外
+    // 变写的 let（V8 无法常量化，只能逐次上下文槽读），usage/ownStamp/hist/hMap 是逐邻居
+    // 多次访问的 typed 数组引用。全部在本次调用内不变（轮间变化发生在 astar 之外），
+    // 逐位一致。netMeta/hMap 在 :1070-1072 已有同款先例。
+    const pf=presFac, ldOn=layerDirOn,
+      usageA=usage, ownStampA=ownStamp, histA=hist, hMapA=hMap;
     if(!goalSet.size) return null;
     computeH(goalSet);
     gen++;
@@ -1154,17 +1166,17 @@ function createSession(design, opts){
         { const fx=model.fixedOwner[ns]; if(fx!==0&&fx!==own) continue nbr; }
         { const po=padOwner[ns]; if(po!==0&&po!==own) continue nbr; }
         { const vi=viaInf[ns]; if(vi!==0&&vi!==own) continue nbr; }
-        if(hard&&usage[ns]-(ownStamp[ns]===gen?1:0)>0) continue nbr;
-        if(hMap[ns]>=BIG) continue;
-        let ec=1+hist[ns];
+        if(hard&&usageA[ns]-(ownStampA[ns]===gen?1:0)>0) continue nbr;
+        if(hMapA[ns]>=BIG) continue;
+        let ec=1+histA[ns];
         if(!hard){
-          const o=usage[ns]-(ownStamp[ns]===gen?1:0);
+          const o=usageA[ns]-(ownStampA[ns]===gen?1:0);
           if(o>0){
             // 借鉴 Freerouting MazeRipupResolver 的 ALREADY_RIPPED_COSTS：跨障按“障碍”计费
             // 而非按格计费——路径正在连续穿越同一拥塞区时只付一次全额，之后每格折扣，
             // 避免长距离借用被拆走线被逐格全额罚导致代价失真（index.html 源码研读笔记）。
-            const prevOver = usage[cur]-(ownStamp[cur]===gen?1:0) > 0;
-            ec += prevOver ? 1+presFac*(o-1) : presFac*o;
+            const prevOver = usageA[cur]-(ownStampA[cur]===gen?1:0) > 0;
+            ec += prevOver ? 1+pf*(o-1) : pf*o;
             // 扇出借道附加罚（0.13.22 F3）：占用者为阵列网时加罚——0.13.21 冻结
             // 证伪（单向冻结阻断全局重排）的"价格版"后手：只抬价格不动属主，
             // 借道者在有余路时绕开逃逸通道，无余路时仍可冲突协商（与
@@ -1200,8 +1212,8 @@ function createSession(design, opts){
               for(let l2=0;l2<L;l2++){
                 const rs=l2*NC+c2;
                 if(rs===ns||rs===cur) continue;
-                const o=usage[rs]-(ownStamp[rs]===gen?1:0);
-                if(o>0){ if(hard){ bad=true; break; } rpen+=presFac*o; }
+                const o=usageA[rs]-(ownStampA[rs]===gen?1:0);
+                if(o>0){ if(hard){ bad=true; break; } rpen+=pf*o; }
               }
               if(bad) break;
             }
@@ -1231,18 +1243,18 @@ function createSession(design, opts){
               const po2=padOwner[s2]; if(po2!==0&&po2!==own) continue;
               const vi2=viaInf[s2]; if(vi2!==0&&vi2!==own) continue; }
             if(hard){
-              if(usage[s1]-(ownStamp[s1]===gen?1:0)>0) continue;
-              if(usage[s2]-(ownStamp[s2]===gen?1:0)>0) continue;
+              if(usageA[s1]-(ownStampA[s1]===gen?1:0)>0) continue;
+              if(usageA[s2]-(ownStampA[s2]===gen?1:0)>0) continue;
             } else {
-              const o1=usage[s1]-(ownStamp[s1]===gen?1:0);
-              const o2=usage[s2]-(ownStamp[s2]===gen?1:0);
-              if(o1>0) ec+=presFac*o1;
-              if(o2>0) ec+=presFac*o2;
+              const o1=usageA[s1]-(ownStampA[s1]===gen?1:0);
+              const o2=usageA[s2]-(ownStampA[s2]===gen?1:0);
+              if(o1>0) ec+=pf*o1;
+              if(o2>0) ec+=pf*o2;
             }
             ec+=Math.SQRT2-1;   // 斜向基础代价 √2
           }
           if(pd>=0 && nd!==pd) ec+=turnPen;
-          if(layerDirOn){
+          if(ldOn){
             // 分层首选方向：相邻层正交（偶数层横走、奇数层竖走）
             const prefH=(l%2)===0;
             const horiz=(nd===0||nd===1);
@@ -1270,7 +1282,7 @@ function createSession(design, opts){
                 const x=tc2+ring2Offs[k][0], y=nr2+ring2Offs[k][1];
                 if(x<0||y<0||x>=GW||y>=GH) continue;
                 const s3=lN*NC+y*GW+x;
-                if(usage[s3]<=0 || ownStamp[s3]===gen) continue;
+                if(usageA[s3]<=0 || ownStampA[s3]===gen) continue;
                 const oi=cellOwner[s3]-1;
                 if(myPair && oi>=0 && netMeta[oi] && netMeta[oi].pair===myPair) continue;
                 nearPen+=1;
@@ -5420,6 +5432,40 @@ function netCurrentDecls(design){
   }
   return out;
 }
+/* ---------- IPC-2221B 电压→安全间距（第十一轮后 L48）----------
+   规格/数据手册里读到某网走 170V → 声明 nets[].voltage=170 → 自动查表得
+   该网的最低安全间距。正反关系是"声明→标准查表→max(全局,标准)"。
+   三档：B1 内层 / B2 外层有涂层 / B4 外层无涂层（打样默认最严格）。 */
+function ipc2221Clr(voltage, table){
+  // IPC-2221B Table 6-1 阶梯查表：V[i] 是档位上界，≤V[i] 用 C[i]（线性插值不适用——标准本身是阶梯表）
+  const T=table||'B4';
+  const V=JLC.ipc2221b.V, C=JLC.ipc2221b[T]||JLC.ipc2221b.B4;
+  if(!Number.isFinite(voltage)||voltage<=0) return C[0];
+  for(let i=0;i<V.length;i++){
+    if(voltage<=V[i]) return C[i];
+  }
+  return C[C.length-1];   // >500V → 最大档（外推偏保守）
+}
+function netClrDecls(design){
+  // 声明了 voltage 的网（V）：[{netId,name,voltage,w,clr,globalClr,status}]
+  const out=[];
+  for(const n of (design.nets||[])){
+    if(n.voltage==null||!Number.isFinite(+n.voltage)||+n.voltage<=0) continue;
+    const need=ipc2221Clr(+n.voltage);
+    const w=netW(design,n.id);
+    out.push({netId:n.id,name:n.name,voltage:+n.voltage,w,
+      clr:need,globalClr:design.clearance,
+      status:w>0&&design.clearance+1e-9>=need?'ok':'under'});
+  }
+  return out;
+}
+function netClr(design, netId){
+  // 逐网有效间距：声明了 voltage 的网 → max(全局, IPC-2221B)；其余 → 全局
+  const n=(design.nets||[]).find(x=>x.id===netId);
+  if(n&&n.voltage!=null&&Number.isFinite(+n.voltage)&&+n.voltage>0)
+    return Math.max(design.clearance, ipc2221Clr(+n.voltage));
+  return design.clearance;
+}
 
 /* ---------- 嘉立创器件库对接（LCSC/EasyEDA API）与原理图导出 ----------
    器件数据来自 easyeda.com/api/products/{C编号}/components（一次返回真符号 docType 2
@@ -6195,7 +6241,16 @@ const JLC = {
     inner: { '0.5': { t: 1.50, s: 1.60 }, '1': { t: 0.80, s: 1.00 } }
   },
   viaAmp: 1.0,             // 0.3mm 过孔保守载流 1A/孔，大电流多孔并联
-  solderBridge: { std: 0.10, bw: 0.13, oz2: 0.20 }   // 阻焊桥极限：绿/彩油、黑白油、2oz
+  solderBridge: { std: 0.10, bw: 0.13, oz2: 0.20 },   // 阻焊桥极限：绿/彩油、黑白油、2oz
+  // IPC-2221B Table 6-1 电压→导线间距（mm）——按工作电压查安全间距
+  // V 断点（V）→ 三档间距（mm）
+  ipc2221b: {
+    // V = 电压上界（≤V[i] 用 C[i]）；9 档
+    V: [15, 30, 50, 100, 150, 170, 250, 300, 500],
+    B1: [0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],   // 内层
+    B2: [0.05, 0.1, 0.1, 0.13, 0.3, 0.3, 0.8, 1.5, 2.0],   // 外层+涂层
+    B4: [0.1, 0.64, 0.64, 0.64, 0.64, 1.27, 1.27, 1.27, 2.5]  // 外层无涂层（打样口径）
+  }
 };
 // 铜厚感知的线宽/线距极限与建议值
 function jlcTrackRule(design){
@@ -9663,4 +9718,4 @@ const EXAMPLES=[
 
 
 
-export { ampWidthFor, netCurrentDecls, designDefaults, detectBallArrays, fanoutMoveToFront, pairCoupleStats, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };
+export { ampWidthFor, netCurrentDecls, ipc2221Clr, netClrDecls, netClr, designDefaults, detectBallArrays, fanoutMoveToFront, pairCoupleStats, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };

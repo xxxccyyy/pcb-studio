@@ -43,6 +43,12 @@
 - **12 案例 ab-diff sha256 全部逐字节一致**（基线与 T1 后同 hash：e555/eled/emcu/m1-p01/
   autoPlace/placeAndRoute/压力板/fable 栅格·形状·shape-only·铺铜·DRC 全口径）；
   npm test 全绿（含外部轮 25 优化锁定）+ test:browser 全绿 + check 行尾守门通过
+- **T2-A 热点名提升（二段追加）**：presFac/layerDirOn（轮边界变写 let，V8 无法常量化）
+  + usage/ownStamp/hist/hMap（逐邻居多访问 typed 引用）提升为 astar 局部别名，仅热点名
+  精准替换 → 逐位一致；**源码锚点测试联动义务实例**：via-ring-cache/congestion-neighborhood
+  的 vm 提取区落入别名 → 脚手架同步绑定（21/21 恢复）；同进程交错 A/B（hash 同时校验）：
+  emcu optimize(2) **-9.1%**、压力板 optimize(3) -1.7%、协商全链 -0.2%（噪声内）；
+  **对拍架扩容 12→14 案例**（+h2-stm32 容量停滞档 ~3min/引擎（非 quick 组）+atmega quick 档）
 - **评估后放弃（留档防重踩）**：H 图缓存（第九轮已证伪 1.3% 命中率）、过孔环跨调用持久化
   （环值内嵌本网 own 调整 → 跨网不复用，仅 ≥3 焊盘网第 2 边起有收益，预估 2-4% 不抵
   一致性风险）、4-ary 堆/懒删除（tie-break 序变化）、fillDistanceMap stamp（启发式口径漂移）

@@ -11,7 +11,10 @@ const scanBody=engineSource.slice(start,end)+'\nreturn {bad,rpen:bad?0:rpen};';
 function ringHarness(cached){
   const GW=9,NC=81,L=4,raw=new Int16Array(NC*L);let reads=0;
   const usage=new Proxy(raw,{get(target,key){if(/^\d+$/.test(String(key)))reads++;return target[key];}});
-  const context={GW,GH:9,NC,L,usage,ownStamp:new Int32Array(NC*L),gen:1,presFac:2,
+  const ownStamp=new Int32Array(NC*L);
+  // 0.14.5 深优二段：引擎环扫描区热点名提升为 astar 局部别名（usage→usageA、
+  // ownStamp→ownStampA、presFac→pf），vm 脚手架同步绑定同一对象——语义不变
+  const context={GW,GH:9,NC,L,usage,usageA:usage,ownStamp,ownStampA:ownStamp,gen:1,presFac:2,pf:2,
     ringOffs:[[-1,0],[1,0],[0,-1],[0,1]],viaRingPenalty:cached?new Float64Array(NC):null,
     viaRingStamp:cached?new Int32Array(NC):null};
   const scan=vm.runInNewContext('(function(cc,cur,ns,hard){'+scanBody+'})',context);
@@ -21,8 +24,8 @@ test('via-ring cache reuses all layer pairs and invalidates on each search gener
   const a=ringHarness(true),b=ringHarness(false),cc=40;
   function next({hard=false,presFac=2,own=false}={}){
     for(const h of [a,b]){
-      h.context.gen++;h.context.presFac=presFac;h.raw.fill(0);h.raw[cc+1]=2;h.raw[cc+81*3-1]=1;
-      h.context.ownStamp.fill(0);if(own)h.context.ownStamp[cc+1]=h.context.gen;
+      h.context.gen++;h.context.presFac=presFac;h.context.pf=presFac;h.raw.fill(0);h.raw[cc+1]=2;h.raw[cc+81*3-1]=1;
+      h.context.ownStamp.fill(0);h.context.ownStampA.fill(0);if(own){h.context.ownStamp[cc+1]=h.context.gen;h.context.ownStampA[cc+1]=h.context.gen;}
     }
     const before=a.reads();
     for(const [from,to] of [[0,1],[1,0],[1,2],[2,3],[3,2],[2,1]])

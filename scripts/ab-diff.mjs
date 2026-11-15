@@ -36,6 +36,8 @@ const sha = r => createHash('sha256').update(JSON.stringify(clean(r))).digest('h
 const load = p => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const fable = load('../projects/ext-fable-03/placed.json');
 const m1 = load('../projects/m1-4layer/p01-lqfp144-mcu/design.json');
+const h2 = load('../projects/h2-stm32/design.json');        // 2 层容量停滞档（75/77 卡死特征）
+const atmega = load('../projects/atmega328p-minsys/design.json');
 
 function stressDesign() {
   const d = before.designDefaults();
@@ -67,12 +69,14 @@ const cases = [
   ['eled routeBoard', core => core.routeBoard(core.EXAMPLES[1].build(), { viaCost: 15 })],
   ['emcu routeBoard', core => core.routeBoard(core.EXAMPLES[2].build(), { viaCost: 15 })],
   ['m1-p01 routeBoard', core => core.routeBoard(JSON.parse(JSON.stringify(m1)), { viaCost: 15 })],
+  ['atmega routeBoard', core => core.routeBoard(JSON.parse(JSON.stringify(atmega)), { viaCost: 15 })],
   ['e555 autoPlace', core => core.autoPlace(core.EXAMPLES[0].build(), {})],
   ['emcu placeAndRoute', core => core.placeAndRoute(core.EXAMPLES[2].build(), {})],
   ['压力板 optimize(3)', core => { const s = sessionRoute(core, stressDesign(), { viaCost: 15, maxIter: 30 }); const snap = s.snapshot(); s.restore(snap); s.optimize(3); return s.buildResult(); }],
 ];
 if (!QUICK) {
   cases.push(
+    ['h2-stm32 routeBoard', core => core.routeBoard(JSON.parse(JSON.stringify(h2)), { viaCost: 15 })],   // 容量停滞档，单引擎 ~3min
     ['fable-03 栅格全链', core => core.routeBoard(JSON.parse(JSON.stringify(fable)), { viaCost: 15 })],
     ['fable-03 形状补线', core => core.routeBoardShape(JSON.parse(JSON.stringify(fable)), {})],
     ['fable-03 shape-only', core => { const r = core.routeBoard(JSON.parse(JSON.stringify(fable)), { viaCost: 15 }).result; return core.routeBoardShape(JSON.parse(JSON.stringify(fable)), { base: r }); }],
