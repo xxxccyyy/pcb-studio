@@ -24,6 +24,10 @@
                                      缺省开启：route 后把 partner 重构到设计间隙带）
                                      [--no-joint-reroute] 关多网联合重布（0.14.1 缺省开启：
                                      失败网+阻塞者子集枚举重排，全板 [-DRC,连通] 计分）
+                                     [--obstacle-h] 障碍感知启发式（0.14.9 opt-in：
+                                     协商重搜索 2.2-2.5×；保证可解板质量持平偏好，
+                                     截断态硬板不动点可能变差——默认关=位级一致，
+                                     权衡表 docs/深度优化报告-20261116b.md）
      drc    <design.json> [result.json]      DRC + 嘉立创投板检查表
      advise <design.json> [result.json]      按优先级给出可执行建议（经验层）
      export <easyeda|gerber|dsn|ses|svg|ipc356> <design.json> [result.json] [-o out]
@@ -929,11 +933,17 @@ switch (cmd) {
     const ffRaw = argFlag(rest, '--fanout-first', '');
     const fanoutFirst = ffRaw === '' ? undefined
       : ({ auto: 'auto', inner: 'inner_first', outer: 'outer_first' }[ffRaw] || ffRaw);
+    // 障碍感知启发式（0.14.9，opt-in）：协商重搜索 2.2-2.5×，代价是协商路径多样性
+    // 下降（等代价路径趋同进最短走廊）——保证可解板质量持平偏好，截断态硬板不动点
+    // 可能变差（实测 fable-03 −1 / icebreaker −11 连通，加迭代不恢复）。默认关=位级
+    // 一致；速度敏感或以 DRC 为先的板可开启（h2-stm32 实测 DRC 错误 39→25）。
+    // 权衡表见 docs/深度优化报告-20261116.md
+    const obstacleH = !!argFlag(rest, '--obstacle-h', '');
     let result, via;
     if (iterWorkers > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
       const shard = parseInt(argFlag(rest, '--shard', '0'));
-      const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard, blindVias, fanoutFirst, compactPairs, jointReroute,
+      const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard, blindVias, fanoutFirst, compactPairs, jointReroute, obstacleH,
         engineUrl, neighbourhoodRipup: nbRipup });
       result = par.result; via = { mode: 'iter-parallel', blind: blindVias || undefined, fanout: fanoutFirst, compact: compactPairs ? undefined : 'off', workers: par.workers,
         iterations: par.iterations, waves: iterWaves ?? 2, shard: shard || 0 };
@@ -944,10 +954,10 @@ switch (cmd) {
     }
     if (parallel > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
-      const par = await core.routeBoardParallel(d, { viaCost, maxIter, parallel, engineUrl, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst, compactPairs, jointReroute });
+      const par = await core.routeBoardParallel(d, { viaCost, maxIter, parallel, engineUrl, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst, compactPairs, jointReroute, obstacleH });
       result = par.result; via = { mode: 'parallel', blind: blindVias || undefined, fanout: fanoutFirst, from: par.from, workers: parallel };
     } else {
-      result = core.routeBoard(d, { viaCost, maxIter, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst, compactPairs, jointReroute }).result;
+      result = core.routeBoard(d, { viaCost, maxIter, neighbourhoodRipup: nbRipup, blindVias, fanoutFirst, compactPairs, jointReroute, obstacleH }).result;
       via = { mode: 'serial' };
     }
     if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
@@ -1345,6 +1355,7 @@ switch (cmd) {
       blindVias: !!options.get('--blind-vias'),
       compactPairs: !options.get('--no-compact-pairs'),
       jointReroute: !options.get('--no-joint-reroute'),
+      obstacleH: !!options.get('--obstacle-h'),
       fanoutFirst: ({inner:'inner_first',outer:'outer_first'}[options.get('--fanout-first')]
         || options.get('--fanout-first')),
       anchor: (argFlag(rest, '--anchor', '') || '').split(',').filter(Boolean)

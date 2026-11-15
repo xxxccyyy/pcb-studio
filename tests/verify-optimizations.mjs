@@ -1,6 +1,7 @@
 import * as core from '../src/engine.mjs';
 // 优化逐项验证：每个优化一个独立测试，直接验证行为而非仅检查代码存在
 import { readFileSync } from 'node:fs';
+import { parseArguments } from '../src/cli-args.mjs';
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const mA = html.match(new RegExp('// ==== ROUTER CORE START ====([\\s\\S]*?)// ==== ROUTER CORE END ===='));
 const mB = html.match(new RegExp('// ==== EXAMPLES START ====([\\s\\S]*?)// ==== EXAMPLES END ===='));
@@ -1173,6 +1174,106 @@ t('43b. 别名化后会话确定性：双会话 buildResult/snapshot 逐位一�
   const X=run(), Y=run();
   assert(JSON.stringify(Y)===JSON.stringify(X), '两次会话结果与快照必须逐位一致');
   assert(X.r.stats.connected===X.r.stats.total, '该板应全连通');
+});
+
+// ===== 45. 0.14.9 障碍感知启发式（opt-in obstacleH）=====
+// 机制：computeH 构建本网"无条件可通行"掩码（判定链与 passable/enterOK 逐字段同源），
+// BFS 只松弛掩码内格——h 可采纳+一致且逐点支配盲口径 → A* 展开集不增、每边代价仍最优。
+// 实测：协商重搜索 2.2-2.5×；但 h 场全板相同使等代价路径选择趋同（"漏斗"），协商路径
+// 多样性下降——保证可解板质量持平偏好（h2 DRC 39→25），截断态硬板不动点变差
+// （fable-03 −1 / icebreaker −11 连通，@60 与 @30 全同=已收敛，加迭代不恢复）。
+// 故默认关（位级一致，search-regression 金标准继续锁默认路径），CLI --obstacle-h opt-in。
+// 权衡表与机制假设留档：docs/深度优化报告-20261116.md
+
+// 45a. 可解板质量中性：obstacleH 开/关连通数一致 + DRC 0（跨层数/斜向）
+t('45a. obstacleH 开/关：可解板连通一致 + DRC 0（质量中性）', () => {
+  const mk = (layers, diag) => {
+    const d = core.designDefaults();
+    Object.assign(d,{width:36,height:24,grid:0.5,layers,trackW:0.25,clearance:0.15,
+      viaOuter:0.6,viaDrill:0.3});
+    d.nets=[{id:'a',name:'A'},{id:'b',name:'B',w:0.3},{id:'c',name:'C',hs:true},{id:'d',name:'D'}];
+    d.pads=[
+      {id:'a1',netId:'a',x:3,y:3,w:1,h:1,shape:'circle',layer:'top'},
+      {id:'a2',netId:'a',x:33,y:21,w:1,h:1,shape:'circle',layer:layers>1?'bottom':'top'},
+      {id:'b1',netId:'b',x:3,y:21,w:0.8,h:0.8,shape:'rect',layer:'top'},
+      {id:'b2',netId:'b',x:33,y:3,w:0.8,h:0.8,shape:'rect',layer:'bottom'},
+      {id:'c1',netId:'c',x:18,y:3,w:0.8,h:0.8,shape:'circle',layer:'top'},
+      {id:'c2',netId:'c',x:18,y:21,w:0.8,h:0.8,shape:'circle',layer:'top'},
+      {id:'d1',netId:'d',x:9,y:3,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'d2',netId:'d',x:27,y:21,w:1,h:1,shape:'rect',layer:'top'}];
+    d.keepouts=[{x:12,y:10,w:4,h:4}];
+    return d;
+  };
+  for(const [layers,diag] of [[1,false],[2,false],[2,true],[4,true]]){
+    const mkD=()=>core.normalizeDesign(mk(layers,diag));
+    const off=core.routeBoard(mkD(),{diag,maxIter:12}).result;
+    const on=core.routeBoard(mkD(),{diag,maxIter:12,obstacleH:true}).result;
+    assertEq(on.stats.connected, off.stats.connected, `${layers}L diag=${diag} 连通数一致`);
+    assertEq(on.stats.connected, on.stats.total, `${layers}L diag=${diag} 应全连通`);
+    const drcE=r=>core.checkDRC(mkD(),{...r,nets:[...r.nets,...core.manualRouteEntries(mkD())]},{dfm:false})
+      .filter(i=>i.sev==='error').length;
+    assertEq(drcE(on), 0, `${layers}L diag=${diag} obstacleH:on DRC 0`);
+    assertEq(drcE(off), 0, `${layers}L diag=${diag} 默认 DRC 0`);
+  }
+});
+
+// 45b. 障碍剪枝正确性：墙围死源 → 开/关均如实失败，掩码不产生幻路径
+t('45b. obstacleH：不可达源如实失败（开=关），可达网正常布通', () => {
+  const mk = () => {
+    const d = core.designDefaults();
+    Object.assign(d,{width:24,height:20,grid:0.5,layers:2,trackW:0.25,clearance:0.15});
+    d.nets=[{id:'w',name:'W'},{id:'o',name:'O'}];
+    // W：环形禁布区围死（上下左右全封），内部焊盘不可达
+    d.keepouts=[
+      {x:12,y:10,w:12,h:1},{x:12,y:16,w:12,h:1},
+      {x:7.25,y:13,w:1,h:5},{x:16.75,y:13,w:1,h:5}];
+    d.pads=[
+      {id:'w1',netId:'w',x:12,y:13,w:0.8,h:0.8,shape:'circle',layer:'top'},
+      {id:'w2',netId:'w',x:21,y:18.5,w:0.8,h:0.8,shape:'circle',layer:'bottom'},
+      {id:'o1',netId:'o',x:2,y:4,w:0.8,h:0.8,shape:'circle',layer:'top'},
+      {id:'o2',netId:'o',x:22,y:16,w:0.8,h:0.8,shape:'circle',layer:'bottom'}];
+    return core.normalizeDesign(d);
+  };
+  const off=core.routeBoard(mk(),{maxIter:4}).result;
+  const on=core.routeBoard(mk(),{maxIter:4,obstacleH:true}).result;
+  const wOf=off.nets.find(n=>n.netId==='w'), wOn=on.nets.find(n=>n.netId==='w');
+  assert(wOf.connected<wOf.total, '默认：围死网失败');
+  assert(wOn.connected<wOn.total, 'obstacleH:on 围死网同样失败（掩码无幻路径）');
+  const oOf=off.nets.find(n=>n.netId==='o'), oOn=on.nets.find(n=>n.netId==='o');
+  assertEq(oOn.connected, oOf.connected, '可达网连通一致');
+  assertEq(oOn.connected, oOn.total, '可达网全连通');
+});
+
+// 45c. 掩码无跨调用残留：obstacleH:on 双跑逐字一致（passMask 会话级复用的污染门）
+t('45c. obstacleH:on 双跑确定性（掩码复用无残留）', () => {
+  const mk = () => {
+    const d = core.designDefaults();
+    Object.assign(d,{width:30,height:20,grid:0.5,layers:4,trackW:0.25,clearance:0.15});
+    d.nets=[{id:'a',name:'A'},{id:'b',name:'B',preferredLayer:1},{id:'c',name:'C',pair:'P'},{id:'d',name:'D',pair:'P'}];
+    d.pads=[];
+    const pos=[[3,3],[27,17],[3,17],[27,3],[10,3],[20,17],[10,17],[20,3],[15,10],[15,12],[6,10],[24,10]];
+    const ids=['a','a','b','b','c','c','d','d','c','c','d','d'];
+    pos.forEach(([x,y],i)=>d.pads.push({id:'p'+i,netId:ids[i],x,y,w:0.8,h:0.8,
+      shape:i%2?'circle':'rect',layer:i%3?'bottom':'top'}));
+    return core.normalizeDesign(d);
+  };
+  const strip=o=>{ if(Array.isArray(o)) return o.map(strip);
+    if(o&&typeof o==='object'){ const r={}; for(const k of Object.keys(o)) if(k!=='timeMs') r[k]=strip(o[k]); return r; }
+    return o; };
+  const run=()=>{ const r=core.routeBoard(mk(),{maxIter:10,obstacleH:true}).result;
+    return JSON.stringify(strip(r.nets)); };
+  assert(run()===run(), 'obstacleH:on 双跑必须逐字一致');
+});
+
+// 45d. CLI 旗标注册：route/autopcb 接受 --obstacle-h（解析层白名单）
+t('45d. --obstacle-h 旗标注册（route/autopcb）', () => {
+  const { options: optRoute } = parseArguments('route', ['x.json','--obstacle-h']);
+  assert(optRoute.get('--obstacle-h')===true, 'route 接受 --obstacle-h');
+  const { options: optAp } = parseArguments('autopcb', ['x.json','--obstacle-h']);
+  assert(optAp.get('--obstacle-h')===true, 'autopcb 接受 --obstacle-h');
+  let threw=false;
+  try{ parseArguments('place', ['x.json','--obstacle-h']); }catch(e){ threw=true; }
+  assert(threw, 'place 不接受 --obstacle-h（白名单拦截）');
 });
 
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');

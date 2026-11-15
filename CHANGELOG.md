@@ -1,5 +1,41 @@
 # 更新日志
 
+## 0.14.9（2026-11-16）—— 障碍感知启发式（opt-in --obstacle-h）：协商重搜索 2.2-2.5×，默认关=位级一致
+
+0.14.8 报告留档方向①的执行轮。机制：computeH 每次调用构建本网"无条件可通行"掩码
+（判定链与 passable/enterOK 逐字段同源：prefL→blocked→scoped→fixedOwner→padOwner→
+viaInf→pairBand→hard-usage），fillDistanceMap 只松弛掩码内格——h 可采纳+一致且逐点
+支配盲口径 → A* 展开集不增、每边代价仍最优。**实测权衡（完整表见
+docs/深度优化报告-20261116b.md）**：协商重搜索 2.2-2.5×（icebreaker 180.9→71.5s、
+fable-03 1.64×、h2 1.34×）；保证可解板质量持平偏好（h2-stm32 DRC 错误 39→**25**），
+但截断态硬板协商不动点变差（fable-03 −1、icebreaker −11 连通；@60 与 @30 输出全同
+=已收敛，加迭代不恢复）。机制假设留档：盲 h 的 plateau 探索顺带给出协商路径多样性，
+感知 h 使等代价路径趋同进最短走廊（"漏斗"效应）——协商路由里多样性 > 单路径最优
+（PathFinder/Freerouting 同实践）。
+
+### 交付形态：opt-in（默认关=0.14.8 位级一致）
+
+- CLI `route|autopcb --obstacle-h`（cli-args 白名单 + 引擎 opts.obstacleH 透传，
+  含 iter-parallel/parallel 两条 worker 路径）；适用：速度敏感迭代流、以 DRC 为先
+  的板；不适用：协商未收敛的截断态硬板
+- astar 入口 gen++/ownStamp 戳位前移（掩码 hard-usage 判定需本网成员戳；gen 只被
+  四个戳数组消费、computeH 只写 hMap，先后交换无交互）；bench-heuristic 改为直接
+  驱动 fillDistanceMap（全通掩码=无障碍特例，跨版本场值断言仍有效）
+
+### 验证
+
+- **默认路径 400 组差分**（冻结 0.14.8 参考 × 100 种子 × 4 配置）全流程逐态一致
+  0 失败——search-regression 金标准**无需重录**继续通过；期间 obstacleH:on 实验
+  暴露 joint-reroute 存档测试断言"连通不得回退"强于 0.14.1 文档化契约
+  [-drcE, conn]（DRC 优先）——默认位级一致后测试回归通过，发现留档
+- 优化锁定 44→**48**（45a 可解板质量中性 开/关连通一致+DRC0；45b 围死源开/关均
+  如实失败=掩码无幻路径；45c 掩码复用双跑逐字一致；45d 旗标注册 route/autopcb
+  接受、place 拦截）
+- 全量 npm test exit 0（80 核心 + 285 node:test + 48 书籍 + 17 CLI + 39 模糊 +
+  7 深检 + 48 锁）；浏览器四组 16+16+22+6=**60 项**全过（截图按惯例恢复原版）
+- 下一算法轮方向：带多样性保持的感知 h（逐网 h 偏置/候选走廊多样性机制），按
+  20261116b 报告 §3 的漏斗假设设计 A/B
+
 ## 0.14.8（2026-11-16）—— A* 热路径深优：别名块扩展 + 堆 hole 法（全量位级不变）
 
 上轮（2026-11-15）"按真实板型剖析决定优化几何索引还是搜索开销"的执行轮。

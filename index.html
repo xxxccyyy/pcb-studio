@@ -694,27 +694,37 @@ function snapToGrid(v, grid){
   return (i+0.5)*grid;
 }
 
-// 忽略障碍的距离下界：先在各层做单位权 BFS，再沿层轴传播过孔代价。
+// 距离下界：先在各层做单位权 BFS，再沿层轴传播过孔代价。
 // 平面步与换层可交换，因此分离计算与全场加权松弛等价，每个单元只入队一次。
-function fillDistanceMap(model, goals, viaCost, diag, distances, queue){
+// 0.14.9 障碍感知启发式（质量车道，CHANGELOG 有专段）：mask 给定时只松弛
+// "对本网无条件可通行"的格（掩码与 astar passable/enterOK 逐字段同源，由
+// computeH 每次调用构建）。可采纳性：可用路径集收缩 → h 仍 ≤ 真实代价；
+// 一致性：相邻可通行格 h 差 ≤1 ≤ 任意边权；且新 h 逐点 ≥ 旧"无视障碍"h
+// （支配关系）→ A* 展开集不增。不可通行种子（目标格自身不可入）只置 0 不
+// 向外松弛——进入该格本就非法，经它中转的路径不存在，跳过仍可采纳且更紧。
+// mask=null 保持旧"无视障碍"口径（导出兼容/基准对照）。层传播不 gate：
+// 换层可用性被高估只使 h 更小（可采纳不变）。
+function fillDistanceMap(model, goals, viaCost, diag, distances, queue, mask){
   const {GW,NC,L}=model, BIG=1e9;
   distances.fill(BIG);
   let head=0, tail=0;
   for(const s of goals){ distances[s]=0; queue[tail++]=s; }
+  const useMask=mask!=null;
   // 第十轮深度优化：visit 闭包内联（剖析 28% 热点——每格 1M+ 次闭包调用）；
   // 邻居访问顺序与原实现逐位一致（左/右/上/下/四斜角）
   while(head<tail){
     const s=queue[head++], c=s%NC, d=distances[s]+1;
+    if(useMask && distances[s]===0 && !mask[s]) continue;   // 种子（波前中 dist 0 ⟺ 种子）
     const left=c%GW>0, right=c%GW<GW-1, up=c>=GW, down=c<NC-GW;
-    if(left){ const t=s-1; if(distances[t]===BIG){ distances[t]=d; queue[tail++]=t; } }
-    if(right){ const t=s+1; if(distances[t]===BIG){ distances[t]=d; queue[tail++]=t; } }
-    if(up){ const t=s-GW; if(distances[t]===BIG){ distances[t]=d; queue[tail++]=t; } }
-    if(down){ const t=s+GW; if(distances[t]===BIG){ distances[t]=d; queue[tail++]=t; } }
+    if(left){ const t=s-1; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
+    if(right){ const t=s+1; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
+    if(up){ const t=s-GW; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
+    if(down){ const t=s+GW; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
     if(diag){
-      if(left&&up){ const t=s-GW-1; if(distances[t]===BIG){ distances[t]=d; queue[tail++]=t; } }
-      if(right&&up){ const t=s-GW+1; if(distances[t]===BIG){ distances[t]=d; queue[tail++]=t; } }
-      if(left&&down){ const t=s+GW-1; if(distances[t]===BIG){ distances[t]=d; queue[tail++]=t; } }
-      if(right&&down){ const t=s+GW+1; if(distances[t]===BIG){ distances[t]=d; queue[tail++]=t; } }
+      if(left&&up){ const t=s-GW-1; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
+      if(right&&up){ const t=s-GW+1; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
+      if(left&&down){ const t=s+GW-1; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
+      if(right&&down){ const t=s+GW+1; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
     }
   }
   const viaH=Math.max(1,viaCost*0.1);
@@ -1403,8 +1413,66 @@ function createSession(design, opts){
   // 目标集含动态布线格，键几乎不重复；收益在机器噪声内）→ 回退，留档为 roadmap
   // （方向：按网的目标焊盘集缓存 + 对动态格的松弛修正，或 A* 内环类型化堆）。
   const DIAGD=[null,null,null,null,[-1,-1],[1,-1],[-1,1],[1,1]];   // 方向4..7 = 左上/右上/左下/右下
-  function computeH(goalSet){
-    fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue);
+  // 0.14.9 障碍感知启发式：本网"无条件可通行"掩码（会话级复用，TS ≤8M 才启用——
+  // 内存 1B/状态；超限回退旧盲口径）。每次 computeH 全量重建（写点均为逐格无条件
+  // 赋值，无跨调用残留）。判定链与 passable/enterOK 逐字段同源：
+  // prefL → blocked → scoped(cls) → fixedOwner → padOwner → viaInf → pairBand →
+  // hard-usage（usage 快照=本次 astar 调用时刻，call 内一致）。
+  // 排除项（有意不 gate，保持可采纳）：viaLegal（过孔可用性被高估→h 更小）、
+  // 软阶段 usage（可借道付罚）、hist/nearPen/presFac（软代价，h 是下界）。
+  const passMask=TS<=8_000_000?new Uint8Array(TS):null;
+  // 0.14.9 障碍感知启发式开关（opt-in）：默认关=0.14.8 位级一致（盲口径）。
+  // 开启动机与代价见 docs/深度优化报告-20261116.md §4：协商重搜索 2.2-2.5×，
+  // 但 h 把全部网漏斗进同一地理最短走廊（每网 h 场相同→等代价路径选择趋同），
+  // 协商路径多样性下降——保证可解板质量持平偏好（h2 DRC −14），截断态硬板
+  // 不动点变差（fable-03 −1、icebreaker −11，加迭代不恢复=已收敛）。
+  const obstacleH=opts.obstacleH===true;
+  function buildPassMask(net, hard){
+    const own=net.i+1, cls=net.cls, prefL=net.prefL==null?-1:net.prefL;
+    const band=S.pairBand, hard2=!!hard;
+    const scopedArr=model.scopedBlocked, hasScoped=scopedArr.length>0;
+    const fx=fixedOwner, po=padOwner, vi=viaInf, bl=blocked, us=usage, os=ownStamp;
+    if(prefL>=0){
+      // 硬层位约束：非 prefL 层整体置 0（省逐格 (t/NC)|0 除法）
+      const off=prefL*NC;
+      for(let t=0;t<off;t++) passMask[t]=0;
+      for(let t=off;t<off+NC;t++){
+        let ok=1;
+        if(bl[t]) ok=0;
+        else if(hasScoped){ const c=t%NC;
+          for(let si=0;si<scopedArr.length;si++){ const sb=scopedArr[si];
+            if(cls!==sb.cls&&sb.cells[c]){ ok=0; break; } } }
+        if(ok){ const f=fx[t]; if(f!==0&&f!==own) ok=0; }
+        if(ok){ const p=po[t]; if(p!==0&&p!==own) ok=0; }
+        if(ok){ const v=vi[t]; if(v!==0&&v!==own) ok=0; }
+        if(ok&&band&&!band.has(t)) ok=0;
+        if(ok&&hard2&&us[t]-(os[t]===gen?1:0)>0) ok=0;
+        passMask[t]=ok;
+      }
+      for(let t=off+NC;t<TS;t++) passMask[t]=0;
+    } else {
+      for(let t=0;t<TS;t++){
+        let ok=1;
+        if(bl[t]) ok=0;
+        else if(hasScoped){ const c=t%NC;
+          for(let si=0;si<scopedArr.length;si++){ const sb=scopedArr[si];
+            if(cls!==sb.cls&&sb.cells[c]){ ok=0; break; } } }
+        if(ok){ const f=fx[t]; if(f!==0&&f!==own) ok=0; }
+        if(ok){ const p=po[t]; if(p!==0&&p!==own) ok=0; }
+        if(ok){ const v=vi[t]; if(v!==0&&v!==own) ok=0; }
+        if(ok&&band&&!band.has(t)) ok=0;
+        if(ok&&hard2&&us[t]-(os[t]===gen?1:0)>0) ok=0;
+        passMask[t]=ok;
+      }
+    }
+  }
+  function computeH(goalSet, net, hard){
+    if(obstacleH && passMask){
+      buildPassMask(net, hard);
+      fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue,passMask);
+    }else{
+      fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue);
+    }
   }
 
   function astar(net, sources, goalSet, hard){
@@ -1429,12 +1497,15 @@ function createSession(design, opts){
       vrS=viaRingStamp, vrP=viaRingPenalty;
     const hScale=netHScale||1;   // push 逐次 `||1` 提升到环外（每次调用内不变）
     if(!goalSet.size) return null;
-    computeH(goalSet);
+    // 0.14.9：gen++/戳位前移到 computeH 之前——障碍感知掩码的 hard-usage 判定需要
+    // 本网成员戳（ownStamp[s]===gen ⟺ s∈net.cells）。gen 只被 gVal/gStamp/closed/
+    // ownStamp 四个戳数组消费，computeH 只写 hMap（无戳），先后顺序交换无交互。
     gen++;
     heapSize=0;
     // 本网成员戳：热路径 net.cells.has → ownStamp[s]===gen（O(1) 类型化读；
     // gen 一次自增覆盖 gVal/gStamp/closed/ownStamp 同生命周期，调用结束即失效）
     for(const s of net.cells) ownStamp[s]=gen;
+    computeH(goalSet, net, hard);
     // swap 内联（V8 对捕获多外层变量的闭包常不内联——堆占档案 17.8%）
     // 2026-11-15 深优：堆数组/大小拷贝进局部（heapSize 在筛化期间只读快照 hs——
     // push/pop 各自入口一次增减后筛化循环内无写入），消除热循环逐层的上下文槽读。

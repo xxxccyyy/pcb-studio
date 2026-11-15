@@ -9,16 +9,18 @@ function load(file) {
   const source=extract('ROUTER CORE');
   const core=new Function(source+'\n'+extract('EXAMPLES')+'\nreturn {createSession,checkDRC,EXAMPLES};')();
   // Isolate the real session heuristic for a repeatable comparison without A* noise.
-  const start=source.indexOf('  function computeH(goalSet){');
-  const end=source.indexOf('\n  function astar(',start);
-  const helper=source.includes('function fillDistanceMap(')
-    ? source.slice(source.indexOf('function fillDistanceMap('),source.indexOf('// 过孔影响区')) : '';
+  // 0.14.9 起直接驱动 fillDistanceMap（computeH 已带网感知掩码构建，无法脱离会话脚手架
+  // 提取）：以全通掩码调用——障碍感知口径的无障碍特例与旧盲口径场值相同，
+  // 跨版本场值断言仍有效；掩码构建的开销在深度优化报告的 A/B 里单独核算。
+  const h0=source.indexOf('function fillDistanceMap(');
+  const h1=source.indexOf('// 过孔影响区',h0);
+  const helper=h0>=0&&h1>h0 ? source.slice(h0,h1) : '';
   core.map=new Function('model','goals','viaCost','diagOn',`
     const {GW,GH,NC,L,TS}=model, BIG=1e9;
     const hMap=new Float32Array(TS), hQueue=new Int32Array(TS);
+    const mask=new Uint8Array(TS); mask.fill(1);
     ${helper}
-    ${source.slice(start,end)}
-    return ()=>{computeH(goals); return hMap;};
+    return ()=>{fillDistanceMap(model,goals,viaCost,diagOn,hMap,hQueue,mask); return hMap;};
   `);
   return core;
 }
