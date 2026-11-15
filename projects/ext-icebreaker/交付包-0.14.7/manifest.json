@@ -1,0 +1,163 @@
+{
+ "ok": true,
+ "project": "iCEBreaker",
+ "generatedBy": "pcb-autorouter@0.14.7",
+ "design": {
+  "nets": 126,
+  "pads": 616,
+  "components": 134,
+  "layers": 4,
+  "width": 76,
+  "height": 40,
+  "external": true
+ },
+ "result": {
+  "nets": 126,
+  "total": 533,
+  "connectedSum": 517,
+  "vias": 490
+ },
+ "gates": {
+  "verify": {
+   "ok": true,
+   "findings": []
+  },
+  "drc": {
+   "errors": 191,
+   "warnings": 9,
+   "fabFail": 0,
+   "detail": [
+    "网络 /P2_4：还有 3 个焊盘未连通",
+    "网络 /P2_10：还有 3 个焊盘未连通",
+    "网络 /iCE_CDONE：还有 1 个焊盘未连通",
+    "网络 /P1B4：还有 2 个焊盘未连通",
+    "网络 /P1B1：还有 2 个焊盘未连通",
+    "网络 /P1B7：还有 2 个焊盘未连通",
+    "网络 /Rx_TTL|FIFO_D0：还有 2 个焊盘未连通",
+    "网络 /VCORE：还有 1 个焊盘未连通",
+    "(8.38, 7.13) mm 附近，第 1 层不同网络走线/过孔重叠",
+    "(8.38, 7.38) mm 附近，第 1 层不同网络走线/过孔重叠",
+    "(8.38, 7.63) mm 附近，第 1 层不同网络走线/过孔重叠",
+    "(8.38, 7.88) mm 附近，第 1 层不同网络走线/过孔重叠"
+   ]
+  },
+  "connectivity": {
+   "total": 533,
+   "connected": 517,
+   "ok": false
+  }
+ },
+ "override": {
+  "forced": true,
+  "reason": "--force"
+ },
+ "evidenceLevels": {
+  "roundtrip-verified": "写后回读对账通过（最强自证）",
+  "deterministic": "工具几何/文件生成（可机器复算）",
+  "datasheet-backed": "厂商参数表口径（BOM/检查表——人工复核 C 编号与封装）"
+ },
+ "artifacts": [
+  {
+   "file": "iCEBreaker.嘉立创EDA.json",
+   "kind": "easyeda-pcb",
+   "bytes": 186019,
+   "evidence": "roundtrip-verified"
+  },
+  {
+   "file": "gerber\\iCEBreaker-F_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 151803,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker-In1_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 126914,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker-In2_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 104193,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker-B_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 89776,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker-F_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 16539,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker-B_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 6221,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker-F_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 2535,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker-B_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 951,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker-Edge_Cuts.gbr",
+   "kind": "gerber",
+   "bytes": 136,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\iCEBreaker.drl",
+   "kind": "gerber",
+   "bytes": 9823,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "iCEBreaker.ipc356.txt",
+   "kind": "ipc-d-356a",
+   "bytes": 57452,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "iCEBreaker.svg",
+   "kind": "svg",
+   "bytes": 539683,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "iCEBreaker.BOM.csv",
+   "kind": "bom",
+   "bytes": 929,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "iCEBreaker.贴片坐标.csv",
+   "kind": "pos",
+   "bytes": 3335,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "iCEBreaker.渲染.png",
+   "kind": "render-png",
+   "bytes": 26321,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "iCEBreaker.投板检查表.json",
+   "kind": "fab-checklist",
+   "bytes": 4666,
+   "evidence": "datasheet-backed"
+  }
+ ]
+}

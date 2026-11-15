@@ -1,0 +1,163 @@
+{
+ "ok": true,
+ "project": "oshwhub-01",
+ "generatedBy": "pcb-autorouter@0.14.7",
+ "design": {
+  "nets": 53,
+  "pads": 211,
+  "components": 80,
+  "layers": 4,
+  "width": 52.506,
+  "height": 24.011,
+  "external": true
+ },
+ "result": {
+  "nets": 320,
+  "total": 470,
+  "connectedSum": 320,
+  "vias": 109
+ },
+ "gates": {
+  "verify": {
+   "ok": true,
+   "findings": []
+  },
+  "drc": {
+   "errors": 196,
+   "warnings": 4,
+   "fabFail": 0,
+   "detail": [
+    "网络 KEY1：还有 4 个焊盘未连通",
+    "网络 GND：还有 14 个焊盘未连通",
+    "网络 NRST：还有 5 个焊盘未连通",
+    "网络 PA7：还有 4 个焊盘未连通",
+    "网络 PA5：还有 4 个焊盘未连通",
+    "网络 PB0：还有 3 个焊盘未连通",
+    "网络 PB1：还有 3 个焊盘未连通",
+    "网络 PA4：还有 2 个焊盘未连通",
+    "网络 3V3：还有 24 个焊盘未连通",
+    "网络 LCD2_12：还有 2 个焊盘未连通",
+    "网络 USB1_B4A9：还有 3 个焊盘未连通",
+    "网络 DP：还有 3 个焊盘未连通"
+   ]
+  },
+  "connectivity": {
+   "total": 470,
+   "connected": 320,
+   "ok": false
+  }
+ },
+ "override": {
+  "forced": true,
+  "reason": "--force"
+ },
+ "evidenceLevels": {
+  "roundtrip-verified": "写后回读对账通过（最强自证）",
+  "deterministic": "工具几何/文件生成（可机器复算）",
+  "datasheet-backed": "厂商参数表口径（BOM/检查表——人工复核 C 编号与封装）"
+ },
+ "artifacts": [
+  {
+   "file": "oshwhub-01.嘉立创EDA.json",
+   "kind": "easyeda-pcb",
+   "bytes": 37076,
+   "evidence": "roundtrip-verified"
+  },
+  {
+   "file": "gerber\\oshwhub-01-F_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 28691,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01-In1_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 13328,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01-In2_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 12982,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01-B_Cu.gbr",
+   "kind": "gerber",
+   "bytes": 181062,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01-F_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 5415,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01-B_Mask.gbr",
+   "kind": "gerber",
+   "bytes": 2314,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01-F_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 1763,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01-B_SilkS.gbr",
+   "kind": "gerber",
+   "bytes": 1022,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01-Edge_Cuts.gbr",
+   "kind": "gerber",
+   "bytes": 136,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "gerber\\oshwhub-01.drl",
+   "kind": "gerber",
+   "bytes": 2456,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "oshwhub-01.ipc356.txt",
+   "kind": "ipc-d-356a",
+   "bytes": 17972,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "oshwhub-01.svg",
+   "kind": "svg",
+   "bytes": 185435,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "oshwhub-01.BOM.csv",
+   "kind": "bom",
+   "bytes": 576,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "oshwhub-01.贴片坐标.csv",
+   "kind": "pos",
+   "bytes": 1899,
+   "evidence": "datasheet-backed"
+  },
+  {
+   "file": "oshwhub-01.渲染.png",
+   "kind": "render-png",
+   "bytes": 7775,
+   "evidence": "deterministic"
+  },
+  {
+   "file": "oshwhub-01.投板检查表.json",
+   "kind": "fab-checklist",
+   "bytes": 14213,
+   "evidence": "datasheet-backed"
+  }
+ ]
+}
