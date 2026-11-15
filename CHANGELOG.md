@@ -1,5 +1,33 @@
 # 更新日志
 
+## 0.14.4（2026-11-15）—— 外部复查轮：正确性修复、等价性优化与拥塞代价模型修正
+
+外部 AI 复查轮（三个子轮，逐轮独立验证后入库；审查记录见对话与各文档）。
+
+### 子轮一：正确性修复与等价性优化（docs/optimization-review-followup.md、docs/deep-optimization-20261115.md）
+
+- **混合线宽几何扫描漏检**：auditGeometry/allNetGeoVio 排序 sweep 的 break 界改用本层最大半宽——旧实现用当前候选段半宽提前终止，后方更宽段的违规被漏检（三段最小反例实证）。均匀线宽板位级不变
+- **Worker 会话指纹**：字段白名单 → 完整规范化设计序列化——旧白名单漏 stitching/间距/过孔尺寸/网规则，新增固定孔后单网重布静默使用旧障碍模型；保守方向（元数据变化也重建模）
+- **CLI 策略契约**：--no-joint-reroute 布尔旗标、--fanout-first 枚举校验、autopcb 透传 blindVias/compactPairs/jointReroute/fanoutFirst、--pair 重复字面量键清理
+- **netLowerBound Prim O(P³)→O(P²)**：独立差分 1000/1000 严格相等；600 焊盘 99.6×/1000 点 170.6×（函数本身，非整板）
+- **netGeoVio 段-段候选专项审计**（countNetSegmentViolations）：等价两次全板审计之差，密集合成板 13×
+- **UI**：网络面板几何缓存（447~480×，输出等价）；路由状态统一 invalidateRoutingSession（Stop/Escape/失败同源，7 项 UI + 6 项浏览器回归）
+
+### 子轮二：拥塞代价模型修正与制造约束（docs/engine-quality-performance-20261115.md）
+
+- **nearPen 邻域坐标错误修复（行为变更）**：旧实现把 `ns%NC`（格索引）当列号、`floor(ns/NC)`（层号）当行号——东邻只在首行生效、西邻 x=0 跨行环绕、南北邻跨层环绕、3W 环坐标错乱。修正为真实列/行分解。**21 案例同输入对比（可复现）**：几何 DRC error 61→48、线长 4906.5→4593.1mm（-6.4%）、过孔 90→115、未连通 0→0，routeScore 7 好/10 同/4 差（退步案例如实点名 p19-star-7、p45-center-keepout）——**不是全面无损的质量提升**。搜索黄金样本随之迁移：旧 search-baseline.json 保留不覆盖，新增 search-neighborhood-baseline.json（连续两次严格相等后记录），配独立 (layer,row,col) 三元组 oracle 回归（VM 沙箱执行真实源码块）
+- **过孔环代价缓存**：环偏移排除中心 ⇒ 环和与换层层对无关（原 rs===cur/ns 过滤恒不命中）⇒ 按 (cell,gen) 缓存 Float64 罚分有效。真实板会话布线 5 次中位 -13.9%，全部几何/统计严格相同（对照=当前引擎仅关缓存）；NC≤100 万启用（+12MB 上限），超限直算回退；顺带修复 TS>4M 时 nearPenCache 为 null 的无条件写入崩溃
+- **自动过孔避开既有固定孔钻孔**：stitching/手动换层孔此前不进布线门禁——最小例实测可在同网固定孔旁钻出 0.10mm 孔边距（几何 DRC 0 但 DFM warn）。会话在有固定过孔时按 manufacturingHoles 同口径建按 X 排序孔表，二分邻域查询，同网不豁免、仅等价孔可复用、不相交埋孔跨度不误挡；最小例孔边距 0.10→0.307mm、DFM warning 1→0、线长代价约 +1mm
+- **全阶段回滚后的差分对报告**：postroute 整体回滚时 routeBoard 恢复几何但不带压实报告、会话残留被回滚尝试的旧报告——回滚后按最终几何重算占比，标记 rolledBack:true/compacted:0，会话 buildResult 同步；仅报告状态，不放宽接受门禁
+
+### 验证
+
+- 旧 search 基线在子轮一状态 16/16 通过（位级不变实证）；子轮二后新基线 16/16×3 次运行确定
+- 21 案例质量对比经第三方以 HEAD 重建 before 引擎逐行复现（21 行浮点一致）
+- npm test 全绿（80 核心 + 281 node:test + 48 书籍 + 17 CLI + 39 模糊 + 7 深度校验 + 22 优化锁定）；npm run test:browser 60 项通过
+- 已知留痕缺口：两份文档引用的改动前快照目录（.scratch/deep-review-20261115/、.scratch/engine-quality-20261115/）未随库存留——复现可用 `git show 30c497c~1:src/engine.mjs` 重建 before 引擎（21 案例数字已证实与该重建一致）
+- 版本 0.14.4；离线入口 index.html 随源码重建
+
 ## 0.14.3（2026-11-14）—— 性能深优轮：14 处位级一致热路径优化（11 案例对拍逐字节一致）
 
 ### 背景

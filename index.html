@@ -510,6 +510,25 @@ function shpLayerInSpan(p, span, L){
   const l=p.layer==='top'?0:L-1;
   return l>=span[0] && l<=span[1];
 }
+// 固定过孔的物理钻孔间距与网络无关。仅等价的同网钻孔可复用；
+// 铜环/走线间距放行同网，不等于可在同网固定孔边再钻一个过近的新孔。
+function fixedViaDrillConflict(x,y,r,netId,fromL,toL,holes,maxReach){
+  // 会话按 x 排序并传入安全半径，只查邻域；单独调用时也支持未排序孔表。
+  let start=0;
+  if(maxReach!=null){
+    let hi=holes.length;
+    const left=x-maxReach;
+    while(start<hi){const mid=(start+hi)>>>1;if(holes[mid].x<left) start=mid+1;else hi=mid;}
+  }
+  for(let i=start;i<holes.length;i++){
+    const h=holes[i];
+    if(maxReach!=null&&h.x>x+maxReach) break;
+    if(fromL>h.span[1]||h.span[0]>toL) continue;
+    if(netId!=null&&netId===h.net&&x===h.x&&y===h.y&&r===h.r&&fromL===h.span[0]&&toL===h.span[1]) continue;
+    if(Math.hypot(x-h.x,y-h.y)<r+h.r+JLC.viaEdgeMin-1e-9) return true;
+  }
+  return false;
+}
 // 两过孔的层跨度是否相交（孔边距/间距判据：不相交的 blind vs buried 可同 XY）
 function viaSpanOverlap(a, b, layers){
   const [a0,a1]=viaSpan(a,layers), [b0,b1]=viaSpan(b,layers);
@@ -956,6 +975,12 @@ function createSession(design, opts){
   // 过孔位置合法性：板边、其它网络焊盘间距（几何硬约束）。
   // keepout 位图会话级懒构建（每过孔尝试一次 distToRect×keepouts → 一次数组读）
   let keepoutViaBlocked=null;
+  // 仅静态固定过孔：动态新孔之间的间距仍由现有搜索/审计处理。
+  // 没有 stitching 或手动换层时不构造孔表；THT 继续走原 viaHoleBlocked 位图。
+  const hasFixedVias=(design.stitching||[]).length||(design.manual||[]).some(m=>m.pts.some((p,i)=>i>0&&p.l!==m.pts[i-1].l));
+  const fixedViaHoles=hasFixedVias?manufacturingHoles(design,{nets:manualRouteEntries(design)}).filter(h=>h.hasVia).sort((a,b)=>a.x-b.x):null;
+  let fixedViaReach=0;
+  if(fixedViaHoles) for(const h of fixedViaHoles) fixedViaReach=Math.max(fixedViaReach,design.viaDrill/2+h.r+JLC.viaEdgeMin);
   function viaLegal(net, c, fromL, toL){
     const cx=cxOf(c), cy=cyOf(c);
     if(cx-design.viaOuter/2<-1e-9 || cx+design.viaOuter/2>design.width+1e-9 ||
@@ -979,6 +1004,7 @@ function createSession(design, opts){
     const vOwner=viaInfV[c];
     if(vOwner!==0&&vOwner!==net.i+1) return false;
     if(model.viaHoleBlocked&&model.viaHoleBlocked[c]) return false;   // 同网 THT 孔边距（DRC 同口径）
+    if(fixedViaHoles&&fixedViaDrillConflict(cx,cy,design.viaDrill/2,net.id,sa,sb,fixedViaHoles,fixedViaReach)) return false;
     if(keepoutViaBlocked===null){
       keepoutViaBlocked=new Uint8Array(NC);
       for(const k of design.keepouts||[]){
@@ -1324,6 +1350,10 @@ function createSession(design, opts){
     ns2.set(heapStates); nc2.set(heapCosts);
     heapStates=ns2; heapCosts=nc2;
   };
+  // 同一次 A* 的 usage/ownStamp/hard/presFac 固定；环偏移不含中心，扫描与换层层对无关。
+  // Float64 保存原序累加的罚分，不引入 Float32 舍入。最多额外 12MB，大板直算回退。
+  const viaRingPenalty=NC<=1_000_000?new Float64Array(NC):null;
+  const viaRingStamp=viaRingPenalty?new Int32Array(NC):null;
   const ownStamp=new Int32Array(TS);   // 本网格成员戳（gen 同周期）——替代热路径 net.cells.has
   const nbStates=new Int32Array(10), nbKinds=new Int8Array(10), nbDirs=new Int8Array(10);
 
@@ -1435,19 +1465,24 @@ function createSession(design, opts){
             // span 外层焊盘，BGA-64 4 层实测 +3 过孔压焊盘）
             if(!viaLegal(net, cc)) continue;
           }
-          const gx=cc%GW, gy=(cc-gx)/GW;
           let bad=false, rpen=0;
-          for(const [dx,dy] of ringOffs){
-            const x=gx+dx, y=gy+dy;
-            if(x<0||y<0||x>=GW||y>=GH) continue;
-            const c2=y*GW+x;
-            for(let l2=0;l2<L;l2++){
-              const rs=l2*NC+c2;
-              if(rs===ns||rs===cur) continue;
-              const o=usage[rs]-(ownStamp[rs]===gen?1:0);
-              if(o>0){ if(hard){ bad=true; break; } rpen+=presFac*o; }
+          if(viaRingStamp&&viaRingStamp[cc]===gen){
+            rpen=viaRingPenalty[cc]; bad=rpen<0;
+          }else{
+            const gx=cc%GW, gy=(cc-gx)/GW;
+            for(const [dx,dy] of ringOffs){
+              const x=gx+dx, y=gy+dy;
+              if(x<0||y<0||x>=GW||y>=GH) continue;
+              const c2=y*GW+x;
+              for(let l2=0;l2<L;l2++){
+                const rs=l2*NC+c2;
+                if(rs===ns||rs===cur) continue;
+                const o=usage[rs]-(ownStamp[rs]===gen?1:0);
+                if(o>0){ if(hard){ bad=true; break; } rpen+=presFac*o; }
+              }
+              if(bad) break;
             }
-            if(bad) break;
+            if(viaRingStamp){ viaRingPenalty[cc]=bad?-1:rpen; viaRingStamp[cc]=gen; }
           }
           if(bad) continue;
           ec+=viaCost+rpen;
@@ -1484,7 +1519,7 @@ function createSession(design, opts){
           let nearPen;
           if(nearPenCache && nearPenStamp[ns]===gen) nearPen=nearPenCache[ns];
           else{
-            const tc2=ns%NC, nr2=(ns/NC)|0;
+            const cell2=ns%NC, tc2=cell2%GW, nr2=(cell2-tc2)/GW;
             nearPen=0;
             if(tc2+1<GW) nearPen+=adjPenAt(net, ns+1, myPair);
             if(tc2-1>=0) nearPen+=adjPenAt(net, ns-1, myPair);
@@ -1504,7 +1539,7 @@ function createSession(design, opts){
                 nearPen+=1;
               }
             }
-            nearPenCache[ns]=nearPen; nearPenStamp[ns]=gen;
+            if(nearPenCache){ nearPenCache[ns]=nearPen; nearPenStamp[ns]=gen; }
           }
           ec+=nearPen;
         }
@@ -2669,14 +2704,21 @@ function netLowerBound(pads){
   if(pts.length<2) return 0;
   const t=rmstTasks(pts);
   if(t) return t.reduce((a,k)=>a+Math.abs(k.to.x-k.from.x)+Math.abs(k.to.y-k.from.y),0);
-  const inT=[0], rest=pts.slice(1).map((_,i)=>i+1); let len=0;
-  while(rest.length){
+  // Prim：未入树点缓存到当前树的最近距离，只与新入树点比较，O(P²)/O(P)。
+  // 索引升序扫描 + 严格 < 保留旧 rest×inT 的同距选点顺序及浮点累加次序；
+  // 不去重坐标，不改变 <=10 点的精确 RMST 分支或其求和表达式。
+  const used=new Uint8Array(pts.length), nearest=new Float64Array(pts.length).fill(Infinity);
+  used[0]=1;
+  let len=0, last=0;
+  for(let left=pts.length-1;left>0;left--){
     let bi=0, bd=Infinity;
-    for(const i of rest) for(const j of inT){
-      const d=Math.abs(pts[i].x-pts[j].x)+Math.abs(pts[i].y-pts[j].y);
-      if(d<bd){ bd=d; bi=i; }
+    const p=pts[last];
+    for(let i=1;i<pts.length;i++) if(!used[i]){
+      const d=Math.abs(pts[i].x-p.x)+Math.abs(pts[i].y-p.y);
+      if(d<nearest[i]) nearest[i]=d;
+      if(nearest[i]<bd){ bd=nearest[i]; bi=i; }
     }
-    len+=bd; inT.push(bi); rest.splice(rest.indexOf(bi),1);
+    len+=bd; used[bi]=1; last=bi;
   }
   return len;
 }
@@ -4463,7 +4505,34 @@ function routeBoard(design,opts={}){
     }
     const next=prepare(best.session.buildResult());
     if(!scoreBetter(routeScore(best.result),routeScore(next))) best.result=next;
-    else best.session.restore(saved);
+    else{
+      best.session.restore(saved);
+      // 全阶段回滚不能丢失压实报告，也不能把已回滚的尝试宣称为压实成功。
+      // 比例以最终保留的（美化后）几何重算；会话后续 buildResult 同步该报告。
+      if(next.compact){
+        const pairs=next.compact.pairs.map(({group})=>{
+          const members=design.nets.filter(n=>n.pair===group),ids=new Set(members.map(n=>n.id));
+          const routes=best.result.nets.filter(n=>ids.has(n.netId));
+          const pair={group,action:'skipped',reason:'postroute-score-rollback'};
+          if(members.length===2&&routes.length===2){
+            const z=diffPairZFor(design,netW(design,members[0].id),members[0].diffZ>0?members[0].diffZ:90);
+            if(z.ok&&z.achievable&&z.sFor!=null){
+              const center=(netW(design,members[0].id)+netW(design,members[1].id))/2+z.sFor;
+              let coupled=0,total=0;
+              for(let i=0;i<2;i++){
+                const st=pairCoupleStats([routes[i].paths],[routes[1-i].paths],center,Math.max(design.grid,0.25));
+                coupled+=st.coupledLen;total+=st.totalLen;
+              }
+              pair.ratioBefore=+(total>0?coupled/total:0).toFixed(3);
+            }
+          }
+          return pair;
+        });
+        const errors=best.result.drcErrors||0;
+        best.result.compact={pairs,compacted:0,skipped:pairs.length,drcBefore:errors,drcAfter:errors,rolledBack:true};
+        best.session.session.compact=best.result.compact;
+      }
+    }
     if(opts.onStage) opts.onStage({ stage:(opts.stagePrefix?opts.stagePrefix+' ':'')+'逐网优化',
       status:best.result.status, connected:best.result.stats.connected, total:best.result.stats.total,
       vias:best.result.stats.vias, drcErrors:best.result.drcErrors||0, hash:resultHash(best.result) });
@@ -4508,20 +4577,56 @@ function auditGeometry(design, result, opts){
   for(const s of segs){ let a=byLayer.get(s.l); if(!a){ a=[]; byLayer.set(s.l,a); } a.push(s); }
   for(const [l,arr] of byLayer){
     arr.sort((p,q)=>p.x0-q.x0||p.y0-q.y0||p.net-q.net);
+    let maxHalf=0;
+    for(const s of arr) if(s.hw>maxHalf) maxHalf=s.hw;
     for(let i=0;i<arr.length;i++){
       const s=arr[i];
+      const scanReach=s.hw+maxHalf+design.clearance;
       for(let j=i+1;j<arr.length;j++){
         const t=arr[j];
+        if(t.x0>s.x1+scanReach) break; // 后续段可能更宽，终止界必须覆盖本层最大半宽
         if(t.net===s.net) continue;
         const reach=s.hw+t.hw+design.clearance;
-        if(t.x0>s.x1+reach) break;                       // 左边界已超出可能间距
-        if(t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
+        if(t.x0>s.x1+reach||t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
         const d=segSegDist(s.a.x,s.a.y,s.b.x,s.b.y,t.a.x,t.a.y,t.b.x,t.b.y);
         if(d<reach-1e-9) out.push({x:(s.a.x+s.b.x)/2,y:(s.a.y+s.b.y)/2,l});
       }
     }
   }
   return out;
+}
+
+// 只计算候选网参与的段-段违规，等价于两次全板审计的计数差。
+// 避免在每次试探接受/回滚时重新扫描与该网无关的全部段对。
+function countNetSegmentViolations(design, entry, rest){
+  const byLayer=new Map(), hw=netW(design,entry.netId)/2;
+  for(const path of entry.paths||[]) for(let i=1;i<path.length;i++){
+    const a=path[i-1],b=path[i];
+    if(a.l!==b.l||(Math.abs(a.x-b.x)<1e-12&&Math.abs(a.y-b.y)<1e-12)) continue;
+    const s={net:entry.netId,hw,a,b,x0:Math.min(a.x,b.x),x1:Math.max(a.x,b.x),
+      y0:Math.min(a.y,b.y),y1:Math.max(a.y,b.y)};
+    let group=byLayer.get(a.l); if(!group){group=[];byLayer.set(a.l,group);} group.push(s);
+  }
+  if(!byLayer.size) return 0;
+  let count=0;
+  for(const n of [...rest,...manualRouteEntries(design)]){
+    if(n.netId===entry.netId) continue;
+    const otherHalf=netW(design,n.netId)/2, reach=hw+otherHalf+design.clearance;
+    for(const path of n.paths||[]) for(let i=1;i<path.length;i++){
+      const a=path[i-1],b=path[i],group=byLayer.get(a.l);
+      if(a.l!==b.l||!group||(Math.abs(a.x-b.x)<1e-12&&Math.abs(a.y-b.y)<1e-12)) continue;
+      const t={net:n.netId,a,b,x0:Math.min(a.x,b.x),x1:Math.max(a.x,b.x),
+        y0:Math.min(a.y,b.y),y1:Math.max(a.y,b.y)};
+      for(const own of group){
+        // 与全板 sweep 保持完全相同的参数方向及边界算式（稳定排序时 entry 在先）。
+        let s=own,o=t;
+        if((s.x0-o.x0||s.y0-o.y0||s.net-o.net)>0){s=t;o=own;}
+        if(o.x0>s.x1+reach||o.y0>s.y1+reach||o.y1<s.y0-reach) continue;
+        if(segSegDist(s.a.x,s.a.y,s.b.x,s.b.y,o.a.x,o.a.y,o.b.x,o.b.y)<reach-1e-9) count++;
+      }
+    }
+  }
+  return count;
 }
 
 function routeBoardShape(design, opts={}){
@@ -4569,8 +4674,7 @@ function routeBoardShape(design, opts={}){
   // before/after 用同一函数（对称），存量违规自动抵消，只剩净增量。
   const netGeoVio=(netEntry)=>{
     const rest=merged.nets.filter(x=>x.netId!==netEntry.netId);
-    let vio=auditGeometry(design,{nets:[netEntry,...rest]}).length
-          - auditGeometry(design,{nets:rest}).length;          // 段-段
+    let vio=countNetSegmentViolations(design,netEntry,rest);   // 段-段（只审计候选网）
     const hw=netW(design,netEntry.netId)/2;
     for(const path of netEntry.paths||[]) for(let k=1;k<path.length;k++){
       const a=path[k-1], b=path[k];
@@ -4634,14 +4738,17 @@ function routeBoardShape(design, opts={}){
     for(const s of segs){ let a=byLayer.get(s.l); if(!a){ a=[]; byLayer.set(s.l,a); } a.push(s); }
     for(const [l,arr] of byLayer){
       arr.sort((p,q)=>p.x0-q.x0||p.y0-q.y0||p.net-q.net);
+      let maxHalf=0;
+      for(const s of arr) if(s.hw>maxHalf) maxHalf=s.hw;
       for(let i=0;i<arr.length;i++){
         const s=arr[i];
+        const scanReach=s.hw+maxHalf+design.clearance;
         for(let j=i+1;j<arr.length;j++){
           const t=arr[j];
+          if(t.x0>s.x1+scanReach) break; // 与 auditGeometry 同口径：不能用当前候选的半宽终止
           if(t.net===s.net) continue;
           const reach=s.hw+t.hw+design.clearance;
-          if(t.x0>s.x1+reach) break;
-          if(t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
+          if(t.x0>s.x1+reach||t.y0>s.y1+reach||t.y1<s.y0-reach) continue;
           if(segSegDist(s.a.x,s.a.y,s.b.x,s.b.y,t.a.x,t.a.y,t.b.x,t.b.y)<reach-1e-9){
             segsegAll++; bump(s.net,1); bump(t.net,1);
           }
@@ -9746,15 +9853,11 @@ const EXAMPLES=[
 </script>
 <script id="pcb-worker" type="text/plain">
 let session=null;
-// 建会话时的设计指纹（#14d）：手动走线/禁布增删会让既有 model 变陈旧——
-// 单网重布必须用与新设计一致的门禁，否则新加的障碍对重布不可见（静默冲突）。
+// 会话捕获建模时的障碍和规则；任何设计变化都保守地要求重新建模。
+// 保存完整的规范化设计，而非字段白名单：漏掉 stitching、间距/过孔参数、
+// 网络元数据或 rules 会让单网重布静默使用旧 model，后续新增约束也不能漏检。
 let sessionKey=null;
-const fingerprint=d=>JSON.stringify({
-  pads:d.pads,p:1,
-  manual:(d.manual||[]).map(m=>({n:m.netId,pts:m.pts})),
-  keepouts:d.keepouts,tracks:d.nets.map(n=>[n.id,n.w,n.tr]),
-  g:d.grid,w:d.width,h:d.height,l:d.layers
-});
+const fingerprint=d=>JSON.stringify(d);
 self.onmessage=event=>{
   const {id,command,design,options={},netId,result:prevResult}=event.data;
   const progress=update=>self.postMessage({id,type:'progress',...update});
@@ -10531,6 +10634,8 @@ class RoutingWorkerClient{
   }
   async function rerouteOne(id){
     if(app.routing) return;
+    // 空闲期 Worker 异常没有待决 request/catch；不能据旧 UI 标记重建一个无会话 Worker。
+    if(!routingClient.worker) app.session=null;
     if(!app.session||!app.result){toast('请先执行一次自动布线');return;}
     routingBusy(true);
     try{
@@ -10545,7 +10650,7 @@ class RoutingWorkerClient{
       app.result=response.result;
       computeDerived(); renderNets(); renderStats(); runDRC(); requestDraw();
       toast(response.outcome.ok?'网络已单独重布 ✓':'单独重布失败，请查看 DRC');
-    }catch(error){app.session=null;toast(error.name==='AbortError'?'已停止重布':error.message);}
+    }catch(error){invalidateRoutingSession();toast(error.name==='AbortError'?'已停止重布':error.message);}
     finally{routingBusy(false);}
   }
   function clearNetRoutes(id){
@@ -10699,7 +10804,7 @@ class RoutingWorkerClient{
     if(key==='1'){ e.preventDefault(); zoomAt(10); return; }
     if(key==='+'||key==='='){ e.preventDefault(); zoomAt(app.view.scale*1.2); return; }
     if(key==='-'){ e.preventDefault(); zoomAt(app.view.scale/1.2); return; }
-    if(app.routing){ if(e.key==='Escape') routingClient.dispose(); return; }
+    if(app.routing){ if(e.key==='Escape') invalidateRoutingSession(); return; }
     if(app.draw){
       if(e.key==='Enter'){ e.preventDefault(); finishDraw(); return; }
       if(e.key==='Escape'){ app.draw=null; syncCanvasUI(); requestDraw(); return; }
@@ -10797,12 +10902,34 @@ class RoutingWorkerClient{
   $('pDel').addEventListener('click',()=>{ if(app.sel) removeObj(app.sel); });
 
   // ---------------- 网络面板 ----------------
+  function createNetGeometryCache(lowerBound){
+    let currentDesign=null, cache=new Map();
+    return d=>{
+      // 撤销/导入会更换 design；缓存不持有历史设计或已删除网络。
+      if(d!==currentDesign){ currentDesign=d; cache=new Map(); }
+      const groups=new Map(d.nets.map(n=>[n.id,{pads:[]}]));
+      for(const p of d.pads) groups.get(p.netId)?.pads.push(p);
+      const next=new Map();
+      for(const [id,group] of groups){
+        // 下界仅取决于本网焊盘坐标；选网、名字、DRC/布线结果不改变它。
+        const signature=JSON.stringify(group.pads.map(p=>[p.x,p.y]));
+        const old=cache.get(id);
+        const entry=old?.signature===signature?old:{signature,value:lowerBound(group.pads)};
+        group.lowerBound=entry.value;
+        next.set(id,entry);
+      }
+      cache=next;
+      return groups;
+    };
+  }
+  const netGeometryCache=createNetGeometryCache(netLowerBound);
   function renderNets(){
     const d=app.design, list=$('netList'); list.innerHTML='';
+    const geometry=netGeometryCache(d);
     for(const n of d.nets){
-      const cnt=d.pads.filter(p=>p.netId===n.id).length;
+      const group=geometry.get(n.id), cnt=group.pads.length;
       let st=['','未布'], cls='', lnTxt='';
-      const lb=netLowerBound(d.pads.filter(p=>p.netId===n.id));
+      const lb=group.lowerBound;
       if(app.result){
         const rn=app.result.nets.find(x=>x.netId===n.id);
         if(rn){ if(!rn.total){ st=['','空']; }
@@ -11126,6 +11253,12 @@ class RoutingWorkerClient{
   $('btnFit').addEventListener('click',fitView);
 
   // ---------------- 自动布线 ----------------
+  function invalidateRoutingSession(){
+    // Worker 是会话的唯一持有者；取消或失败时同步清标记，不能等 Promise catch。
+    // 保留已显示的 result/design：重布与形状补线失败不应抹掉原有成果。
+    app.session=null;
+    routingClient.dispose();
+  }
   function routingBusy(busy){
     app.routing=busy;
     if(busy){
@@ -11171,7 +11304,7 @@ class RoutingWorkerClient{
         ? '✅ 布线完成：全部网络连通，无间距冲突'
         : '⚠ 请查看统计与 DRC 结果');
     }catch(error){
-      app.session=null;
+      invalidateRoutingSession();
       if(error.name==='AbortError') toast('已停止布线');
       else{toast('布线失败：'+error.message);$('drcList').textContent=error.message;}
     }finally{
@@ -11179,7 +11312,7 @@ class RoutingWorkerClient{
     }
   }
   $('btnRoute').addEventListener('click',()=>runRoute());
-  $('btnStop').addEventListener('click',()=>routingClient.dispose());
+  $('btnStop').addEventListener('click',()=>invalidateRoutingSession());
   $('btnAutopcb').addEventListener('click',async()=>{
     if(app.routing||!app.design) return;
     if(!confirm('将自动布局（会移动未锚定元件）并完整布线，继续？')) return;
@@ -11213,8 +11346,14 @@ class RoutingWorkerClient{
         ? '形状补线：接受 '+sh.accepted+'/'+sh.attempted+' 网（连通 '+app.result.stats.connected+'/'+app.result.stats.total+'）'
         : '形状补线未改动（'+(sh.reason||'无失败网')+'）');
     }catch(error){
-      toast('形状补线失败：'+error.message);
-      $('drcList').textContent=error.message;
+      invalidateRoutingSession();
+      if(error.name==='AbortError'){
+        toast('已停止形状补线，保留原布线结果');
+        $('drcList').textContent='形状补线已停止，保留原布线结果，可重新检查 DRC。';
+      }else{
+        toast('形状补线失败：'+error.message);
+        $('drcList').textContent=error.message;
+      }
     }finally{
       routingBusy(false); $('progressWrap').style.display='none'; requestDraw();
     }

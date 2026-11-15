@@ -30,8 +30,14 @@ const drc = (d, r) => core.checkDRC(d, { ...r, nets: [...r.nets, ...core.manualR
 
 test('已耦合板：压实如实 skipped（0.913 无法更优），DRC 清洁', () => {
   const d = mkBoard();
-  const r = core.routeBoard(d, { maxIter: 20 }).result;
+  const routed = core.routeBoard(d, { maxIter: 20 }), r = routed.result;
   assert.ok(r.compact, 'result 应附 compact 报告');
+  assert.deepEqual(routed.session.buildResult().compact,r.compact,'后续会话结果不得保留已回滚的压实报告');
+  if(r.compact.rolledBack){
+    assert.equal(r.compact.compacted,0,'全阶段回滚不能宣称压实成功');
+    assert.equal(r.compact.drcAfter,r.drcErrors);
+    assert.ok(r.compact.pairs.every(p=>p.action==='skipped'&&p.reason==='postroute-score-rollback'));
+  }
   assert.equal(r.compact.pairs[0].group, 'usb');
   assert.ok(r.compact.pairs[0].ratioBefore >= 0.6, '偏置路由在此板应已耦合 ≥0.6');
   assert.equal(r.compact.pairs[0].action, 'skipped', '已耦合时不得强行重构');

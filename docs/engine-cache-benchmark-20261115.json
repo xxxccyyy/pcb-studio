@@ -1,0 +1,31 @@
+﻿{
+  "scope": "ext-fable-03 createSession(maxIter=8), no postroute/beautify",
+  "node": "v24.21.0",
+  "samples": 5,
+  "rows": [
+    {
+      "beforeMs": 6186.0478,
+      "afterMs": 5841.250600000001
+    },
+    {
+      "beforeMs": 7785.009000000002,
+      "afterMs": 5695.0581999999995
+    },
+    {
+      "beforeMs": 6614.754099999998,
+      "afterMs": 6296.316500000001
+    },
+    {
+      "beforeMs": 6585.116499999996,
+      "afterMs": 5555.513599999998
+    },
+    {
+      "beforeMs": 6880.427199999991,
+      "afterMs": 5604.6394999999975
+    }
+  ],
+  "beforeMedianMs": 6614.754099999998,
+  "afterMedianMs": 5695.0581999999995,
+  "reduction": 0.13903705052316295,
+  "equivalent": true
+}

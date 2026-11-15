@@ -5,9 +5,12 @@ import {createHash} from 'node:crypto';
 import * as core from '../src/engine.mjs';
 import {searchCases,runSearchCase} from './search-cases.mjs';
 
-const baseline=JSON.parse(readFileSync(new URL('./search-baseline.json',import.meta.url),'utf8'));
+// Keep search-baseline.json as the historical allocating-search reference. The
+// corrected row/column cost model intentionally changes some negotiated routes;
+// its golden was recorded twice and is guarded separately by a coordinate oracle.
+const baseline=JSON.parse(readFileSync(new URL('./search-neighborhood-baseline.json',import.meta.url),'utf8'));
 const digest=s=>createHash('sha256').update(s).digest('hex');
-for(const fixture of searchCases(core)) test('A* preserves allocating baseline: '+fixture.name,()=>{
+for(const fixture of searchCases(core)) test('A* preserves corrected-neighborhood baseline: '+fixture.name,()=>{
   assert.deepEqual(runSearchCase(core,fixture,digest),baseline.cases[fixture.name]);
 });
 

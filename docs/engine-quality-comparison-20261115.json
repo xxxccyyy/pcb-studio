@@ -1,0 +1,963 @@
+﻿{
+  "scope": "same-input 21-case quality comparison; single-run runtime is illustrative only",
+  "summary": {
+    "cases": 21,
+    "improved": 7,
+    "regressed": 4,
+    "geometricErrorsBefore": 61,
+    "geometricErrorsAfter": 48,
+    "unconnectedBefore": 0,
+    "unconnectedAfter": 0,
+    "viasBefore": 90,
+    "viasAfter": 115,
+    "trackLenBefore": 4906.505592141147,
+    "trackLenAfter": 4593.093583979422
+  },
+  "rows": [
+    {
+      "name": "e555 {}",
+      "before": {
+        "ms": 396.6617,
+        "status": "complete",
+        "connected": 22,
+        "total": 22,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 141.81933147246545,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1418
+        ]
+      },
+      "after": {
+        "ms": 380.2853,
+        "status": "complete",
+        "connected": 22,
+        "total": 22,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 141.81933147246545,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1418
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "e555 {\"diag\":false}",
+      "before": {
+        "ms": 196.7708,
+        "status": "complete",
+        "connected": 22,
+        "total": 22,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 158.60660171779818,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1586
+        ]
+      },
+      "after": {
+        "ms": 121.48960000000011,
+        "status": "complete",
+        "connected": 22,
+        "total": 22,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 158.60660171779818,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1586
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "e555 {\"viaCost\":17.3,\"layerDir\":false}",
+      "before": {
+        "ms": 203.29629999999997,
+        "status": "complete",
+        "connected": 22,
+        "total": 22,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 141.81933147246545,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1418
+        ]
+      },
+      "after": {
+        "ms": 188.52010000000018,
+        "status": "complete",
+        "connected": 22,
+        "total": 22,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 141.81933147246545,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1418
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "eled {}",
+      "before": {
+        "ms": 119.46759999999995,
+        "status": "complete",
+        "connected": 25,
+        "total": 25,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 95.96907940858222,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          960
+        ]
+      },
+      "after": {
+        "ms": 132.2940000000001,
+        "status": "complete",
+        "connected": 25,
+        "total": 25,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 95.96907940858222,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          960
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "eled {\"diag\":false}",
+      "before": {
+        "ms": 149.1860999999999,
+        "status": "complete",
+        "connected": 25,
+        "total": 25,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 98,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          980
+        ]
+      },
+      "after": {
+        "ms": 116.04500000000007,
+        "status": "complete",
+        "connected": 25,
+        "total": 25,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 98,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          980
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "eled {\"viaCost\":17.3,\"layerDir\":false}",
+      "before": {
+        "ms": 152.33320000000003,
+        "status": "complete",
+        "connected": 25,
+        "total": 25,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 95.96907940858222,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          960
+        ]
+      },
+      "after": {
+        "ms": 175.72840000000042,
+        "status": "complete",
+        "connected": 25,
+        "total": 25,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 95.96907940858222,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          960
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "emcu {}",
+      "before": {
+        "ms": 302.1837999999998,
+        "status": "complete",
+        "connected": 33,
+        "total": 33,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 327.63305842720854,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3276
+        ]
+      },
+      "after": {
+        "ms": 319.0238999999997,
+        "status": "complete",
+        "connected": 33,
+        "total": 33,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 309.35903101956717,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3094
+        ]
+      },
+      "improved": true,
+      "regressed": false
+    },
+    {
+      "name": "emcu {\"diag\":false}",
+      "before": {
+        "ms": 233.03690000000006,
+        "status": "complete",
+        "connected": 33,
+        "total": 33,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 7,
+        "trackLen": 334.8137084989848,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          7,
+          3348
+        ]
+      },
+      "after": {
+        "ms": 251.2768000000001,
+        "status": "complete",
+        "connected": 33,
+        "total": 33,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 7,
+        "trackLen": 334.8137084989848,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          7,
+          3348
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "emcu {\"viaCost\":17.3,\"layerDir\":false}",
+      "before": {
+        "ms": 336.3149000000003,
+        "status": "complete",
+        "connected": 33,
+        "total": 33,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 329.4830503288763,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3295
+        ]
+      },
+      "after": {
+        "ms": 347.0748000000003,
+        "status": "complete",
+        "connected": 33,
+        "total": 33,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 329.4830503288763,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3295
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "crossing 1L diag=false",
+      "before": {
+        "ms": 107.32030000000032,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 9,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 122.07106781186548,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1221
+        ]
+      },
+      "after": {
+        "ms": 154.8200999999999,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 7,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 121.48528137423857,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1215
+        ]
+      },
+      "improved": true,
+      "regressed": false
+    },
+    {
+      "name": "crossing 1L diag=true",
+      "before": {
+        "ms": 65.97170000000006,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 7,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 109.90603760432451,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1099
+        ]
+      },
+      "after": {
+        "ms": 58.3800999999994,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 7,
+        "overuse": 0,
+        "vias": 0,
+        "trackLen": 109.90603760432451,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1099
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "crossing 2L diag=false",
+      "before": {
+        "ms": 156.08740000000034,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 2,
+        "overuse": 0,
+        "vias": 4,
+        "trackLen": 107.2175144212722,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          4,
+          1072
+        ]
+      },
+      "after": {
+        "ms": 157.6916000000001,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 2,
+        "overuse": 0,
+        "vias": 4,
+        "trackLen": 109.36396103067892,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          4,
+          1094
+        ]
+      },
+      "improved": false,
+      "regressed": true
+    },
+    {
+      "name": "crossing 2L diag=true",
+      "before": {
+        "ms": 236.27230000000054,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 2,
+        "overuse": 0,
+        "vias": 4,
+        "trackLen": 89.892077818421,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          4,
+          899
+        ]
+      },
+      "after": {
+        "ms": 164.17299999999977,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 2,
+        "overuse": 0,
+        "vias": 4,
+        "trackLen": 90.732697241117,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          4,
+          907
+        ]
+      },
+      "improved": false,
+      "regressed": true
+    },
+    {
+      "name": "crossing 4L diag=false",
+      "before": {
+        "ms": 233.57669999999962,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 2,
+        "overuse": 0,
+        "vias": 11,
+        "trackLen": 108.92462120245875,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          11,
+          1089
+        ]
+      },
+      "after": {
+        "ms": 181.3843999999999,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 2,
+        "overuse": 0,
+        "vias": 11,
+        "trackLen": 104.85139789775539,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          11,
+          1049
+        ]
+      },
+      "improved": true,
+      "regressed": false
+    },
+    {
+      "name": "crossing 4L diag=true",
+      "before": {
+        "ms": 337.79359999999997,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 2,
+        "overuse": 0,
+        "vias": 8,
+        "trackLen": 95.65671723722328,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          8,
+          957
+        ]
+      },
+      "after": {
+        "ms": 256.66430000000037,
+        "status": "complete",
+        "connected": 8,
+        "total": 8,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 2,
+        "overuse": 0,
+        "vias": 8,
+        "trackLen": 90.3939946076424,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          8,
+          904
+        ]
+      },
+      "improved": true,
+      "regressed": false
+    },
+    {
+      "name": "p10-grid-08",
+      "before": {
+        "ms": 175.88640000000032,
+        "status": "partial",
+        "connected": 28,
+        "total": 28,
+        "geometricErrors": 4,
+        "manufacturingErrors": 4,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 7,
+        "trackLen": 223.53295964108287,
+        "score": [
+          1,
+          0,
+          4,
+          0,
+          7,
+          2235
+        ]
+      },
+      "after": {
+        "ms": 226.09249999999975,
+        "status": "partial",
+        "connected": 28,
+        "total": 28,
+        "geometricErrors": 4,
+        "manufacturingErrors": 4,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 6,
+        "trackLen": 230.0119711318274,
+        "score": [
+          1,
+          0,
+          4,
+          0,
+          6,
+          2300
+        ]
+      },
+      "improved": true,
+      "regressed": false
+    },
+    {
+      "name": "p13-density-3",
+      "before": {
+        "ms": 1341.0157999999992,
+        "status": "complete",
+        "connected": 32,
+        "total": 32,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 9,
+        "trackLen": 195.48156180187203,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          9,
+          1955
+        ]
+      },
+      "after": {
+        "ms": 1481.6557999999986,
+        "status": "complete",
+        "connected": 32,
+        "total": 32,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 9,
+        "trackLen": 195.48156180187203,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          9,
+          1955
+        ]
+      },
+      "improved": false,
+      "regressed": false
+    },
+    {
+      "name": "p19-star-7",
+      "before": {
+        "ms": 3810.1301000000003,
+        "status": "complete",
+        "connected": 46,
+        "total": 46,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 7,
+        "trackLen": 513.5174773618915,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          7,
+          5135
+        ]
+      },
+      "after": {
+        "ms": 2401.605800000001,
+        "status": "complete",
+        "connected": 46,
+        "total": 46,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 19,
+        "trackLen": 377.2026779559498,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          19,
+          3772
+        ]
+      },
+      "improved": false,
+      "regressed": true
+    },
+    {
+      "name": "p27-cnc-shield",
+      "before": {
+        "ms": 14832.4208,
+        "status": "partial",
+        "connected": 64,
+        "total": 64,
+        "geometricErrors": 55,
+        "manufacturingErrors": 55,
+        "manufacturingWarnings": 3,
+        "overuse": 38,
+        "vias": 20,
+        "trackLen": 1071.432159926294,
+        "score": [
+          1,
+          0,
+          55,
+          38,
+          20,
+          10714
+        ]
+      },
+      "after": {
+        "ms": 39303.579,
+        "status": "partial",
+        "connected": 64,
+        "total": 64,
+        "geometricErrors": 42,
+        "manufacturingErrors": 42,
+        "manufacturingWarnings": 3,
+        "overuse": 27,
+        "vias": 23,
+        "trackLen": 999.6293946015584,
+        "score": [
+          1,
+          0,
+          42,
+          27,
+          23,
+          9996
+        ]
+      },
+      "improved": true,
+      "regressed": false
+    },
+    {
+      "name": "p43-single-layer",
+      "before": {
+        "ms": 1042.7887000000046,
+        "status": "partial",
+        "connected": 20,
+        "total": 20,
+        "geometricErrors": 2,
+        "manufacturingErrors": 2,
+        "manufacturingWarnings": 0,
+        "overuse": 1,
+        "vias": 0,
+        "trackLen": 86.38556348075326,
+        "score": [
+          1,
+          0,
+          2,
+          1,
+          0,
+          864
+        ]
+      },
+      "after": {
+        "ms": 717.6327999999921,
+        "status": "partial",
+        "connected": 20,
+        "total": 20,
+        "geometricErrors": 2,
+        "manufacturingErrors": 2,
+        "manufacturingWarnings": 0,
+        "overuse": 1,
+        "vias": 0,
+        "trackLen": 86.16378954581783,
+        "score": [
+          1,
+          0,
+          2,
+          1,
+          0,
+          862
+        ]
+      },
+      "improved": true,
+      "regressed": false
+    },
+    {
+      "name": "p45-center-keepout",
+      "before": {
+        "ms": 7569.897400000002,
+        "status": "complete",
+        "connected": 44,
+        "total": 44,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 13,
+        "trackLen": 458.3745930987252,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          13,
+          4584
+        ]
+      },
+      "after": {
+        "ms": 3128.4451000000117,
+        "status": "complete",
+        "connected": 44,
+        "total": 44,
+        "geometricErrors": 0,
+        "manufacturingErrors": 0,
+        "manufacturingWarnings": 0,
+        "overuse": 0,
+        "vias": 24,
+        "trackLen": 372.0316058593181,
+        "score": [
+          0,
+          0,
+          0,
+          0,
+          24,
+          3720
+        ]
+      },
+      "improved": false,
+      "regressed": true
+    }
+  ]
+}

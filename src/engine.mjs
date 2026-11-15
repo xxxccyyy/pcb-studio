@@ -209,6 +209,25 @@ function shpLayerInSpan(p, span, L){
   const l=p.layer==='top'?0:L-1;
   return l>=span[0] && l<=span[1];
 }
+// 固定过孔的物理钻孔间距与网络无关。仅等价的同网钻孔可复用；
+// 铜环/走线间距放行同网，不等于可在同网固定孔边再钻一个过近的新孔。
+function fixedViaDrillConflict(x,y,r,netId,fromL,toL,holes,maxReach){
+  // 会话按 x 排序并传入安全半径，只查邻域；单独调用时也支持未排序孔表。
+  let start=0;
+  if(maxReach!=null){
+    let hi=holes.length;
+    const left=x-maxReach;
+    while(start<hi){const mid=(start+hi)>>>1;if(holes[mid].x<left) start=mid+1;else hi=mid;}
+  }
+  for(let i=start;i<holes.length;i++){
+    const h=holes[i];
+    if(maxReach!=null&&h.x>x+maxReach) break;
+    if(fromL>h.span[1]||h.span[0]>toL) continue;
+    if(netId!=null&&netId===h.net&&x===h.x&&y===h.y&&r===h.r&&fromL===h.span[0]&&toL===h.span[1]) continue;
+    if(Math.hypot(x-h.x,y-h.y)<r+h.r+JLC.viaEdgeMin-1e-9) return true;
+  }
+  return false;
+}
 // 两过孔的层跨度是否相交（孔边距/间距判据：不相交的 blind vs buried 可同 XY）
 function viaSpanOverlap(a, b, layers){
   const [a0,a1]=viaSpan(a,layers), [b0,b1]=viaSpan(b,layers);
@@ -655,6 +674,12 @@ function createSession(design, opts){
   // 过孔位置合法性：板边、其它网络焊盘间距（几何硬约束）。
   // keepout 位图会话级懒构建（每过孔尝试一次 distToRect×keepouts → 一次数组读）
   let keepoutViaBlocked=null;
+  // 仅静态固定过孔：动态新孔之间的间距仍由现有搜索/审计处理。
+  // 没有 stitching 或手动换层时不构造孔表；THT 继续走原 viaHoleBlocked 位图。
+  const hasFixedVias=(design.stitching||[]).length||(design.manual||[]).some(m=>m.pts.some((p,i)=>i>0&&p.l!==m.pts[i-1].l));
+  const fixedViaHoles=hasFixedVias?manufacturingHoles(design,{nets:manualRouteEntries(design)}).filter(h=>h.hasVia).sort((a,b)=>a.x-b.x):null;
+  let fixedViaReach=0;
+  if(fixedViaHoles) for(const h of fixedViaHoles) fixedViaReach=Math.max(fixedViaReach,design.viaDrill/2+h.r+JLC.viaEdgeMin);
   function viaLegal(net, c, fromL, toL){
     const cx=cxOf(c), cy=cyOf(c);
     if(cx-design.viaOuter/2<-1e-9 || cx+design.viaOuter/2>design.width+1e-9 ||
@@ -678,6 +703,7 @@ function createSession(design, opts){
     const vOwner=viaInfV[c];
     if(vOwner!==0&&vOwner!==net.i+1) return false;
     if(model.viaHoleBlocked&&model.viaHoleBlocked[c]) return false;   // 同网 THT 孔边距（DRC 同口径）
+    if(fixedViaHoles&&fixedViaDrillConflict(cx,cy,design.viaDrill/2,net.id,sa,sb,fixedViaHoles,fixedViaReach)) return false;
     if(keepoutViaBlocked===null){
       keepoutViaBlocked=new Uint8Array(NC);
       for(const k of design.keepouts||[]){
@@ -1023,6 +1049,10 @@ function createSession(design, opts){
     ns2.set(heapStates); nc2.set(heapCosts);
     heapStates=ns2; heapCosts=nc2;
   };
+  // 同一次 A* 的 usage/ownStamp/hard/presFac 固定；环偏移不含中心，扫描与换层层对无关。
+  // Float64 保存原序累加的罚分，不引入 Float32 舍入。最多额外 12MB，大板直算回退。
+  const viaRingPenalty=NC<=1_000_000?new Float64Array(NC):null;
+  const viaRingStamp=viaRingPenalty?new Int32Array(NC):null;
   const ownStamp=new Int32Array(TS);   // 本网格成员戳（gen 同周期）——替代热路径 net.cells.has
   const nbStates=new Int32Array(10), nbKinds=new Int8Array(10), nbDirs=new Int8Array(10);
 
@@ -1134,19 +1164,24 @@ function createSession(design, opts){
             // span 外层焊盘，BGA-64 4 层实测 +3 过孔压焊盘）
             if(!viaLegal(net, cc)) continue;
           }
-          const gx=cc%GW, gy=(cc-gx)/GW;
           let bad=false, rpen=0;
-          for(const [dx,dy] of ringOffs){
-            const x=gx+dx, y=gy+dy;
-            if(x<0||y<0||x>=GW||y>=GH) continue;
-            const c2=y*GW+x;
-            for(let l2=0;l2<L;l2++){
-              const rs=l2*NC+c2;
-              if(rs===ns||rs===cur) continue;
-              const o=usage[rs]-(ownStamp[rs]===gen?1:0);
-              if(o>0){ if(hard){ bad=true; break; } rpen+=presFac*o; }
+          if(viaRingStamp&&viaRingStamp[cc]===gen){
+            rpen=viaRingPenalty[cc]; bad=rpen<0;
+          }else{
+            const gx=cc%GW, gy=(cc-gx)/GW;
+            for(const [dx,dy] of ringOffs){
+              const x=gx+dx, y=gy+dy;
+              if(x<0||y<0||x>=GW||y>=GH) continue;
+              const c2=y*GW+x;
+              for(let l2=0;l2<L;l2++){
+                const rs=l2*NC+c2;
+                if(rs===ns||rs===cur) continue;
+                const o=usage[rs]-(ownStamp[rs]===gen?1:0);
+                if(o>0){ if(hard){ bad=true; break; } rpen+=presFac*o; }
+              }
+              if(bad) break;
             }
-            if(bad) break;
+            if(viaRingStamp){ viaRingPenalty[cc]=bad?-1:rpen; viaRingStamp[cc]=gen; }
           }
           if(bad) continue;
           ec+=viaCost+rpen;
@@ -1183,7 +1218,7 @@ function createSession(design, opts){
           let nearPen;
           if(nearPenCache && nearPenStamp[ns]===gen) nearPen=nearPenCache[ns];
           else{
-            const tc2=ns%NC, nr2=(ns/NC)|0;
+            const cell2=ns%NC, tc2=cell2%GW, nr2=(cell2-tc2)/GW;
             nearPen=0;
             if(tc2+1<GW) nearPen+=adjPenAt(net, ns+1, myPair);
             if(tc2-1>=0) nearPen+=adjPenAt(net, ns-1, myPair);
@@ -1203,7 +1238,7 @@ function createSession(design, opts){
                 nearPen+=1;
               }
             }
-            nearPenCache[ns]=nearPen; nearPenStamp[ns]=gen;
+            if(nearPenCache){ nearPenCache[ns]=nearPen; nearPenStamp[ns]=gen; }
           }
           ec+=nearPen;
         }
@@ -4169,7 +4204,34 @@ function routeBoard(design,opts={}){
     }
     const next=prepare(best.session.buildResult());
     if(!scoreBetter(routeScore(best.result),routeScore(next))) best.result=next;
-    else best.session.restore(saved);
+    else{
+      best.session.restore(saved);
+      // 全阶段回滚不能丢失压实报告，也不能把已回滚的尝试宣称为压实成功。
+      // 比例以最终保留的（美化后）几何重算；会话后续 buildResult 同步该报告。
+      if(next.compact){
+        const pairs=next.compact.pairs.map(({group})=>{
+          const members=design.nets.filter(n=>n.pair===group),ids=new Set(members.map(n=>n.id));
+          const routes=best.result.nets.filter(n=>ids.has(n.netId));
+          const pair={group,action:'skipped',reason:'postroute-score-rollback'};
+          if(members.length===2&&routes.length===2){
+            const z=diffPairZFor(design,netW(design,members[0].id),members[0].diffZ>0?members[0].diffZ:90);
+            if(z.ok&&z.achievable&&z.sFor!=null){
+              const center=(netW(design,members[0].id)+netW(design,members[1].id))/2+z.sFor;
+              let coupled=0,total=0;
+              for(let i=0;i<2;i++){
+                const st=pairCoupleStats([routes[i].paths],[routes[1-i].paths],center,Math.max(design.grid,0.25));
+                coupled+=st.coupledLen;total+=st.totalLen;
+              }
+              pair.ratioBefore=+(total>0?coupled/total:0).toFixed(3);
+            }
+          }
+          return pair;
+        });
+        const errors=best.result.drcErrors||0;
+        best.result.compact={pairs,compacted:0,skipped:pairs.length,drcBefore:errors,drcAfter:errors,rolledBack:true};
+        best.session.session.compact=best.result.compact;
+      }
+    }
     if(opts.onStage) opts.onStage({ stage:(opts.stagePrefix?opts.stagePrefix+' ':'')+'逐网优化',
       status:best.result.status, connected:best.result.stats.connected, total:best.result.stats.total,
       vias:best.result.stats.vias, drcErrors:best.result.drcErrors||0, hash:resultHash(best.result) });
