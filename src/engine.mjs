@@ -5428,6 +5428,13 @@ function maxTrackW(design){
    正向公式（投板检查表在用）：I = (w/base)^(1/1.113)；反向：w = base × I^1.113。
    maxTrackW 全板生效（L37）：线宽加大 → 栅格变粗 → 调用方必须报告节距冲突
    （minimumRoutingGrid 自动调整 + L37 节距公式由 spec 门/检查表输出）。 */
+/* 过孔载流孔径折算（0.14.7 批次1 A1）：barrel 铜截面 ≈ π·D·t（镀铜厚 t 固定），
+   载流一阶 ∝ 孔径——锚点 (0.3mm, 1A) 线性折算。0.4→1.33A、0.2→0.67A。
+   一阶口径：未含纵横比/温升二阶效应，检查表行如实标注锚点与折算式。 */
+function viaAmpFor(design){
+  const d=design.viaDrill>0?design.viaDrill:JLC.viaAmpRef;
+  return JLC.viaAmp*(d/JLC.viaAmpRef);
+}
 function ampWidthFor(design, amps, opts={}){
   const oz=String(design.copperWeight||1);
   const inner=opts.layer==='inner';
@@ -5437,7 +5444,7 @@ function ampWidthFor(design, amps, opts={}){
   const tol=opts.tolerance!=null?opts.tolerance:1;   // 1=足宽；0.8=按 −20% 线宽公差校核
   if(!Number.isFinite(amps)||amps<=0) throw new Error('amps must be a positive number');
   const width=+(base*Math.pow(amps,1.113)/tol).toFixed(3);
-  return { width, anchor, oz, layer:inner?'inner':'outer', tolerance:tol, viaCount:Math.max(1,Math.ceil(amps/JLC.viaAmp)) };
+  return { width, anchor, oz, layer:inner?'inner':'outer', tolerance:tol, viaCount:Math.max(1,Math.ceil(amps/viaAmpFor(design))) };
 }
 function netCurrentDecls(design){
   // 声明了 current 的网（A, RMS）：[{netId,name,current,w,required,requiredLimit,vias}]
@@ -6260,7 +6267,8 @@ const JLC = {
     outer: { '1': { t: 0.40, s: 0.50 }, '2': { t: 0.20, s: 0.30 } },
     inner: { '0.5': { t: 1.50, s: 1.60 }, '1': { t: 0.80, s: 1.00 } }
   },
-  viaAmp: 1.0,             // 0.3mm 过孔保守载流 1A/孔，大电流多孔并联
+  viaAmp: 1.0,             // 0.3mm 过孔保守载流 1A/孔锚点，大电流多孔并联
+  viaAmpRef: 0.3,          // viaAmp 的锚定孔径 mm——实际按 design.viaDrill 线性折算（viaAmpFor）
   solderBridge: { std: 0.10, bw: 0.13, oz2: 0.20 },   // 阻焊桥极限：绿/彩油、黑白油、2oz
   // IPC-2221B Table 6-1 电压→导线间距（mm）——按工作电压查安全间距
   // V 断点（V）→ 三档间距（mm）
@@ -8909,12 +8917,13 @@ function fabChecklist(design, result, opts){
       const rn=result.nets.find(x=>x.netId===dc.netId);
       const act=(rn?(rn.vias||[]).length:0)
         +(design.stitching||[]).filter(s=>s.netId===dc.netId).length;
+      const vNote='需 ≥'+dc.vias+' 孔 '+design.viaDrill+'mm';
       if(act>0) R('载流','网 '+dc.name+'：换层过孔并联', act+' 孔',
-        '需 ≥'+dc.vias+' 孔 0.3mm',
+        vNote,
         act>=dc.vias?'ok':'warn',
-        act>=dc.vias?'并联满足（布线换层孔 + stitching/热过孔阵列）'
-          :'单孔 >'+JLC.viaAmp+'A 有过热失效风险——大电流走同层、加大孔径，或用 thermal 命令在换层处补并联孔');
-      else R('载流','网 '+dc.name+'：换层过孔并联', '0 孔', '需 ≥'+dc.vias+' 孔 0.3mm', 'ok',
+        act>=dc.vias?'并联满足（布线换层孔 + stitching/热过孔阵列；'+design.viaDrill+'mm 孔 ≈'+viaAmpFor(design).toFixed(2)+'A/孔）'
+          :'单孔 >'+viaAmpFor(design).toFixed(2)+'A 有过热失效风险——大电流走同层、加大孔径，或用 thermal 命令在换层处补并联孔');
+      else R('载流','网 '+dc.name+'：换层过孔并联', '0 孔', vNote, 'ok',
         '同层走线，无过孔载流瓶颈');
     }
   }
@@ -8923,7 +8932,7 @@ function fabChecklist(design, result, opts){
       const base=(JLC.amp.outer[oz]||JLC.amp.outer['1']).t;
       const maxI=Math.pow(design.trackW/base, 1/1.113);
       R('载流','当前线宽约可载（外层 ΔT10℃）', maxI.toFixed(1)+' A', '1A 建议 0.5mm（'+oz+'oz 外层）',
-        maxI>=1?'ok':'warn', '按 I_RMS 计发热；0.3mm 过孔按 1A/孔，大电流多孔并联');
+        maxI>=1?'ok':'warn', '按 I_RMS 计发热；'+design.viaDrill+'mm 过孔 ≈'+viaAmpFor(design).toFixed(2)+'A/孔（0.3mm 锚点 1A 线性折算），大电流多孔并联');
     } else {
       R('载流','内层铜厚常见 0.5oz', '1A 需 ≥1.6mm', '大电流走外层或升 1oz 内层', 'warn');
     }
@@ -8964,14 +8973,16 @@ function fabChecklist(design, result, opts){
     const inPad=(x,y,p)=>p.shape==='circle'
       ? Math.hypot(x-p.x,y-p.y)<=p.w/2+1e-6
       : Math.abs(x-p.x)<=p.w/2+1e-6&&Math.abs(y-p.y)<=((p.shape==='circle'?p.w:p.h)/2)+1e-6;
+    const curNetIds=new Set(netCurrentDecls(design).map(x=>x.netId));
     for(const p of design.pads||[]){
       const a=p.w*(p.shape==='circle'?p.w:p.h);
-      if(a<6||(p.holeR||0)>0) continue;
+      const th=curNetIds.has(p.netId)?3:6;   // 载流声明网的焊盘阈值降为 3mm²——电源散热盘更该打孔（D1）
+      if(a<th||(p.holeR||0)>0) continue;
       const same=(result&&result.nets||[]).filter(n=>n.netId===p.netId)
         .reduce((s,n)=>s+(n.vias||[]).filter(v=>inPad(v.x,v.y,p)).length,0)
         +(design.stitching||[]).filter(s=>s.netId===p.netId&&inPad(s.x,s.y,p)).length;
       R('热设计','散热盘 '+p.id+'（'+netNameOf(p.netId)+'）',
-        same+' 孔', '建议 ≥9 孔（3×3 阵列 0.3mm）',
+        same+' 孔', '建议 ≥9 孔（3×3 阵列 '+design.viaDrill+'mm）',
         same>=9?'ok':'warn',
         same===0?'大铜盘下无过孔：热阻高且换层载流受限——thermal 命令生成过孔阵列'
           :(same<9?'有散热孔但不足 3×3——热阻仍偏高，可加密阵列':''));
@@ -9845,4 +9856,4 @@ const EXAMPLES=[
 
 
 
-export { ampWidthFor, netCurrentDecls, thermalViaArray, pairGapFor, ipc2221Clr, netClrDecls, netClr, designDefaults, detectBallArrays, fanoutMoveToFront, pairCoupleStats, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };
+export { ampWidthFor, netCurrentDecls, thermalViaArray, pairGapFor, viaAmpFor, ipc2221Clr, netClrDecls, netClr, designDefaults, detectBallArrays, fanoutMoveToFront, pairCoupleStats, normalizeDesign, minimumRoutingGrid, assertGridBudget, manualRouteEntries, normalizeResult, distToRect, padOnLayer, pointPadDistance, segmentRectDistance, segmentPadDistance, padGap, snapToGrid, fillDistanceMap, markViaInfluence, buildModel, createSession, parseSexpr, _sxFind, _sxChild, importKiCadPcb, netLowerBound, impedance, widthForZ0, DIELECTRICS, effectiveEr, skinDepth, acTraceR, dielectricLossDbPerIn, pdnPlaneCapPf, pdnEstimate, fdtimPlan, exportIPC356, fknee, criticalLineLen, netRoutedLen, hsCrosstalkScan, autoReturnVias, copperThickUm, viaLoopInductanceNanohenry, traceLoopInductancePh, viaPairLoopInductancePh, planeSquareLoopInductancePh, radialSpreadingInductancePh, betweenViasSpreadingInductancePh, staleResultCheck, powerDrop, footprintPads, exportDSN, importSES, importDSN, exportSES, autoPlace, snapPadsPreserveGroups, computeHotspots, routeScore, scoreBetter, viaSpan, viaOnLayer, viaThrough, viaSpanOverlap, manufacturingHoles, routeBoard, routeBoardShape, auditGeometry, shpCollectObstacles, shpBuildAxes, shpBuildGraph, shpAstar, shpRouteNet, pathLenOf as __pathLen, placeAndRoute, exportEasyEdaPcb, netW, maxTrackW, _eeCanvasOrigin, parseEasyEdaDevice, _eeTransPath, _eeTransShape, _eeGenericSymbol, exportEasyEdaSch, verifyEasyEdaExport, importEasyEdaPcb, importEasyEdaPcbFull, renderBoardPixels, jlcTrackRule, _scopedHit, netClsMap, rmstTasks, checkDRC, segDist, computeRatsnest, buildSVG, segSegDist, mergePathPts, cornerTurnCost, beautifyResult, teardropPolys, serpentineTune, diffPairZ, diffPairZFor, routeBoardParallel, routeBoardIterParallel, _rotRectGap, computePour, roundedPathD, fmt6, buildGerber, gerberFiles, fabChecklist, planStitching, inPour, pourContains, pourNear, padObj, EXAMPLES_555, EXAMPLES_LED, EXAMPLES_MCU, JLC, EXAMPLES };

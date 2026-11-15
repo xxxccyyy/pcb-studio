@@ -570,7 +570,7 @@ switch (cmd) {
     out({ ok: true, comp: arr.comp, pad: arr.pad, net: netName ? netName.name : arr.netId,
       drill: arr.drill, pitch: arr.pitch, cols: arr.cols, rows: arr.rows,
       added: arr.added, skipped: arr.skipped,
-      perViaAmp: core.JLC.viaAmp, parallelAmp: +(arr.added * core.JLC.viaAmp).toFixed(2),
+      perViaAmp: +core.viaAmpFor(d).toFixed(3), parallelAmp: +(arr.added * core.viaAmpFor(d)).toFixed(2),
       vias: arr.vias, applied: apply, written,
       note: arr.skipped > 0 ? (arr.skipped + ' 个位置越界/触孔被跳过（收进 viaOuter/2 + 孔边距滤除）') : null });
     break;

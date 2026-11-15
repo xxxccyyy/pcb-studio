@@ -794,5 +794,59 @@ t('22d. 阻抗定档端到端：4 层 USB 对布线 + 耦合走廊 + DRC', () =>
   assertEq(warns.length, 0, '耦合走廊生效（无差分耦合 warn）');
 });
 
+// ===== 23a-23b. 过孔载流孔径感知 + 热设计阈值智能化（0.14.7 批次1）=====
+
+t('23a. viaAmpFor 孔径折算：0.3 锚点 1A 线性，viaCount/检查表行跟随', () => {
+  const mk = (drill) => {
+    const d = core.designDefaults();
+    d.viaDrill = drill; d.viaOuter = 0.6;
+    return d;
+  };
+  // 独立折算锚点（π·D·t 一阶线性，锚 0.3mm→1A）
+  assert(Math.abs(core.viaAmpFor(mk(0.4)) - 4/3) < 1e-9, '0.4mm→1.333A');
+  assert(Math.abs(core.viaAmpFor(mk(0.3)) - 1) < 1e-9, '0.3mm→1A（锚点）');
+  assert(Math.abs(core.viaAmpFor(mk(0.2)) - 2/3) < 1e-9, '0.2mm→0.667A');
+  // viaCount 跟随：8A @ 0.4→6 / @0.3→8 / @0.2→12
+  assertEq(core.ampWidthFor(mk(0.4), 8).viaCount, 6, '8A@0.4mm→6 孔');
+  assertEq(core.ampWidthFor(mk(0.3), 8).viaCount, 8, '8A@0.3mm→8 孔');
+  assertEq(core.ampWidthFor(mk(0.2), 8).viaCount, 12, '8A@0.2mm→12 孔');
+  // 检查表行带实际孔径
+  const d = mk(0.4);
+  d.nets = [{id:'pwr',name:'PWR',current:8},{id:'sig',name:'SIG'},{id:'gnd',name:'GND'}];
+  d.pads = [
+    {id:'J1-1',netId:'pwr',x:6,y:15,w:6,h:6,shape:'rect',layer:'top'},
+    {id:'J1-2',netId:'gnd',x:6,y:24,w:1.5,h:1.5,shape:'circle',layer:'both',holeR:0.5},
+    {id:'U1-1',netId:'sig',x:44,y:15,w:1.5,h:1.5,shape:'circle',layer:'top'}
+  ];
+  const r = core.routeBoard(d, { maxIter: 15 }).result;
+  const cl = core.fabChecklist(d, r);
+  const row = cl.find(x => x.group === '载流' && x.item === '网 PWR：换层过孔并联');
+  if (row) {
+    assert(row.limit.includes('0.4mm'), 'limit 带实际孔径：' + row.limit);
+    assert(row.limit.includes('6'), '8A@0.4mm 需 6 孔：' + row.limit);
+  }
+});
+t('23b. 热设计阈值智能化：载流声明网 3mm² 触发，普通网仍 6mm²', () => {
+  const d = core.designDefaults();   // viaDrill 0.4
+  d.width = 40; d.height = 30; d.grid = 0.6; d.trackW = 0.4; d.clearance = 0.25;
+  d.nets = [{id:'pwr',name:'PWR',current:2},{id:'sig',name:'SIG'}];
+  d.pads = [
+    {id:'U1-1',netId:'pwr',x:10,y:10,w:2,h:2,shape:'rect',layer:'top'},    // 4mm² < 6 但 ≥3
+    {id:'U2-1',netId:'sig',x:28,y:10,w:2,h:2,shape:'rect',layer:'top'}     // 4mm² 普通网不触发
+  ];
+  const cl = core.fabChecklist(d, null);
+  assert(cl.some(x => x.group === '热设计' && x.item.includes('U1-1')),
+    '载流声明网 4mm² 盘触发热设计行');
+  assert(!cl.some(x => x.group === '热设计' && x.item.includes('U2-1')),
+    '普通网 4mm² 盘不触发（阈值仍 6mm²）');
+  // 阈值下限不误伤小信号脚
+  const d2 = core.designDefaults();
+  d2.width = 40; d2.height = 30; d2.grid = 0.6; d2.trackW = 0.4; d2.clearance = 0.25;
+  d2.nets = [{id:'pwr',name:'PWR',current:2},{id:'sig',name:'SIG'}];
+  d2.pads = [{id:'U3-1',netId:'pwr',x:10,y:10,w:1,h:1,shape:'rect',layer:'top'}];  // 1mm²
+  assert(!core.fabChecklist(d2, null).some(x => x.group === '热设计'),
+    '1mm² 小脚不触发');
+});
+
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);
