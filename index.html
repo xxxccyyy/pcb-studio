@@ -699,18 +699,18 @@ function snapToGrid(v, grid){
 // 0.14.9 障碍感知启发式（质量车道，CHANGELOG 有专段）：mask 给定时只松弛
 // "对本网无条件可通行"的格（掩码与 astar passable/enterOK 逐字段同源，由
 // computeH 每次调用构建）。
-// 【0.14.9 深检修正口径】可采纳：每个场值对应一条"放松的真实路径"（平面步 mask
-// 恰=真实可通行、diag 计 1 ≤ √2、过孔计 viaH ≤ viaCost）→ h ≤ 真实代价（探针
-// 支配性 410 组 0 违反佐证）；但【非一致场】：盲场全层可达 → 逐层 Lipschitz+min
-// 论证成立（探针 0 违反）；掩码场在"跨层掩码不对称"处失去该性质——t2 的 argmin
-// 层可能是 t 该层 mask=0 的层，平面 +1 边不在该层（探针 40 板 43240 处，最大超出
-// 76.5 格）→ A* first-pop 终止下 obstacleH 模式可能接受轻度次优路径（opt-in 已知
-// 代价，硬板质量偏移的第二机制候选）。不可通行种子（目标格自身不可入）只置 0 不
-// 向外松弛——进入该格本就非法，经它中转的路径不存在，跳过仍可采纳且更紧。
-// mask=null 保持旧"无视障碍"口径（导出兼容/基准对照）。层传播不 gate：
-// 换层可用性被高估只使 h 更小（可采纳不变）。
+// 【0.14.9b 一致场重构】mask 模式改为"组合图单元 BFS"：平面 8 邻 + 换层 2 邻
+// （双端 mask 门控）全部计 1——场 = 组合图精确最短路度量。可采纳：每条场路径对应
+// 一条放松的真实路径（平面步 mask 恰=真实可通行、diag 计 1 ≤ √2、换层计 1 ≤
+// viaCost，前提 viaCost ≥ 1——viaCost<1 为既有退化域，盲口径 viaH=1 同样越界）；
+// 一致：A* 全部可遍历边（平面双 mask=1 / 换层双端 mask=1 / diag 附带正交格检查）
+// ⊆ 场图边集且真实权重 ≥ 1 → 对 A* 代价函数 Lipschitz → first-pop 终止即每边最优
+// （0.14.9 分离场在跨层掩码不对称处非一致，见深度检查报告-0.14.9.md 探针 B2）。
+// 不可通行种子（目标格自身不可入）只置 0 不向外松弛——进入该格本就非法，经它中转
+// 的路径不存在，跳过仍可采纳且更紧；A* 亦无法遍历进入该格，Lipschitz 链无缺口。
+// mask=null 保持旧"分离场"口径逐位不变（导出兼容/基准对照/默认路径）。
 function fillDistanceMap(model, goals, viaCost, diag, distances, queue, mask){
-  const {GW,NC,L}=model, BIG=1e9;
+  const {GW,NC,L,TS}=model, BIG=1e9;
   distances.fill(BIG);
   let head=0, tail=0;
   for(const s of goals){ distances[s]=0; queue[tail++]=s; }
@@ -731,15 +731,23 @@ function fillDistanceMap(model, goals, viaCost, diag, distances, queue, mask){
       if(left&&down){ const t=s+GW-1; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
       if(right&&down){ const t=s+GW+1; if(distances[t]===BIG&&(!useMask||mask[t])){ distances[t]=d; queue[tail++]=t; } }
     }
+    if(useMask){
+      // 0.14.9b：换层边内联进 BFS（分离场的传播改在此处）——双端 mask 门控
+      //（展开格自身 mask=1 已由种子门/松弛门保证），计 1 ≤ 真实 viaCost
+      if(s>=NC && mask[s-NC] && distances[s-NC]===BIG){ distances[s-NC]=d; queue[tail++]=s-NC; }
+      if(s<TS-NC && mask[s+NC] && distances[s+NC]===BIG){ distances[s+NC]=d; queue[tail++]=s+NC; }
+    }
   }
-  const viaH=Math.max(1,viaCost*0.1);
-  for(let l=1;l<L;l++) for(let c=0;c<NC;c++){
-    const s=l*NC+c, d=distances[s-NC]+viaH;
-    if(d<distances[s]) distances[s]=d;
-  }
-  for(let l=L-2;l>=0;l--) for(let c=0;c<NC;c++){
-    const s=l*NC+c, d=distances[s+NC]+viaH;
-    if(d<distances[s]) distances[s]=d;
+  if(!useMask){
+    const viaH=Math.max(1,viaCost*0.1);
+    for(let l=1;l<L;l++) for(let c=0;c<NC;c++){
+      const s=l*NC+c, d=distances[s-NC]+viaH;
+      if(d<distances[s]) distances[s]=d;
+    }
+    for(let l=L-2;l>=0;l--) for(let c=0;c<NC;c++){
+      const s=l*NC+c, d=distances[s+NC]+viaH;
+      if(d<distances[s]) distances[s]=d;
+    }
   }
   return distances;
 }
@@ -1203,6 +1211,7 @@ function createSession(design, opts){
   const _vRadiusT=Math.sqrt(_vDdT*_vDdT+grid*grid/2);
   const _vRadiusV=design.viaOuter+design.clearance;
   function rebuildViaInf(){
+    passMaskEpoch++;
     // No vias is common on small boards. Clear once when the last via disappears,
     // including after rip-up or snapshot restoration; skip repeated full-grid work.
     if(!nets.some(net=>net.viaSet.size)){
@@ -1259,6 +1268,7 @@ function createSession(design, opts){
   // 标记次序无关（0→o；≠o→-2；===o 保持），故区域内终值=全量重建值。
   // stale 窗口语义不变：rip 后、补丁前 viaInf 保持旧态（与原 rebuild 时序一致）。
   function patchViaInf(){
+    passMaskEpoch++;
     const changed=[];
     for(const net of nets){
       const snap=_viaSnap.get(net.i);
@@ -1426,12 +1436,12 @@ function createSession(design, opts){
   // 排除项（有意不 gate，保持可采纳）：viaLegal（过孔可用性被高估→h 更小）、
   // 软阶段 usage（可借道付罚）、hist/nearPen/presFac（软代价，h 是下界）。
   const passMask=TS<=8_000_000?new Uint8Array(TS):null;
-  // 0.14.9 障碍感知启发式开关（opt-in）：默认关=0.14.8 位级一致（盲口径）。
-  // 开启动机与代价见 docs/深度优化报告-20261116.md §4：协商重搜索 2.2-2.5×，
-  // 但 h 把全部网漏斗进同一地理最短走廊（每网 h 场相同→等代价路径选择趋同），
-  // 协商路径多样性下降——保证可解板质量持平偏好（h2 DRC −14），截断态硬板
-  // 不动点变差（fable-03 −1、icebreaker −11，加迭代不恢复=已收敛）。
-  const obstacleH=opts.obstacleH===true;
+  // 0.14.9b 障碍感知启发式转正：默认开（组合一致场，见 fillDistanceMap 头注——
+  // 一致性可证 + 五板 A/B 质量全面 ≥ 盲口径：h2 DRC 39→12、fable/icebreaker 连通
+  // 持平且 1.37-1.88× 提速）；opts.obstacleH===false / CLI --no-obstacle-h 回退盲口径
+  //（0.14.8 位级一致逃生门）。0.14.9 分离场版本的质量回归（fable −1/icebreaker −11）
+  // 已由深检定位为非一致场次优路径机制，组合场根除——见深度检查报告-0.14.9.md。
+  const obstacleH=opts.obstacleH!==false;
   function buildPassMask(net, hard){
     const own=net.i+1, cls=net.cls, prefL=net.prefL==null?-1:net.prefL;
     const band=S.pairBand, hard2=!!hard;
@@ -1471,9 +1481,21 @@ function createSession(design, opts){
       }
     }
   }
+  // 0.14.9b 掩码缓存：mask 是 {net 恒等字段, model 静态, viaInf, usage-异网, pairBand,
+  // hard} 的纯函数。routeNet(N) 内部：pairBand 不变、viaInf 只在尾部 patch、usage 只有
+  // N 自己的 commit（own 提交经 usage+1/ownStamp=gen 配对抵消——缓存构造时该格
+  // usage-0、真值 usage-1=同值，可采纳判定逐格一致），故 routeNet 内跨 astar 调用
+  // 掩码逐位不变 → 以 (epoch, net.i, hard) 缓存。失效点（passMaskEpoch++）= 全部
+  // 异网 usage/viaInf/pairBand 写点：ripNet/rebuildViaInf/patchViaInf/restore/
+  // adoptShared/commitRoutes/optimize 回滚/compactPairs pairBand 置位。多失效无害，
+  // 漏失效为正确性 bug——探针逐 astar 重算比对验证完备性（.scratch probe）。
+  let passMaskEpoch=0, maskCacheEpoch=-1, maskCacheNet=-1, maskCacheHard=null;
   function computeH(goalSet, net, hard){
     if(obstacleH && passMask){
-      buildPassMask(net, hard);
+      if(maskCacheEpoch!==passMaskEpoch || maskCacheNet!==net.i || maskCacheHard!==hard){
+        buildPassMask(net, hard);
+        maskCacheEpoch=passMaskEpoch; maskCacheNet=net.i; maskCacheHard=hard;
+      }
       fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue,passMask);
     }else{
       fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue);
@@ -1804,6 +1826,7 @@ function createSession(design, opts){
     }));
   }
   function ripNet(net){
+    passMaskEpoch++;
     clearPairBonus(net);
     for(const s of net.cells){
       usage[s]--;
@@ -2304,6 +2327,7 @@ function createSession(design, opts){
       paths:n.paths.map(p=>p.map(pt=>({...pt})))})),overuse:S.overuse.slice()};
   }
   function restore(saved){
+    passMaskEpoch++;
     usage.fill(0);viaCore.fill(0);
     for(let i=0;i<nets.length;i++){
       const from=saved.nets[i];
@@ -2327,6 +2351,7 @@ function createSession(design, opts){
       presFac, hardPhase:!!S.hard };
   }
   function adoptShared(sh){
+    passMaskEpoch++;
     usage.set(sh.usage); hist.set(sh.hist); cellOwner.set(sh.cellOwner);
     viaCore.set(sh.viaCore); viaInf.set(sh.viaInf);
     if(pairBonusTyped&&sh.pbVal){ pairBonusTyped.val.set(sh.pbVal); pairBonusTyped.src.set(sh.pbSrc); }
@@ -2571,10 +2596,10 @@ function createSession(design, opts){
       const attempt=(M,P)=>{
         const saved=snapshot();
         ripNet(P);
-        S.pairBand=buildBand(M,P);
+        S.pairBand=buildBand(M,P); passMaskEpoch++;
         let okConn=false;
         try{ routeNet(P,false); okConn=P.connected===P.total; }
-        finally{ S.pairBand=null; }
+        finally{ S.pairBand=null; passMaskEpoch++; }
         if(!okConn){ restore(saved); return null; }
         S.overuse=scanOveruse();
         const after=stats();

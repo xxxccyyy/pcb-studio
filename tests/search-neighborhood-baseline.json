@@ -1,14 +1,18 @@
 {
- "reason": "Corrected soft-search row/column decoding and no-cache fallback; historical allocating baseline retained separately.",
+ "reason": "0.14.9 obstacle-aware A* heuristic (net-gated passable mask; admissible+consistent, dominates the blind field). Deliberate negotiated-route change; recorded once against the new engine. Previous reason: Corrected soft-search row/column decoding and no-cache fallback; historical allocating baseline retained separately.",
  "historical": "search-baseline.json",
  "changedCases": [
+  "e555 {}",
+  "e555 {\"diag\":false}",
+  "e555 {\"viaCost\":17.3,\"layerDir\":false}",
+  "eled {}",
+  "eled {\"diag\":false}",
   "emcu {}",
   "emcu {\"diag\":false}",
+  "emcu {\"viaCost\":17.3,\"layerDir\":false}",
   "crossing 1L diag=false",
   "crossing 2L diag=false",
-  "crossing 2L diag=true",
-  "crossing 4L diag=false",
-  "crossing 4L diag=true"
+  "crossing 4L diag=false"
  ],
  "cases": {
   "e555 {}": [
@@ -28,7 +32,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "bf09218f758e17abf5c50f8898adc0eaa8cef24fc5e4d5a82dbe3e8e4bbe7340"
+    "geometry": "77713651cdd24c341d639172f27d661293a9d0052c2852ed7c5b1bc244b42ded"
    },
    {
     "status": "complete",
@@ -46,7 +50,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "bf09218f758e17abf5c50f8898adc0eaa8cef24fc5e4d5a82dbe3e8e4bbe7340"
+    "geometry": "77713651cdd24c341d639172f27d661293a9d0052c2852ed7c5b1bc244b42ded"
    },
    {
     "status": "complete",
@@ -64,7 +68,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "bf09218f758e17abf5c50f8898adc0eaa8cef24fc5e4d5a82dbe3e8e4bbe7340"
+    "geometry": "77713651cdd24c341d639172f27d661293a9d0052c2852ed7c5b1bc244b42ded"
    }
   ],
   "e555 {\"diag\":false}": [
@@ -84,7 +88,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "c0a8e3ba5a6f81742c46e07746d20a94464a36389713fe69349e6a7a4cec7941"
+    "geometry": "69f06a93a9f69e2971fabba8a9d5020566c7d02d02f3e45a21e784a0deb80e3e"
    },
    {
     "status": "complete",
@@ -102,7 +106,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "c0a8e3ba5a6f81742c46e07746d20a94464a36389713fe69349e6a7a4cec7941"
+    "geometry": "69f06a93a9f69e2971fabba8a9d5020566c7d02d02f3e45a21e784a0deb80e3e"
    },
    {
     "status": "complete",
@@ -120,7 +124,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "c0a8e3ba5a6f81742c46e07746d20a94464a36389713fe69349e6a7a4cec7941"
+    "geometry": "69f06a93a9f69e2971fabba8a9d5020566c7d02d02f3e45a21e784a0deb80e3e"
    }
   ],
   "e555 {\"viaCost\":17.3,\"layerDir\":false}": [
@@ -130,17 +134,17 @@
     "stats": {
      "connected": 22,
      "total": 22,
-     "trackTop": 54.47056274847712,
-     "trackBot": 89.16295090390224,
+     "trackTop": 66.38477631085024,
+     "trackBot": 75.11269837220804,
      "vias": 0,
-     "trackLen": 143.63351365237935,
+     "trackLen": 141.49747468305827,
      "trackLayers": [
-      54.47056274847712,
-      89.16295090390224
+      66.38477631085024,
+      75.11269837220804
      ],
      "trackInner": 0
     },
-    "geometry": "bb99c26f0b5f00a4fe6b90719e4bfb19144b00a90d925f2f902195e1a11d37e7"
+    "geometry": "389eb36b6ed9565015792ee2dd74480aefb0d4549f0e51b4f5bacc9bf2cae3db"
    },
    {
     "status": "complete",
@@ -148,17 +152,17 @@
     "stats": {
      "connected": 22,
      "total": 22,
-     "trackTop": 54.47056274847712,
-     "trackBot": 88.8700576850888,
+     "trackTop": 66.38477631085024,
+     "trackBot": 74.8198051533946,
      "vias": 0,
-     "trackLen": 143.3406204335659,
+     "trackLen": 141.20458146424482,
      "trackLayers": [
-      54.47056274847712,
-      88.8700576850888
+      66.38477631085024,
+      74.8198051533946
      ],
      "trackInner": 0
     },
-    "geometry": "9595fa9191b51becea95197c8c3253aa9671aa8e71d5239b48417f645b06cceb"
+    "geometry": "578b67591ce3a50a7a80cfed01f807c4341da6a7c04ec4bc5e44ede474853a25"
    },
    {
     "status": "complete",
@@ -166,17 +170,17 @@
     "stats": {
      "connected": 22,
      "total": 22,
-     "trackTop": 54.47056274847712,
-     "trackBot": 89.16295090390224,
+     "trackTop": 66.38477631085024,
+     "trackBot": 75.11269837220804,
      "vias": 0,
-     "trackLen": 143.63351365237935,
+     "trackLen": 141.49747468305827,
      "trackLayers": [
-      54.47056274847712,
-      89.16295090390224
+      66.38477631085024,
+      75.11269837220804
      ],
      "trackInner": 0
     },
-    "geometry": "bb99c26f0b5f00a4fe6b90719e4bfb19144b00a90d925f2f902195e1a11d37e7"
+    "geometry": "389eb36b6ed9565015792ee2dd74480aefb0d4549f0e51b4f5bacc9bf2cae3db"
    }
   ],
   "eled {}": [
@@ -196,7 +200,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "35501db7f98738f97d939065ec8a461e9636be7fe35d859e9cc5d0c82a22f204"
+    "geometry": "9327a089bd2041fbb76864d348b87365baa0a5dec28698feca8b598f6bd0303b"
    },
    {
     "status": "complete",
@@ -214,7 +218,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "35501db7f98738f97d939065ec8a461e9636be7fe35d859e9cc5d0c82a22f204"
+    "geometry": "9327a089bd2041fbb76864d348b87365baa0a5dec28698feca8b598f6bd0303b"
    },
    {
     "status": "complete",
@@ -232,7 +236,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "35501db7f98738f97d939065ec8a461e9636be7fe35d859e9cc5d0c82a22f204"
+    "geometry": "9327a089bd2041fbb76864d348b87365baa0a5dec28698feca8b598f6bd0303b"
    }
   ],
   "eled {\"diag\":false}": [
@@ -252,7 +256,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "8ef92598e0511120278766dc8ffd341570d4a8b022562e0a486485ee284e6149"
+    "geometry": "4181a4b23df8cdd883b7535f364256a9cd1f978ae47c3999a42d26f357164b8e"
    },
    {
     "status": "complete",
@@ -270,7 +274,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "8ef92598e0511120278766dc8ffd341570d4a8b022562e0a486485ee284e6149"
+    "geometry": "4181a4b23df8cdd883b7535f364256a9cd1f978ae47c3999a42d26f357164b8e"
    },
    {
     "status": "complete",
@@ -288,7 +292,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "8ef92598e0511120278766dc8ffd341570d4a8b022562e0a486485ee284e6149"
+    "geometry": "4181a4b23df8cdd883b7535f364256a9cd1f978ae47c3999a42d26f357164b8e"
    }
   ],
   "eled {\"viaCost\":17.3,\"layerDir\":false}": [
@@ -391,16 +395,16 @@
      "connected": 33,
      "total": 33,
      "trackTop": 208.6837661840737,
-     "trackBot": 114.14823227814094,
+     "trackBot": 115.8908729652602,
      "vias": 1,
-     "trackLen": 322.83199846221464,
+     "trackLen": 324.5746391493339,
      "trackLayers": [
       208.6837661840737,
-      114.14823227814094
+      115.8908729652602
      ],
      "trackInner": 0
     },
-    "geometry": "19b5f66f7a801b5218d6d7754699a03084e7aa1ed1f8ca3e891b5190f2a5df1d"
+    "geometry": "9bc2d8779d08d5f268e02e44dc57a27f53cafcbcb21dd8f1ace1fce2803f49ce"
    }
   ],
   "emcu {\"diag\":false}": [
@@ -411,16 +415,16 @@
      "connected": 33,
      "total": 33,
      "trackTop": 189.5,
-     "trackBot": 149.5,
+     "trackBot": 148.5,
      "vias": 1,
-     "trackLen": 339,
+     "trackLen": 338,
      "trackLayers": [
       189.5,
-      149.5
+      148.5
      ],
      "trackInner": 0
     },
-    "geometry": "74a380e19705ecc3809e2d59325e23640e405364bee067840119b6274e5c625d"
+    "geometry": "53b1a3be98288a7bdf3b10017387316eb66699e8d6fd94dbfd44a5435cf6e3eb"
    },
    {
     "status": "complete",
@@ -429,16 +433,16 @@
      "connected": 33,
      "total": 33,
      "trackTop": 189.5,
-     "trackBot": 149.5,
+     "trackBot": 148.5,
      "vias": 1,
-     "trackLen": 339,
+     "trackLen": 338,
      "trackLayers": [
       189.5,
-      149.5
+      148.5
      ],
      "trackInner": 0
     },
-    "geometry": "74a380e19705ecc3809e2d59325e23640e405364bee067840119b6274e5c625d"
+    "geometry": "53b1a3be98288a7bdf3b10017387316eb66699e8d6fd94dbfd44a5435cf6e3eb"
    },
    {
     "status": "complete",
@@ -456,7 +460,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "d77ffc3ecdfa4d2dcd972876d01105f785110427fb3f72b753a86e331c4c52c9"
+    "geometry": "a4d0571459bdbff971219a6026e0555073998aae85da44c11b16f0abc5ae4c5c"
    }
   ],
   "emcu {\"viaCost\":17.3,\"layerDir\":false}": [
@@ -466,17 +470,17 @@
     "stats": {
      "connected": 33,
      "total": 33,
-     "trackTop": 133.0624458405141,
-     "trackBot": 184.56244584051404,
-     "vias": 1,
-     "trackLen": 317.62489168102815,
+     "trackTop": 140.21930009000644,
+     "trackBot": 164.56244584051404,
+     "vias": 2,
+     "trackLen": 304.7817459305205,
      "trackLayers": [
-      133.0624458405141,
-      184.56244584051404
+      140.21930009000644,
+      164.56244584051404
      ],
      "trackInner": 0
     },
-    "geometry": "b707e7056b5143787eac9b220ced57f4819ead013b419f803d3a3cbca38ece63"
+    "geometry": "89fcd706994f1394b7fc1cb56444a6866704ae8c543121cfceba80b7a816b61f"
    },
    {
     "status": "complete",
@@ -484,17 +488,17 @@
     "stats": {
      "connected": 33,
      "total": 33,
-     "trackTop": 133.0624458405141,
-     "trackBot": 184.56244584051404,
-     "vias": 1,
-     "trackLen": 317.62489168102815,
+     "trackTop": 140.21930009000644,
+     "trackBot": 164.56244584051404,
+     "vias": 2,
+     "trackLen": 304.7817459305205,
      "trackLayers": [
-      133.0624458405141,
-      184.56244584051404
+      140.21930009000644,
+      164.56244584051404
      ],
      "trackInner": 0
     },
-    "geometry": "b707e7056b5143787eac9b220ced57f4819ead013b419f803d3a3cbca38ece63"
+    "geometry": "89fcd706994f1394b7fc1cb56444a6866704ae8c543121cfceba80b7a816b61f"
    },
    {
     "status": "complete",
@@ -502,17 +506,17 @@
     "stats": {
      "connected": 33,
      "total": 33,
-     "trackTop": 133.0624458405141,
-     "trackBot": 184.56244584051404,
-     "vias": 1,
-     "trackLen": 317.62489168102815,
+     "trackTop": 140.426406871193,
+     "trackBot": 164.56244584051404,
+     "vias": 2,
+     "trackLen": 304.98885271170707,
      "trackLayers": [
-      133.0624458405141,
-      184.56244584051404
+      140.426406871193,
+      164.56244584051404
      ],
      "trackInner": 0
     },
-    "geometry": "fb7141f9973c1baf4b2fb91ad6f8a79d8399dd874ebaea2960fd75e42b82c20d"
+    "geometry": "b023ae6bd0646dbb3d9ffdc4cbeae92d904cf9f32f39b671684ff3836d809fb6"
    }
   ],
   "crossing 1L diag=false": [
@@ -531,7 +535,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "c1743661728de265dc3265efad679c0b8cdc19084191b95c55623d928561aa87"
+    "geometry": "3dcc6b6cbef6d5d039f474c5de4384c53d5c1fd8c543a25d4d04cb7c04b948f7"
    },
    {
     "status": "complete",
@@ -548,7 +552,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "cc9858273c125465f0fe8f63efa7c72387b42b3d7457f28f7d994bb5fa873d49"
+    "geometry": "d91b630ed728a71ca06d1e42fc5fc37deeebe04225b1c97d409410f02d922a1e"
    },
    {
     "status": "complete",
@@ -565,7 +569,7 @@
      ],
      "trackInner": 0
     },
-    "geometry": "c1743661728de265dc3265efad679c0b8cdc19084191b95c55623d928561aa87"
+    "geometry": "3dcc6b6cbef6d5d039f474c5de4384c53d5c1fd8c543a25d4d04cb7c04b948f7"
    }
   ],
   "crossing 1L diag=true": [
@@ -628,17 +632,17 @@
     "stats": {
      "connected": 8,
      "total": 8,
-     "trackTop": 81,
-     "trackBot": 33,
-     "vias": 6,
-     "trackLen": 114,
+     "trackTop": 82.5,
+     "trackBot": 29.5,
+     "vias": 4,
+     "trackLen": 112,
      "trackLayers": [
-      81,
-      33
+      82.5,
+      29.5
      ],
      "trackInner": 0
     },
-    "geometry": "292c3da7d31065fba8b51e65677448a3371eb968d5faa82ad40b7341c502d0fb"
+    "geometry": "de80b5405158f6647a7789fa2d3a0dc2d0fc4e36ee3002477c22b3e569f570d0"
    },
    {
     "status": "complete",
@@ -664,17 +668,17 @@
     "stats": {
      "connected": 8,
      "total": 8,
-     "trackTop": 76,
-     "trackBot": 38,
-     "vias": 6,
+     "trackTop": 83.5,
+     "trackBot": 30.5,
+     "vias": 4,
      "trackLen": 114,
      "trackLayers": [
-      76,
-      38
+      83.5,
+      30.5
      ],
      "trackInner": 0
     },
-    "geometry": "e63e197e9dbcc77215fa73797a554696dd5a4801a6997e5b59e4bd8b554eb58e"
+    "geometry": "cca29a4b9436a83ae24fc06d830cf8de93cbd126fc300ecd25d11b0a4d376bf9"
    }
   ],
   "crossing 2L diag=true": [
@@ -740,39 +744,19 @@
     "stats": {
      "connected": 8,
      "total": 8,
-     "trackTop": 62.5,
-     "trackBot": 20,
+     "trackTop": 55,
+     "trackBot": 18,
      "vias": 12,
-     "trackLen": 117,
-     "trackLayers": [
-      62.5,
-      13.5,
-      21,
-      20
-     ],
-     "trackInner": 34.5
-    },
-    "geometry": "4b0264b20d63d5ed62e25e87b3150321dbba7380a9c3e8489a27c9dad71f9563"
-   },
-   {
-    "status": "complete",
-    "iterations": 0,
-    "stats": {
-     "connected": 8,
-     "total": 8,
-     "trackTop": 16.5,
-     "trackBot": 17,
-     "vias": 11,
      "trackLen": 112,
      "trackLayers": [
-      16.5,
-      31.5,
-      47,
-      17
+      55,
+      16,
+      23,
+      18
      ],
-     "trackInner": 78.5
+     "trackInner": 39
     },
-    "geometry": "74b7d615c7b3b781582c2c91b140b087c46c6e54d8c8ccb180feac3121a9c2fd"
+    "geometry": "2cbe403b17cdb5629754c39c8a3076a0650536bfbee6695a088d5ae9401930c4"
    },
    {
     "status": "complete",
@@ -780,19 +764,39 @@
     "stats": {
      "connected": 8,
      "total": 8,
-     "trackTop": 49,
-     "trackBot": 13,
+     "trackTop": 17,
+     "trackBot": 9.5,
      "vias": 12,
-     "trackLen": 119,
+     "trackLen": 112,
      "trackLayers": [
-      49,
-      22,
-      35,
-      13
+      17,
+      16,
+      69.5,
+      9.5
      ],
-     "trackInner": 57
+     "trackInner": 85.5
     },
-    "geometry": "10fa14069d723b8c04c483e81e3126f8375e384a09e3ea600dcd869c44a4c2a6"
+    "geometry": "68b9f75046195d808214a7c9cf94d4337bbfd5fa030676abc2f19005f36f1c43"
+   },
+   {
+    "status": "complete",
+    "iterations": 0,
+    "stats": {
+     "connected": 8,
+     "total": 8,
+     "trackTop": 44,
+     "trackBot": 23,
+     "vias": 12,
+     "trackLen": 113,
+     "trackLayers": [
+      44,
+      14.5,
+      31.5,
+      23
+     ],
+     "trackInner": 46
+    },
+    "geometry": "b882f5ad43bfe643681ac42e0b0de7678e214b2bec70a04bd8c05b32d9e4ecda"
    }
   ],
   "crossing 4L diag=true": [

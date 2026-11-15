@@ -1187,8 +1187,9 @@ t('43b. 别名化后会话确定性：双会话 buildResult/snapshot 逐位一�
 // 故默认关（位级一致，search-regression 金标准继续锁默认路径），CLI --obstacle-h opt-in。
 // 权衡表与机制假设留档：docs/深度优化报告-20261116.md
 
-// 45a. 可解板质量中性：obstacleH 开/关连通数一致 + DRC 0（跨层数/斜向）
-t('45a. obstacleH 开/关：可解板连通一致 + DRC 0（质量中性）', () => {
+// 45a.（0.14.9b 更新口径）默认=组合一致场；对比 --no-obstacle-h（盲回退）vs 默认：
+// 可解板连通数一致 + 双侧 DRC 0（跨层数/斜向）
+t('45a. obstacleH 默认 vs 盲回退：可解板连通一致 + DRC 0（质量中性）', () => {
   const mk = (layers, diag) => {
     const d = core.designDefaults();
     Object.assign(d,{width:36,height:24,grid:0.5,layers,trackW:0.25,clearance:0.15,
@@ -1208,14 +1209,14 @@ t('45a. obstacleH 开/关：可解板连通一致 + DRC 0（质量中性）', ()
   };
   for(const [layers,diag] of [[1,false],[2,false],[2,true],[4,true]]){
     const mkD=()=>core.normalizeDesign(mk(layers,diag));
-    const off=core.routeBoard(mkD(),{diag,maxIter:12}).result;
-    const on=core.routeBoard(mkD(),{diag,maxIter:12,obstacleH:true}).result;
+    const off=core.routeBoard(mkD(),{diag,maxIter:12,obstacleH:false}).result;
+    const on=core.routeBoard(mkD(),{diag,maxIter:12}).result;
     assertEq(on.stats.connected, off.stats.connected, `${layers}L diag=${diag} 连通数一致`);
     assertEq(on.stats.connected, on.stats.total, `${layers}L diag=${diag} 应全连通`);
     const drcE=r=>core.checkDRC(mkD(),{...r,nets:[...r.nets,...core.manualRouteEntries(mkD())]},{dfm:false})
       .filter(i=>i.sev==='error').length;
-    assertEq(drcE(on), 0, `${layers}L diag=${diag} obstacleH:on DRC 0`);
-    assertEq(drcE(off), 0, `${layers}L diag=${diag} 默认 DRC 0`);
+    assertEq(drcE(on), 0, `${layers}L diag=${diag} 默认（组合场）DRC 0`);
+    assertEq(drcE(off), 0, `${layers}L diag=${diag} 盲回退 DRC 0`);
   }
 });
 
@@ -1262,20 +1263,25 @@ t('45c. obstacleH:on 双跑确定性（掩码复用无残留）', () => {
   const strip=o=>{ if(Array.isArray(o)) return o.map(strip);
     if(o&&typeof o==='object'){ const r={}; for(const k of Object.keys(o)) if(k!=='timeMs') r[k]=strip(o[k]); return r; }
     return o; };
-  const run=()=>{ const r=core.routeBoard(mk(),{maxIter:10,obstacleH:true}).result;
+  const run=()=>{ const r=core.routeBoard(mk(),{maxIter:10,obstacleH:false}).result;
     return JSON.stringify(strip(r.nets)); };
-  assert(run()===run(), 'obstacleH:on 双跑必须逐字一致');
+  const runOn=()=>{ const r=core.routeBoard(mk(),{maxIter:10}).result;
+    return JSON.stringify(strip(r.nets)); };
+  assert(run()===run(), '盲回退双跑必须逐字一致');
+  assert(runOn()===runOn(), '默认（组合场）双跑必须逐字一致');
 });
 
 // 45d. CLI 旗标注册：route/autopcb 接受 --obstacle-h（解析层白名单）
 t('45d. --obstacle-h 旗标注册（route/autopcb）', () => {
   const { options: optRoute } = parseArguments('route', ['x.json','--obstacle-h']);
-  assert(optRoute.get('--obstacle-h')===true, 'route 接受 --obstacle-h');
+  assert(optRoute.get('--obstacle-h')===true, 'route 接受 --obstacle-h（向后兼容）');
+  const { options: optOff } = parseArguments('route', ['x.json','--no-obstacle-h']);
+  assert(optOff.get('--no-obstacle-h')===true, 'route 接受 --no-obstacle-h');
   const { options: optAp } = parseArguments('autopcb', ['x.json','--obstacle-h']);
   assert(optAp.get('--obstacle-h')===true, 'autopcb 接受 --obstacle-h');
   let threw=false;
-  try{ parseArguments('place', ['x.json','--obstacle-h']); }catch(e){ threw=true; }
-  assert(threw, 'place 不接受 --obstacle-h（白名单拦截）');
+  try{ parseArguments('place', ['x.json','--no-obstacle-h']); }catch(e){ threw=true; }
+  assert(threw, 'place 不接受 --no-obstacle-h（白名单拦截）');
 });
 
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
