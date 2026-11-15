@@ -1379,23 +1379,29 @@ function createSession(design, opts){
     // gen 一次自增覆盖 gVal/gStamp/closed/ownStamp 同生命周期，调用结束即失效）
     for(const s of net.cells) ownStamp[s]=gen;
     // swap 内联（V8 对捕获多外层变量的闭包常不内联——堆占档案 17.8%）
+    // 2026-11-15 深优：堆数组/大小拷贝进局部（heapSize 在筛化期间只读快照 hs——
+    // push/pop 各自入口一次增减后筛化循环内无写入），消除热循环逐层的上下文槽读；
+    // 筛化算法逐行一致 → 弹出序逐位一致
     const push=(f,i)=>{
       if(heapSize===heapStates.length) heapGrow();
-      heapStates[heapSize]=i; heapCosts[heapSize]=f; let j=heapSize++;
-      while(j>0){ const p=(j-1)>>1; if(heapCosts[p]<=heapCosts[j]) break;
-        const sT=heapStates[p], cT=heapCosts[p];
-        heapStates[p]=heapStates[j]; heapCosts[p]=heapCosts[j];
-        heapStates[j]=sT; heapCosts[j]=cT; j=p; } };
-    const pop=()=>{ const top=heapStates[0]; heapSize--;
-      if(heapSize){ const lastS=heapStates[heapSize], lastC=heapCosts[heapSize];
-        heapStates[0]=lastS; heapCosts[0]=lastC; let j=0;
+      const hsA=heapStates, hcA=heapCosts;
+      const sz=heapSize; hsA[sz]=i; hcA[sz]=f; let j=sz; heapSize=sz+1;
+      while(j>0){ const p=(j-1)>>1; if(hcA[p]<=hcA[j]) break;
+        const sT=hsA[p], cT=hcA[p];
+        hsA[p]=hsA[j]; hcA[p]=hcA[j];
+        hsA[j]=sT; hcA[j]=cT; j=p; } };
+    const pop=()=>{ const hsA=heapStates, hcA=heapCosts;
+      const top=hsA[0]; heapSize--;
+      const hs=heapSize;
+      if(hs){ const lastS=hsA[hs], lastC=hcA[hs];
+        hsA[0]=lastS; hcA[0]=lastC; let j=0;
         for(;;){ let a=2*j+1,b=a+1,m=j;
-          if(a<heapSize&&heapCosts[a]<heapCosts[m]) m=a;
-          if(b<heapSize&&heapCosts[b]<heapCosts[m]) m=b;
+          if(a<hs&&hcA[a]<hcA[m]) m=a;
+          if(b<hs&&hcA[b]<hcA[m]) m=b;
           if(m===j) break;
-          const sT=heapStates[m], cT=heapCosts[m];
-          heapStates[m]=heapStates[j]; heapCosts[m]=heapCosts[j];
-          heapStates[j]=sT; heapCosts[j]=cT; j=m; } }
+          const sT=hsA[m], cT=hcA[m];
+          hsA[m]=hsA[j]; hcA[m]=hcA[j];
+          hsA[j]=sT; hcA[j]=cT; j=m; } }
       return top; };
 
     const own=net.i+1;
@@ -1406,6 +1412,10 @@ function createSession(design, opts){
       push(hMap[s], s);
     }
     let found=-1;
+    // 2026-11-15 深优：会话级常量外提（原逐邻居经闭包上下文读）——会话内不变，
+    // 与 enterOK/passable 逐字段同源（内联见下方 nbr 环，字段序保持原判定序）
+    const pairBand=S.pairBand;
+    const scopedArr=model.scopedBlocked, hasScoped=scopedArr.length>0;
     while(heapSize){
       const cur=pop();
       if(closed[cur]===gen) continue;
@@ -1429,9 +1439,23 @@ function createSession(design, opts){
       }
       if(l>0){ nbStates[nbCount]=cur-NC; nbKinds[nbCount]=1; nbDirs[nbCount++]=-1; }
       if(l<L-1){ nbStates[nbCount]=cur+NC; nbKinds[nbCount]=1; nbDirs[nbCount++]=-1; }
+      nbr:
       for(let ni=0;ni<nbCount;ni++){
         const ns=nbStates[ni], kind=nbKinds[ni], nd=nbDirs[ni];
-        if(!enterOK(net,ns,hard)) continue;
+        // enterOK 内联（2026-11-15 深优）：passable/enterOK 为 (net,s) 纯函数，逐字段
+        // 同序拷贝（pairBand → blocked → scoped → fixed → pad → viaInf → hard），
+        // 短路结果逐位一致；hard 段 own 判定 net.cells.has(s) 与 ownStamp[s]===gen
+        // 在本次 astar 生命周期内恒等（ownStamp 入口自 net.cells 全量置位，调用期间
+        // net.cells 不变——commit/rip 均发生在 astar 之外）
+        if(pairBand&&!pairBand.has(ns)) continue nbr;
+        if(blocked[ns]) continue nbr;
+        if(hasScoped){ const cc2=ns%NC;
+          for(let si=0;si<scopedArr.length;si++){ const sb=scopedArr[si];
+            if(net.cls!==sb.cls&&sb.cells[cc2]) continue nbr; } }
+        { const fx=model.fixedOwner[ns]; if(fx!==0&&fx!==own) continue nbr; }
+        { const po=padOwner[ns]; if(po!==0&&po!==own) continue nbr; }
+        { const vi=viaInf[ns]; if(vi!==0&&vi!==own) continue nbr; }
+        if(hard&&usage[ns]-(ownStamp[ns]===gen?1:0)>0) continue nbr;
         if(hMap[ns]>=BIG) continue;
         let ec=1+hist[ns];
         if(!hard){
@@ -1492,7 +1516,21 @@ function createSession(design, opts){
             //（防止斜切穿越、并保证平行斜线间距 ≥ 2 格对角距）
             const dd=DIAGD[nd], l0=(cur/NC)|0, c0=cur%NC;
             const s1=l0*NC+(c0+dd[0]), s2=l0*NC+(c0+dd[1]*GW);
-            if(!passable(net,s1)||!passable(net,s2)) continue;
+            // passable 内联（同 nbr 环口径，passable 段无 pairBand/hard）
+            { if(blocked[s1]) continue;
+              if(hasScoped){ const c1=s1%NC;
+                for(let si=0;si<scopedArr.length;si++){ const sb=scopedArr[si];
+                  if(net.cls!==sb.cls&&sb.cells[c1]) continue nbr; } }
+              const fx1=model.fixedOwner[s1]; if(fx1!==0&&fx1!==own) continue;
+              const po1=padOwner[s1]; if(po1!==0&&po1!==own) continue;
+              const vi1=viaInf[s1]; if(vi1!==0&&vi1!==own) continue; }
+            { if(blocked[s2]) continue;
+              if(hasScoped){ const c2=s2%NC;
+                for(let si=0;si<scopedArr.length;si++){ const sb=scopedArr[si];
+                  if(net.cls!==sb.cls&&sb.cells[c2]) continue nbr; } }
+              const fx2=model.fixedOwner[s2]; if(fx2!==0&&fx2!==own) continue;
+              const po2=padOwner[s2]; if(po2!==0&&po2!==own) continue;
+              const vi2=viaInf[s2]; if(vi2!==0&&vi2!==own) continue; }
             if(hard){
               if(usage[s1]-(ownStamp[s1]===gen?1:0)>0) continue;
               if(usage[s2]-(ownStamp[s2]===gen?1:0)>0) continue;
@@ -1546,7 +1584,10 @@ function createSession(design, opts){
         // 差分对耦合走廊：伙伴已布走线的贴邻格成本折扣（0.5 地板保持边权>0；
         // 硬/软两阶段均生效——硬阶段无拥塞代价，正是走廊引导窗口）
         {
-          const b=pairBonusGet(ns)/1000;
+          // pairBonusGet 内联（2026-11-15 深优）：逐邻居闭包调用 → typed 直读；
+          // 语义逐位一致（pairBonusTyped 会话内只增不减，非空性可在环外判定）
+          const pb=pairBonusTyped?pairBonusTyped.val[ns]:(pairBonus.get(ns)||0);
+          const b=pb/1000;
           if(b) ec=Math.max(0.25, ec-b); // 折扣：走廊格实付边权=基础−折扣（地板 0.25）
         }
         const ng=gc+ec;
@@ -5627,6 +5668,16 @@ function netW(design, netId){
     let c=_netWCache.get(design);
     if(!c||c.nets!==design.nets){
       const map=new Map();
+      // 载流感知自动定档（第十一轮后用户指令：根据电流大小调线粗）：
+      // nets[].current（A, RMS）→ IPC-2152 反查（w = base_s × I^1.113）→ 原地抬宽
+      // （仅抬不降）。maxTrackW 下次调用自然读到新值 → 栅格/影响区/布线全链生效。
+      // 一次性计算（缓存在 _netWCache 生命周期内），热路径零额外开销。
+      for(const n of (design.nets||[])){
+        if(n.current!=null&&Number.isFinite(+n.current)&&+n.current>0){
+          const need=ampWidthFor(design,+n.current).width;
+          if((n.w||0)<need) n.w=need;
+        }
+      }
       for(const n of (design.nets||[])) map.set(n.id,n);
       c={nets:design.nets, map};
       _netWCache.set(design,c);

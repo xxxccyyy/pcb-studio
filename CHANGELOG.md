@@ -1,5 +1,58 @@
 # 更新日志
 
+## 0.14.5（2026-11-15）—— 深优轮：布线热循环机械优化（位级一致）+ 外围工程化收口
+
+双段式一轮：评审驱动的外围收口（不碰引擎行为）+ 剖析驱动的深优（位级一致）。
+
+### 外围收口（评审 P0-P2 清单，docs/外围收口轮-20261115.md）
+
+- **CRLF 回归修复三件套**：0.14.4 的 6a6896d 专做的 LF 归一化被 6d11acb 的 python 补丁工具
+  整文件写回 CRLF，7 个源码锚点测试（via-ring-cache 等）在真实工作区全灭而 `npm run check`
+  全绿（build 读源码时就地归一化，把问题掩盖而非暴露）。修复：① engine.mjs/template 归一 LF
+  ② 新增 `.gitattributes`（`* text=auto eol=lf`，仓库层锁死——外部 python 补丁再写 CRLF 也会
+  在提交时归一）③ `build --check` 新增行尾守门（任一注入源含 CR 即报错并给出归一化命令）。
+  附教训：行尾转换禁用 `open('wb').write(open('rb').read()…)` 同路径一行式（wb 先截断——
+  本轮实测把 engine.mjs 清成 0 字节，git checkout 恢复）
+- **LICENSE**（MIT 文本落盘）+ **CI**（.github/workflows/ci.yml：行尾断言 → check → npm test
+  → headless 浏览器测试；playwright 仅 CI 侧 --no-save 安装）
+- **README.en.md 重写**：36 行（检查数"162"，11-06）严重落后 → 紧凑英文摘要（0.14.4 口径），
+  明确中文版为事实源；**README.md 检查数对齐**（250→494，标注"明细随 CHANGELOG 滚动更新"）
+- **AI 手册新增 §3.1 故障排查 checklist**：此前失败处理指引散落 §2/§3/§6 三处，收拢为按症状
+  A-F 对号入座的固定排查顺序（先查布局，再调参数，最后才动层数——§6 复盘实证结论）
+- **tests/si-inductance.test.mjs（4 测试入链）**：SI 电感五式 + copperThickUm 手算锚点
+  （黑魔书式 7.9 / Bogatin ch13，非引擎复算）+ jlcTrackRule 2/4 层×铜厚矩阵；锁定已知缺口：
+  1.5oz 单面板 limit 字段缺失（spec 工艺极限检查对该组合静默跳过），修复时反转断言
+- **scripts/ab-diff.mjs 对拍架转正**（--before 任意 git 引用，12 案例 sha256）——修复 0.14.4
+  记录的留痕缺口。确定性口径修正：clean() 需剔除 session.t0（Date.now 墙钟）与 timeMs；
+  剔除后实测 routeBoard 的 result 跨进程/跨运行逐字节确定（位级对拍成立前提再确认）
+
+### 深优（全部位级一致，docs/深度优化报告-20261115b.md）
+
+- **剖析**（--cpu-prof，fable-03 shape 全链）：astar 主循环 59.3% + 堆 pop/push 12.7% +
+  fillDistanceMap 8.7%——形状管线成本大头在内部栅格基线协商，shape 侧合计 <5%
+- **T1-1 堆 push/pop 局部变量化**：堆数组/大小拷贝进局部，消除筛化循环逐层上下文槽读；
+  筛化算法逐行一致 → 弹出序逐位一致（4-ary/懒删除都会改 tie-break 序，禁止）
+- **T1-2 邻居环 enterOK 内联 + pairBand/scoped 会话常量外提**：逐字段同序直读链；
+  hard own 判定 `net.cells.has(s)` 与 `ownStamp[s]===gen` 在 astar 生命周期内恒等
+  （ownStamp 入口自 net.cells 全量置位，commit/rip 均在 astar 之外）
+- **T1-3 斜向双正交格 passable 内联**（同口径）；**T1-4 pairBonusGet 邻居环内联**
+  （typed 直读 + Map 回退原样）
+- **实测（同机空载两轮复测一致）**：emcu optimize(2) 155→101ms（**-35%**）、压力板
+  optimize(3) 38.7→21ms（**-45%**）、fable-03 shape 全链 29.0→26.2s（**-10%**）、
+  e555 optimize(2) -6~-12%；剖析总时长 93.7→68.9s（-26%，pop/push 从热点榜消失）
+- **12 案例 ab-diff sha256 全部逐字节一致**（基线与 T1 后同 hash：e555/eled/emcu/m1-p01/
+  autoPlace/placeAndRoute/压力板/fable 栅格·形状·shape-only·铺铜·DRC 全口径）；
+  npm test 全绿（含外部轮 25 优化锁定）+ test:browser 全绿 + check 行尾守门通过
+- **评估后放弃（留档防重踩）**：H 图缓存（第九轮已证伪 1.3% 命中率）、过孔环跨调用持久化
+  （环值内嵌本网 own 调整 → 跨网不复用，仅 ≥3 焊盘网第 2 边起有收益，预估 2-4% 不抵
+  一致性风险）、4-ary 堆/懒删除（tie-break 序变化）、fillDistanceMap stamp（启发式口径漂移）
+- **结论**：位级一致机械优化接近地板；下一档收益在质量侧实验（0.14.4 邻域修正口径）
+
+### 版本记账说明
+
+外部轮提交信息版本号（"0.14.2 载流感知线宽定档"，54b06f8）与 package.json（0.14.4）不一致，
+系其会话内独立计数所致；package.json 未回退，本轮按序列推进至 0.14.5。
+
 ## 0.14.4（2026-11-15）—— 外部复查轮：正确性修复、等价性优化与拥塞代价模型修正
 
 外部 AI 复查轮（三个子轮，逐轮独立验证后入库；审查记录见对话与各文档）。
