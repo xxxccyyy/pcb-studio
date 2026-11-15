@@ -40,7 +40,18 @@ function normalizeDesign(input){
     if(n.tr!=null&&(!Number.isFinite(n.tr)||n.tr<=0)) throw new Error('Invalid net rise time (ns): '+n.id);
     if(n.pair!=null&&(typeof n.pair!=='string'||!n.pair)) throw new Error('Invalid pair (expect nonempty string group name): '+n.id);
     if(n.lenGroup!=null&&(typeof n.lenGroup!=='string'||!n.lenGroup)) throw new Error('Invalid lenGroup (expect nonempty string group name): '+n.id);
-    return {...n,name:n.name==null?n.id:String(n.name)};
+    // preferredLayer（0.14.7 批次5 探针级）：'top'/'bottom'/层号整数 → 规范化层号。
+    // 语义 = 硬层位约束（该网 A* 扩展限制在指定层）。代价偏好变体未实现（批次4 留档）。
+    const q={...n,name:n.name==null?n.id:String(n.name)};
+    if(q.preferredLayer!=null){
+      const L=Math.max(1,d.layers|0);
+      const pl=q.preferredLayer==='top'?0
+        :(q.preferredLayer==='bottom'?L-1
+        :(Number.isInteger(q.preferredLayer)?q.preferredLayer:null));
+      if(pl==null||pl<0||pl>=L) throw new Error('Invalid preferredLayer (expect "top"|"bottom"|integer layer index): '+n.id);
+      q.preferredLayer=pl;
+    }
+    return q;
   });
   const rect=(p,label)=>{
     if(!p||!['x','y','w','h'].every(k=>Number.isFinite(p[k]))||p.w<=0||p.h<=0) throw new Error('Invalid geometry: '+label);
@@ -743,6 +754,7 @@ function createSession(design, opts){
 
   const nets=(design.nets||[]).map((n,i)=>({
     i, id:n.id, name:n.name, cls:((design.rules&&design.rules.netClass||{})[n.name])||null,
+    prefL:n.preferredLayer!=null?n.preferredLayer:null,
     cells:new Set(), viaSet:new Map(), paths:[],
     failed:0, connected:0, total:0, prio:0, failedLast:0, conflicted:false,
     fanoutRing:fanoutRing.get(n.id)!=null?fanoutRing.get(n.id):null   // 阵列网的最内圈环深（0.13.20 F1）
@@ -1026,6 +1038,7 @@ function createSession(design, opts){
 
   // ---- 单元通行判断 ----
   function passable(net, s){
+    if(net.prefL!=null && ((s/NC)|0)!==net.prefL) return false;   // 批次5 探针：硬层位约束
     if(blocked[s]) return false;
     // class keepout（roadmap #10）：scope 类名的禁布对异类网阻挡、本类网自由
     if(model.scopedBlocked.length){
@@ -1086,6 +1099,7 @@ function createSession(design, opts){
   }
 
   function astar(net, sources, goalSet, hard){
+    const _prefL=net.prefL==null?-1:net.prefL;   // 批次5 探针：硬层位约束（-1=无约束零开销）
     // pair 网：走廊边权地板 0.25 → 启发式 ×0.25 保持可采纳性（否则 A* 会剪掉折扣走廊分支）
     const netHScale=(netMeta[net.i]&&netMeta[net.i].pair)?0.25:1;
     const myPair=netMeta[net.i] ? netMeta[net.i].pair : null;    // 热循环外提取（每邻居不再读对象）
@@ -1167,6 +1181,7 @@ function createSession(design, opts){
       nbr:
       for(let ni=0;ni<nbCount;ni++){
         const ns=nbStates[ni], kind=nbKinds[ni], nd=nbDirs[ni];
+        if(_prefL>=0 && ((ns/NC)|0)!==_prefL) continue nbr;   // 批次5 探针（passable 同源内联）
         // enterOK 内联（2026-11-15 深优）：passable/enterOK 为 (net,s) 纯函数，逐字段
         // 同序拷贝（pairBand → blocked → scoped → fixed → pad → viaInf → hard），
         // 短路结果逐位一致；hard 段 own 判定 net.cells.has(s) 与 ownStamp[s]===gen

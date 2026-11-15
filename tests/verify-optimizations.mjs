@@ -1040,5 +1040,42 @@ t('25b. solderMask 0.0254mm（1mil）→ z0 −2Ω，sFor 增大（阻焊压低�
   assertEq(drc.length, 0, 'DRC 干净');
 });
 
+// ===== 26a. 层位感知探针机制（0.14.7 批次5，探针级）=====
+
+t('26a. preferredLayer 硬层位约束：规范化/生效/无声明 no-op/越界报错', () => {
+  const mk = (withPref) => {
+    const d = core.designDefaults();
+    d.width=30; d.height=20; d.grid=0.5; d.layers=4; d.trackW=0.3; d.clearance=0.2;
+    d.nets=[{id:'a',name:'A',...(withPref?{preferredLayer:'top'}:{})},{id:'b',name:'B'}];
+    d.pads=[
+      {id:'A1',netId:'a',x:5,y:5,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'A2',netId:'a',x:25,y:15,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'B1',netId:'b',x:5,y:15,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'B2',netId:'b',x:25,y:5,w:1,h:1,shape:'rect',layer:'top'}];
+    return d;
+  };
+  // 规范化：'top'→0
+  const n1 = core.normalizeDesign(mk(true));
+  assertEq(n1.nets[0].preferredLayer, 0, 'top → 层号 0');
+  // 生效：网 A 全程仅层 0（无过孔）
+  const r = core.routeBoard(n1, { maxIter: 20 }).result;
+  assertEq(r.stats.connected, 4, '4/4 布通');
+  const aNet = r.nets.find(x => x.netId === 'a');
+  const aLayers = new Set();
+  for (const p of aNet.paths) for (const pt of p) aLayers.add(pt.l);
+  assertEq([...aLayers].join(','), '0', '网 A 仅层 0（硬约束生效）');
+  assertEq((aNet.vias || []).length, 0, '单层网零过孔');
+  // 无声明 → 无 prefL 字段影响（no-op 门：字段不存在）
+  const n0 = core.normalizeDesign(mk(false));
+  assert(n0.nets[0].preferredLayer == null, '无声明无字段');
+  // 越界层号报错
+  let threw = false;
+  try { const d2 = mk(true); d2.nets[0].preferredLayer = 7; core.normalizeDesign(d2); } catch (e) { threw = true; }
+  assert(threw, '越界层号必须报错');
+  // 'bottom' → L-1
+  const d3 = mk(true); d3.nets[0].preferredLayer = 'bottom';
+  assertEq(core.normalizeDesign(d3).nets[0].preferredLayer, 3, 'bottom → 层 3（4 层板）');
+});
+
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);
