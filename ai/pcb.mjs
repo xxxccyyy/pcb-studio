@@ -1101,11 +1101,12 @@ switch (cmd) {
       rows.push({ pair: name, nets: members.map(m => m.name || m.id), target: zt,
         w: r.w, stackup: r.stackup, z0: r.z0, zdiffUncoupled: r.zdiffUncoupled,
         zdiffMinAtSmin: r.zdiffMinAtSmin, achievable: r.achievable, sFor: r.sFor,
+        corrected: r.corrected, maskMm: r.maskMm,
         note: r.achievable
           ? `间隙 S=${r.sFor}mm 时 Zdiff=${zt}Ω（奇模 ${r.zoddAt(r.sFor)}Ω / 偶模 ${r.zevenAt(r.sFor)}Ω）——耦合走廊与耦合度 DRC 已按此间隙工作`
           : `当前叠层不可达（最低 ${r.zdiffMinAtSmin}Ω @ S=0.1mm）——建议 4 层或接受不控阻抗` });
     }
-    out({ ok: true, pairs: rows, disclaimer: 'IPC-2141 量级经验公式，正式阻抗控制以板厂层压实测为准（与 impedance() 同一免责层级）' });
+    out({ ok: true, pairs: rows, disclaimer: 'IPC-2141 量级经验公式，正式阻抗控制以板厂层压实测为准（与 impedance() 同一免责层级）' + (rows.some(r => r.corrected) ? '；solderMask 修正为一阶口径（−2Ω/mil，Bogatin B.43/44），精确控阻须板厂层压结构复算' : '') });
     break;
   }
   case 'tune': {

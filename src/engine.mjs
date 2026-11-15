@@ -2520,10 +2520,20 @@ function widthForZ0(target,h,Er,t,type){
    间隙求解：S = −(H/0.96)·ln((1 − Zt/(2·Z0))/0.48)，要求 Zt ≥ 2·Z0·0.52
    （S→0 下界）且 Zt < 2·Z0，否则当前叠层不可达——如实报告。
    经验式误差大于带状线式，仅作量级口径（与 impedance() 同一免责层级）。 */
-function diffPairZ(w, h, er, t, target){
+function diffPairZ(w, h, er, t, target, opts){
+  opts=opts||{};
   const se=impedance(w, h, er, t, 'microstrip');
   if(!se.ok) return { ok:false, reason:'参数不合法' };
-  const z0=se.z0, twoZ0=2*z0;
+  // 阻焊一阶修正（0.14.7 批次3 A3，Bogatin B.43/44 口径）：阻焊覆盖微带线抬高
+  // 有效介电常数 → Z0 下降，约每 1mil（0.0254mm）−2Ω。一阶线性外推，缺省
+  // maskMm=0 完全不修正（位级兼容）；z0<10Ω 截断保护并标注截断。
+  let z0=se.z0, corrected=false, clamped=false;
+  if(opts.maskMm!=null&&Number.isFinite(opts.maskMm)&&opts.maskMm>0){
+    const dz=-2*(opts.maskMm/0.0254);
+    z0=Math.max(10, se.z0+dz);
+    corrected=true; clamped=z0===10&&se.z0+dz<10;
+  }
+  const twoZ0=2*z0;
   const zdiffAt=S=>twoZ0*(1-0.48*Math.exp(-0.96*S/h));
   const sMin=0.1;
   const zMin=zdiffAt(sMin);
@@ -2532,16 +2542,19 @@ function diffPairZ(w, h, er, t, target){
   return { ok:true, w:+w.toFixed(3), h, er, z0:+z0.toFixed(2),
     zdiffUncoupled:+twoZ0.toFixed(2), zdiffMinAtSmin:+zMin.toFixed(2),
     achievable, sFor, target:target>0?+target:null,
+    corrected, clamped, maskMm:opts.maskMm||0,
     zoddAt:S=>+(zdiffAt(S)/2).toFixed(2), zevenAt:S=>+z0.toFixed(2), zdiffAt:S=>+zdiffAt(S).toFixed(2) };
 }
 // 设计级包装：叠层口径（4 层=0.2 平面介质，与 pdnPlaneCapPf 同假设；2 层=1.5 core）
 function diffPairZFor(design, w, target){
   const h=(design.layers||2)>=4?0.2:1.5;
   const er=DIELECTRICS.fr4.er, t=copperThickUm(design.copperWeight)/1000;
-  const r=diffPairZ(w, h, er, t, target);
-  r.stackup={ layers:design.layers||2, h, er, t, note:(design.layers||2)>=4
-    ?'4 层：微带参考内层平面，h=0.2（与 PDN 平面电容同假设）'
-    :'2 层：参考对层铜皮，h≈1.5 core——经典口径下 90Ω 难达成（如实报告）' };
+  const mask=design.solderMask!=null&&Number.isFinite(+design.solderMask)&&+design.solderMask>0?+design.solderMask:0;
+  const r=diffPairZ(w, h, er, t, target, {maskMm:mask});
+  r.stackup={ layers:design.layers||2, h, er, t, mask,
+    note:(design.layers||2)>=4
+      ?'4 层：微带参考内层平面，h=0.2（与 PDN 平面电容同假设）'+(r.corrected?'；阻焊 '+mask+'mm 一阶修正（−2Ω/mil，Bogatin B.43/44），精确控阻须板厂层压结构复算':'')
+      :'2 层：参考对层铜皮，h≈1.5 core——经典口径下 90Ω 难达成（如实报告）'+(r.corrected?'；阻焊 '+mask+'mm 一阶修正':'') };
   return r;
 }
 /* 差分对有效耦合间隙（批次 3：阻抗自动定档单一事实源）：

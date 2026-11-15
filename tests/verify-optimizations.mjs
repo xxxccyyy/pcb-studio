@@ -973,5 +973,72 @@ t('24c. rules.classes[].clr → netClr 第三来源（影响区 + DRC + 检查�
   assert(row && row.value.includes('1.50'), '电压组行显示有效间距 1.50mm');
 });
 
+// ===== 25a-25b. 阻抗阻焊一阶修正（0.14.7 批次3）=====
+
+t('25a. solderMask=0 位级兼容（不修正）', () => {
+  const mk = (mask) => {
+    const d = core.designDefaults();
+    d.width=60; d.height=40; d.grid=0.6; d.layers=4; d.trackW=0.3; d.clearance=0.2;
+    if (mask) d.solderMask = mask;
+    d.nets=[{id:'dp',name:'USB_DP'},{id:'dm',name:'USB_DM'},{id:'sig',name:'SIG'},{id:'gnd',name:'GND'}];
+    d.pads=[
+      {id:'U1-1',netId:'dp',x:8,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U1-2',netId:'dm',x:8,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-1',netId:'dp',x:50,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-2',netId:'dm',x:50,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-1',netId:'sig',x:8,y:30,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-2',netId:'sig',x:50,y:30,w:1,h:1,shape:'rect',layer:'top'}];
+    d.rules={pairs:[{group:'USB',nets:['USB_DP','USB_DM'],z:90}]};
+    return core.normalizeDesign(d);
+  };
+  const n0 = mk();
+  const z0 = core.diffPairZFor(n0, 0.3, 90);
+  assertEq(z0.corrected, false, '无声明 corrected=false');
+  assertEq(z0.maskMm, 0, 'maskMm=0');
+  assertEq(core.pairGapFor(n0, n0.nets[0]), 0.25, 'sFor 与无修正口径一致');
+  // 检查表阻抗行不带修正注
+  const cl = core.fabChecklist(n0, null);
+  const row = cl.find(x => x.group === '阻抗' && x.item.includes('USB'));
+  assert(!row.note.includes('阻焊'), '无声明行不提阻焊');
+});
+t('25b. solderMask 0.0254mm（1mil）→ z0 −2Ω，sFor 增大（阻焊压低阻抗→需更松耦合回到目标），pairGapFor 跟随', () => {
+  const mk = (mask) => {
+    const d = core.designDefaults();
+    d.width=60; d.height=40; d.grid=0.6; d.layers=4; d.trackW=0.3; d.clearance=0.2;
+    if (mask) d.solderMask = mask;
+    d.nets=[{id:'dp',name:'USB_DP'},{id:'dm',name:'USB_DM'},{id:'sig',name:'SIG'},{id:'gnd',name:'GND'}];
+    d.pads=[
+      {id:'U1-1',netId:'dp',x:8,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U1-2',netId:'dm',x:8,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-1',netId:'dp',x:50,y:10,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U2-2',netId:'dm',x:50,y:13,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-1',netId:'sig',x:8,y:30,w:1,h:1,shape:'rect',layer:'top'},
+      {id:'U3-2',netId:'sig',x:50,y:30,w:1,h:1,shape:'rect',layer:'top'}];
+    d.rules={pairs:[{group:'USB',nets:['USB_DP','USB_DM'],z:90}]};
+    return core.normalizeDesign(d);
+  };
+  const n0 = mk(), n1 = mk(0.0254);
+  const zA = core.diffPairZFor(n0, 0.3, 90), zB = core.diffPairZFor(n1, 0.3, 90);
+  assertEq(zB.corrected, true, 'corrected=true');
+  assertEq(zB.z0, +(zA.z0 - 2).toFixed(2), '1mil → z0 −2Ω（Bogatin B.43/44）');
+  assertEq(zB.maskMm, 0.0254, 'maskMm 记录');
+  const gA = core.pairGapFor(n0, n0.nets[0]), gB = core.pairGapFor(n1, n1.nets[0]);
+  assertEq(gB, 0.305, '阻焊压低 z0 → sFor 增大（0.25→0.305，独立核算一致）');
+  assert(gB > gA, 'sFor 增大：' + gA + '→' + gB);
+  // zdiffAt(sFor) 仍回到目标 90（奇偶模自洽）
+  assert(Math.abs(zB.zdiffAt(gB) - 90) < 1, '修正后 S 处 Zdiff 仍=90');
+  // 检查表行注明修正
+  const cl = core.fabChecklist(n1, null);
+  const row = cl.find(x => x.group === '阻抗' && x.item.includes('USB'));
+  assert(row.value.includes('0.31') || row.value.includes('0.30'),
+    '检查表 S 值为修正后间隙：' + row.value);
+  // 端到端：布线 + DRC 干净（走廊按修正间隙工作）
+  const r = core.routeBoard(n1, { maxIter: 30 }).result;
+  assertEq(r.stats.connected, 6, '6/6 布通');
+  const drc = core.checkDRC(n1, { ...r, nets: [...r.nets, ...core.manualRouteEntries(n1)] }, { dfm: false })
+    .filter(x => x.sev === 'error');
+  assertEq(drc.length, 0, 'DRC 干净');
+});
+
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);
