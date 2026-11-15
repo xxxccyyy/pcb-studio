@@ -6989,17 +6989,46 @@ function checkDRC(design, result, opts){
   for(const p of pads) _maxPadR=Math.max(_maxPadR, Math.hypot(p.w,p.h)/2);
   const _padR2=_clrMax+2*_maxPadR+1e-9;
   const _layerList=Array.from({length:design.layers},(_,l)=>l);
-  for(let i=0;i<pads.length;i++)for(let j=i+1;j<pads.length;j++){
-    const a=pads[i], b=pads[j];
-    if(a.netId!=null && b.netId!=null && a.netId===b.netId) continue;
-    if(_extSameComp && a.id.split('-')[0]===b.id.split('-')[0]) continue;   // external 同元件豁免
-    if(Math.abs(a.x-b.x)>_padR2||Math.abs(a.y-b.y)>_padR2) continue;
-    if(!_layerList.some(l=>padOnLayer(a,l,design.layers)&&padOnLayer(b,l,design.layers))) continue;
-    const need=clrBetween(a.netId,b.netId);
-    const gap=padGap(a,b);
-    if(gap<-1e-9) add('error','焊盘重叠','焊盘 '+a.id+' 与 '+b.id+' 重叠');
-    else if(gap<need-1e-9)
-      add('error','焊盘间距','焊盘 '+a.id+' 与 '+b.id+' 铜边间距 '+Math.max(0,gap).toFixed(3)+'mm < 设计间距 '+need+'mm');
+  // 0.14.11 深优：pad-pad 桶格加速——原 O(P²) 双循环（剖析：冰拳板 189k 对占 checkDRC
+  // 82%）。桶边长=_padR2（bbox 过滤界）→ 存活对 |dx|,|dy| ≤ _padR2 必落相邻桶；逐 i 收集
+  // 邻桶候选（j>i）按 j 升序求值 → 求值序 = 原 (i,j) 双循环序，findings 逐位一致。
+  // 跳过的对必不过 bbox 过滤（保守超集，不可能违规）。每次调用重建 O(P)（微秒级），
+  // 不做跨调用缓存——design.pads 可能被 autoPlace 原地改写，免失效风险。
+  {
+    const _nbX=Math.max(1,Math.ceil(design.width/_padR2)), _nbY=Math.max(1,Math.ceil(design.height/_padR2));
+    const _padBuckets=new Array(_nbX*_nbY);
+    for(let i=0;i<pads.length;i++){
+      const p=pads[i];
+      const bx=Math.min(_nbX-1,Math.max(0,Math.floor(p.x/_padR2)));
+      const by=Math.min(_nbY-1,Math.max(0,Math.floor(p.y/_padR2)));
+      const b=by*_nbX+bx;
+      (_padBuckets[b]||(_padBuckets[b]=[])).push(i);
+    }
+    for(let i=0;i<pads.length;i++){
+      const a=pads[i];
+      const bx=Math.min(_nbX-1,Math.max(0,Math.floor(a.x/_padR2)));
+      const by=Math.min(_nbY-1,Math.max(0,Math.floor(a.y/_padR2)));
+      const cand=[];
+      for(let dy=-1;dy<=1;dy++){ const yy=by+dy; if(yy<0||yy>=_nbY) continue;
+        for(let dx=-1;dx<=1;dx++){ const xx=bx+dx; if(xx<0||xx>=_nbX) continue;
+          const cell=_padBuckets[yy*_nbX+xx]; if(!cell) continue;
+          for(const j of cell) if(j>i) cand.push(j);
+        } }
+      if(!cand.length) continue;
+      cand.sort((x,y)=>x-y);   // j 升序 = 原内层循环序
+      for(const j of cand){
+        const b=pads[j];
+        if(a.netId!=null && b.netId!=null && a.netId===b.netId) continue;
+        if(_extSameComp && a.id.split('-')[0]===b.id.split('-')[0]) continue;   // external 同元件豁免
+        if(Math.abs(a.x-b.x)>_padR2||Math.abs(a.y-b.y)>_padR2) continue;
+        if(!_layerList.some(l=>padOnLayer(a,l,design.layers)&&padOnLayer(b,l,design.layers))) continue;
+        const need=clrBetween(a.netId,b.netId);
+        const gap=padGap(a,b);
+        if(gap<-1e-9) add('error','焊盘重叠','焊盘 '+a.id+' 与 '+b.id+' 重叠');
+        else if(gap<need-1e-9)
+          add('error','焊盘间距','焊盘 '+a.id+' 与 '+b.id+' 铜边间距 '+Math.max(0,gap).toFixed(3)+'mm < 设计间距 '+need+'mm');
+      }
+    }
   }
   // 焊盘出板 / 落入禁布区（class keepout：本类网焊盘自由，roadmap #10）
   const _drcCls=netClsMap(design);
@@ -7107,6 +7136,24 @@ function checkDRC(design, result, opts){
   // Exact segment/shape tests: short obstacles must not disappear between samples.
   let _segMaxPadR=0;
   for(const p of pads) _segMaxPadR=Math.max(_segMaxPadR, Math.hypot(p.w,p.h)/2);
+  // 0.14.11 深优：seg-pad 桶格（剖析占 checkDRC 13%）——按层桶化（pad 层归属 ∈
+  // {top,bottom,both} 对层号 0..L-1 可预先展开），桶边长 = 最大 _sR 上界
+  // maxTrackW/2+_clrMax+_segMaxPadR → 每段 bbox+margin 覆盖的桶收集候选焊盘，
+  // 按 pad 索引升序求值、首违即 break——与原全量序（pad 索引序+break）findings 逐位一致。
+  // 桶格每次调用重建 O(P×L)，无跨调用失效风险。
+  const _spCell=Math.max(1e-6, maxTrackW(design)/2+_clrMax+_segMaxPadR);
+  const _spNx=Math.max(1,Math.ceil(design.width/_spCell)), _spNy=Math.max(1,Math.ceil(design.height/_spCell));
+  const _spBuckets=Array.from({length:design.layers},()=>new Array(_spNx*_spNy));
+  for(let pi=0;pi<pads.length;pi++){
+    const p=pads[pi];
+    for(let l=0;l<design.layers;l++){
+      if(!padOnLayer(p,l,design.layers)) continue;
+      const bx=Math.min(_spNx-1,Math.max(0,Math.floor(p.x/_spCell)));
+      const by=Math.min(_spNy-1,Math.max(0,Math.floor(p.y/_spCell)));
+      const b=by*_spNx+bx;
+      (_spBuckets[l][b]||(_spBuckets[l][b]=[])).push(pi);
+    }
+  }
   for(const n of result.nets) for(const path of n.paths) for(let i=1;i<path.length;i++){
     const a=path[i-1],b=path[i];
     if(a.l!==b.l) continue;
@@ -7114,11 +7161,25 @@ function checkDRC(design, result, opts){
     const _sR=half+_clrMax+_segMaxPadR;   // 违规时焊盘中心距段 bbox ≤ 此界（保序快速过滤；含声明网逐对口径）
     const _sMinX=Math.min(a.x,b.x)-_sR, _sMaxX=Math.max(a.x,b.x)+_sR;
     const _sMinY=Math.min(a.y,b.y)-_sR, _sMaxY=Math.max(a.y,b.y)+_sR;
-    for(const p of pads){
-      if((p.netId!=null&&p.netId===n.netId)||!padOnLayer(p,a.l,design.layers)) continue;
-      if(p.x<_sMinX||p.x>_sMaxX||p.y<_sMinY||p.y>_sMaxY) continue;
-      if(segmentPadDistance(a,b,p)<half+clrBetween(n.netId,p.netId)-1e-9){
-        add('error',n.manual?'手动布线冲突':'走线-焊盘间距','走线距焊盘 '+p.id+' 过近');break;
+    {
+      const grid=_spBuckets[a.l];
+      const cx0=Math.max(0,Math.floor(_sMinX/_spCell)), cx1=Math.min(_spNx-1,Math.floor(_sMaxX/_spCell));
+      const cy0=Math.max(0,Math.floor(_sMinY/_spCell)), cy1=Math.min(_spNy-1,Math.floor(_sMaxY/_spCell));
+      const cand=[];
+      for(let cy=cy0;cy<=cy1;cy++) for(let cx=cx0;cx<=cx1;cx++){
+        const cell=grid[cy*_spNx+cx]; if(!cell) continue;
+        for(const pi of cell) cand.push(pi);
+      }
+      if(cand.length){
+        cand.sort((x,y)=>x-y);   // pad 索引升序 = 原 pads 全量序
+        for(const pi of cand){
+          const p=pads[pi];
+          if(p.netId!=null&&p.netId===n.netId) continue;
+          if(p.x<_sMinX||p.x>_sMaxX||p.y<_sMinY||p.y>_sMaxY) continue;
+          if(segmentPadDistance(a,b,p)<half+clrBetween(n.netId,p.netId)-1e-9){
+            add('error',n.manual?'手动布线冲突':'走线-焊盘间距','走线距焊盘 '+p.id+' 过近');break;
+          }
+        }
       }
     }
     for(const k of design.keepouts||[]){
