@@ -587,13 +587,13 @@ switch (cmd) {
         clearance: '间距 mm（≥ 嘉立创极限，见 rules 的 DFM）',
         viaOuter: '过孔外径 mm', viaDrill: '钻孔 mm',
         copperWeight: '铜厚 "1"|"2"|…',
-        nets: [{ id: '网络 id（引用用 id 不是名字）', name: '显示名', hs: '可选 true=高速（启用 3W 检查）', w: '可选，每网线宽 mm（网络类：电源 0.5/信号默认）', tr: '可选，上升时间 ns（10%~90%）：高速网配合 hs 启用传输线 1/6 临界长度判据（端接提醒）', pair: '可选，差分对组名：同组两网启用等长检查（ΔL≤0.2×UI）与 3W 对内豁免（差分对 lite）', lenGroup: '可选，等长组名：组内各网与最长网做等长（tune 命令自动蛇形补长，DRC 同口径评差）', diffZ: '可选，差分对目标差分阻抗 Ω（默认 90）——奇偶模口径解耦合间隙（diffz 命令查看），耦合走廊与耦合度 DRC 按此工作', padToDie: '可选，mm：封装内走线长度（数据手册可查）——计入等长口径（KiCad pad-to-die 同概念）' }],
+        nets: [{ id: '网络 id（引用用 id 不是名字）', name: '显示名', hs: '可选 true=高速（启用 3W 检查）', w: '可选，每网线宽 mm（网络类：电源 0.5/信号默认）', tr: '可选，上升时间 ns（10%~90%）：高速网配合 hs 启用传输线 1/6 临界长度判据（端接提醒）', pair: '可选，差分对组名：同组两网启用等长检查（ΔL≤0.2×UI）与 3W 对内豁免（差分对 lite）', lenGroup: '可选，等长组名：组内各网与最长网做等长（tune 命令自动蛇形补长，DRC 同口径评差）', diffZ: '可选，差分对目标差分阻抗 Ω（默认 90）——奇偶模口径解耦合间隙（diffz 命令查看），耦合走廊与耦合度 DRC 按此工作', voltage: '可选，V：该网工作电压 → IPC-2221B 表 6-1 查最低安全间距（B4 外层无涂层口径，max(全局,标准) 自动生效——per-pad 影响区/布线/DRC/检查表全链）', pairGap: '可选，mm：差分对内边到边间隙显式覆写（用叠层工具算得的值；须 ≥ clearance）——优先于 diffZ 反查', padToDie: '可选，mm：封装内走线长度（数据手册可查）——计入等长口径（KiCad pad-to-die 同概念）' }],
         pads: [{ id: '"U1-2" 前缀分组=同一封装；独立焊盘无 "-"', netId: 'nets[].id 或 null', x: 'mm', y: 'mm', w: 'mm', h: 'mm', shape: '"rect"|"circle"（circle 用 w 作直径）', layer: '"both"=通孔 | "top" | "bottom"' }],
         keepouts: [{ x: '中心 mm', y: '中心 mm', w: '宽 mm', h: '高 mm', scope: '（rules.keepouts 展开产物）class 名：仅阻挡异类网，本类网自由' }],
         rules: {
           classes: '{ 类名: { w?: 线宽 mm, tr?: 上升时间 ns } }',
           netClass: '{ 网名: 类名 }——归类；成员网的 w/tr 自动取 class 值（已有值且不一致=报错）',
-          pairs: '[{ group: 组名, nets: [网A, 网B], z?: 目标差分阻抗 Ω }]——展开为成员网 pair/diffZ',
+          pairs: '[{ group: 组名, nets: [网A, 网B], z?: 目标差分阻抗 Ω, gap?: 显式耦合间隙 mm（边到边，≥clearance；优先于 z 反查） }]——展开为成员网 pair/diffZ/pairGap',
           lengths: '[{ group: 组名, nets: [网名...] }]——展开为成员网 lenGroup（tune 按组补长）',
           keepouts: '[{ x,y,w,h | rects:[...] , class?: 类名 }]——class keepout：对异类网是障碍、本类网自由（路由/过孔/DRC/美化/布局全链同口径）；无 class=全局禁布'
         },

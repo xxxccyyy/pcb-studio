@@ -1,5 +1,56 @@
 # 更新日志
 
+## 0.14.6（2026-11-16）—— 规格声明→IPC/IEC 标准自动生效（批次1-3，每批独立深检+提交）
+
+规格书/数据手册里有物理约束数据，但引擎声明入口此前只有全板统一默认值——"电流→线宽"
+（0.14.2-0.14.4）是第一个实例，本轮按同一模式（声明→标准查表→自动生效→DRC 校验）补齐
+三批。每批完成后独立深检（查表数值校验 + 真板端到端 + 导出链路 + 全量回归 + 永久测试）。
+
+### 批次1：电压→安全间距（IPC-2221B，a485135 + 7a0231a）
+
+- `nets[].voltage=V` → `ipc2221Clr` 查表 6-1（B1 内层/B2 外层涂层/B4 外层无涂层三档阶梯，
+  15V→0.1 … 170V→1.27 / 500V→2.5mm）→ 该网有效间距 `max(全局,标准)`（`netClr/netClrDecls`）
+- buildModel 焊盘影响区从全局 halfClr 改为 per-pad 影响区（高压焊盘推开异网更远；
+  无声明网行为不变——位级兼容）
+- spec 门电压声明拦截 + fabChecklist 逐网行；导出链路带电压网端到端验证
+  （EasyEDA verify PASS / Gerber 8 刀 / IPC-356）
+- 20b 断言语义升级：netW 内核自动抬宽后检查表从 fail 触发改为确认行（原地改写锁定）
+
+### 批次2：过孔载流 + 热过孔阵列（70d3ed0）
+
+- 检查表"换层过孔并联"行：布线换层孔 + 同网 stitching 计入并联，少于 `ceil(I/viaAmp)`
+  （0.3mm 孔 1A/孔）判 warn；0 孔=同层走线 ok——布线器不自动加孔（几何约束复杂，
+  报告给调用方）
+- `thermalViaArray(design, compId, opts)` + CLI `thermal [--pitch --cols --rows --apply]`：
+  元件面积最大焊盘（散热盘）下生成过孔阵，缺省按焊盘自适应（3×3 起）；孔心收进
+  viaOuter/2、TO-220 舌片插件孔按孔边距滤除（DRC 同网不豁免口径）、pitch ≥
+  viaOuter+viaEdgeMin 校验；输出复用 stitching 通道（固定孔/路由避让/DRC/Gerber
+  钻孔/IPC-356 全链既有，零新增管线）
+- fabChecklist 热设计组：≥6mm² 无孔 SMD 盘下无过孔 warn
+- 行尾归一化（python 文本模式写 CRLF 再犯——已用 bytes 模式重写工具脚本）
+
+### 批次3：阻抗自动定档收口（0a067db）
+
+- `pairGapFor` 单一事实源：显式 `rules.pairs[].gap`（展开 nets[].pairGap，<clearance
+  拦截——边到边语义与线宽无关）优先，否则 nets[].diffZ（缺省 90Ω）反查 sFor；
+  调用方可能传会话内部网对象（无 pair/diffZ 字段）——按 id 归位 design 网再读声明
+  （**深检抓到的真集成 bug**：compactPairs 传会话网 → 反查全 skip-unreachable，
+  pair-compact 4 测试红；修复后 6/6）
+- 四消费点统一：netMeta 耦合走廊带心 / compactPairs 限带 A* / 压实报告 ratioBefore /
+  DRC 差分耦合度——无显式 gap 时行为位级兼容
+- fabChecklist 阻抗组逐对行（不可达 warn 指向 gap 逃生门）+ spec 门布线前拦截
+  （2 层 90Ω 最低 ~137Ω 物理不可达，如实报告）
+- 永久测试 22a-22d：4 层 0.3mm 90Ω→S=0.25 自洽（zdiffAt(S)=90）、显式 gap 覆写、
+  2 层诚实不可达、端到端耦合走廊 DRC 干净
+
+### 验证
+
+- 优化锁定 26→34（20a-d/21a-d/22a-d）；全量回归 80 核心 + 285 node:test + 48 书籍 +
+  17 CLI + 39 模糊 + 7 深度校验全绿（exit 0）
+- 批次4（层位感知 preferredLayer→协商约束）按计划立项留档不实施：需先设计
+  "该网只走哪层"约束进协商的方式（passable 层过滤 or 代价偏好），规模与门图同阶——
+  立项证据与规模估算见 docs/报告-规格声明自动生效-20261116.md
+
 ## 0.14.5（2026-11-15）—— 深优轮：布线热循环机械优化（位级一致）+ 外围工程化收口
 
 双段式一轮：评审驱动的外围收口（不碰引擎行为）+ 剖析驱动的深优（位级一致）。

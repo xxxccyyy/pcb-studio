@@ -34,6 +34,8 @@
 | `route <design.json> -o result.json --parallel K` | 并行候选布线：K 个 worker 各跑一套配置候选（每候选独立优化后取最优，质量 ≥ 串行）；重板 1.5× 实测，小板被 worker 启动开销淹没（<1s 的板别用） | via.mode/workers |
 | `diffz <design.json> [--pair 名] [--z 90]` | **差分对奇偶模阻抗口径**（roadmap #3）：给定叠层与线宽解目标差分阻抗（默认 90Ω，`nets[].diffZ` 覆写）对应间隙 S、奇/偶模阻抗、可达性——2 层板如实报不可达；耦合走廊与耦合度 DRC 自动按此工作 | pairs[]（S/Z0/奇偶模/可达性/建议）+ 免责声明 |
 | `tune <design.json> <result.json> [-o result2] [--pair 名] [--group 名] [--serp-gap 0=自动3W] [--tol 0.05] [--target mm] [--max-amp mm]` | **等长蛇形生成**（roadmap #2）：pair/lenGroup 组内短网沿线插入 90° 方波 bump 精确补长（与 DRC 同尺，支持 45° 载体）；节距 ≥3W；`nets[].padToDie` 计入口径；报告含 audit 自审计；route 之后、drc 之前运行，之后勿再 beautify | groups/tuned/skipped/audit |
+| `currents <design.json> [--apply]` | **载流→线宽报告**：nets[].current 逐网 报告/所需线宽（s 建议 + t 极限）/所需过孔数；`--apply` 抬宽回写并同步最小栅格（内核 netW 自动抬宽已默认生效，此命令用于显式核对） | rows/maxTrackW/minimumRoutingGrid |
+| `thermal <design> <compId> [--pitch 1] [--cols 3] [--rows 3] [--apply]` | **散热盘过孔阵列**：找该元件面积最大焊盘生成 0.3mm 过孔阵（自适应 3×3 起；收进 viaOuter/2；TO-220 舌孔按孔边距滤除），写入 stitching 全链复用（路由避让/DRC/Gerber/IPC-356） | cols/rows/added/skipped/parallelAmp |
 | `drc <design.json> [result.json]` | DRC + 嘉立创投板检查表 | errors/warnings/fabFail |
 | `drop <design.json> [result.json] --net <网>` | **电源网 IR-drop**：节点电导矩阵解每焊盘压降/等效电阻（--current 1 --entries J1-1；连接器焊盘或铺铜过孔自动当入口） | maxDropV/worstPad/drops |
 | `pdn <design.json> [--vdd 3.3 --itrans 1 --ripple 5 --esl-nh 1 --cap-uf 0.1 --pkg-lnh 0]` | **PDN 一阶阻抗评估**：目标阻抗/库仑桶体电容/平面电容/电容库 SRF/交接频率与阻抗/一阶达标判定（Bogatin ch13 口径） | ztargetOhm/caps/handoffMhz/pass |
@@ -235,6 +237,20 @@
   内层 0.5oz 反而需 1.6mm。maxTrackW 全板生效（L37）：8A→5.06mm→栅格 5.3 →
   细节距焊盘封死——**大电流板用 2oz 铜+覆铜载流，或与信号区分层/分区**。
   spec 门自动拦截不足网；投板检查表逐网行自动出现。
+- **电压→安全间距（0.14.5 批次1，IPC-2221B）**：nets[].voltage=V（如 170）→ 查表 6-1
+  B4 外层无涂层口径（15V→0.1 / 50V→0.64 / 170V→1.27 / 500V→2.5mm 阶梯）→
+  该网有效间距 max(全局,标准)：per-pad 影响区推开异网更远、布线保间距、DRC 逐对
+  校验、检查表逐网行。安规终判按 IEC 62368-1/60664-1（检查表有人工确认行）。
+- **过孔载流（批次2）**：0.3mm 孔保守 1A/孔——检查表"换层过孔并联"行 = 布线换层孔 +
+  stitching 并联数，少于所需（I^1.113 线宽需求同源）判 warn；0 孔=同层走线 ok。
+  布线器不自动加孔（几何约束复杂，报告给调用方）——大电流网配 `thermal` 阵列补并联孔。
+- **热过孔阵列（批次2）**：`thermal <design> <compId> --apply` 在 DPAK/TO-220/QFN
+  散热盘（元件面积最大焊盘）下生成过孔阵，写入 design.stitching——垂直热通道 +
+  大电流并联路径双用途。TO-220 舌片自带插件孔时按孔边距自动滤除近孔位。
+- **阻抗自动定档（批次3）**：rules.pairs[].z（或 nets[].diffZ）→ diffPairZFor 反查
+  耦合间隙 S → 耦合走廊/压实带心/DRC 耦合度全链按此工作。2 层板 90Ω 物理不可达
+  （最低 ~137Ω）——spec 门在布线前拦截，检查表如实 warn；用叠层工具算得的间隙
+  可 rules.pairs[].gap 显式覆写（≥clearance）。
 - **禁布区缓冲（第十轮 L35）**- **禁布区缓冲（第十轮 L35）**：禁布阻挡自动外扩 maxTrackW/2——贴禁布边缘 maxTrackW/2 内
   不再有可布格（铜皮不出界保证）。需要跨区连线的电源/地网别被禁布带完全包围，
   预留桥口（n145 教训：分区禁布带会切断跨区电源网，DRC 拦截）。
