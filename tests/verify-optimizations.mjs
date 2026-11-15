@@ -535,5 +535,132 @@ t('20d. IPC-2221B 查表 + per-pad 影响区 + 混合电压端到端', () => {
   assertEq(issues.filter(ii => ii.sev === 'error').length, 0, '混合电压板 DRC 干净');
 });
 
+// ===== 21a-21d. 过孔载流 + 热过孔阵列（第十一轮后批次2）=====
+
+t('21a. 过孔载流并联检查表：路由换层孔 + stitching 计入，不足 warn', () => {
+  const mk = () => {
+    const d = core.designDefaults();
+    d.width = 50; d.height = 30; d.grid = 0.6; d.trackW = 0.5; d.clearance = 0.25;
+    d.viaDrill = 0.3; d.viaOuter = 0.6;
+    d.nets = [{id:'pwr',name:'PWR',current:6},{id:'sig',name:'SIG'}];
+    d.pads = [
+      {id:'J1-1',netId:'pwr',x:6,y:8,w:4,h:4,shape:'rect',layer:'top'},
+      {id:'U1-1',netId:'pwr',x:44,y:8,w:2,h:2,shape:'circle',layer:'bottom'},
+      {id:'J2-1',netId:'sig',x:6,y:22,w:1.5,h:1.5,shape:'circle',layer:'top'},
+      {id:'U2-1',netId:'sig',x:44,y:22,w:1.5,h:1.5,shape:'circle',layer:'top'}
+    ];
+    return d;
+  };
+  const d1 = mk();
+  const r1 = core.routeBoard(d1, { maxIter: 25 }).result;
+  assertEq(r1.stats.connected, 4, '跨层板 4/4 布通');
+  const rn1 = r1.nets.find(n => n.netId === 'pwr');
+  const act1 = (rn1.vias || []).length;
+  assert(act1 > 0, '跨层路径必有换层孔');
+  const cl1 = core.fabChecklist(d1, r1);
+  const row1 = cl1.find(x => x.group === '载流' && x.item === '网 PWR：换层过孔并联');
+  assert(row1, '有换层过孔并联行');
+  assertEq(row1.status, act1 >= 6 ? 'ok' : 'warn', '6A 需 6 孔——实际 ' + act1 + ' 孔应 warn');
+  assertEq(row1.value, act1 + ' 孔', '值=实际并联数');
+  assert(row1.limit.includes('6'), '需 6 孔（6A/1A每孔）');
+  const arr = core.thermalViaArray(d1, 'J1');
+  assert(arr.added >= 6, '4×4mm 盘自适应阵列 ≥6 孔，实际 ' + arr.added);
+  d1.stitching = arr.vias;
+  const cl2 = core.fabChecklist(d1, r1);
+  const row2 = cl2.find(x => x.group === '载流' && x.item === '网 PWR：换层过孔并联');
+  assertEq(row2.status, 'ok', 'stitching 补齐后 ok');
+});
+t('21b. thermalViaArray 自适应阵列 + DRC 干净 + 钻孔表', () => {
+  const d = core.designDefaults();
+  d.width = 50; d.height = 30; d.grid = 0.6; d.trackW = 0.4; d.clearance = 0.25;
+  d.viaDrill = 0.3; d.viaOuter = 0.6;
+  d.nets = [{id:'vbat',name:'VBAT',current:6},{id:'sw',name:'SW'},{id:'gnd',name:'GND'}];
+  d.pads = [
+    {id:'U1-1',netId:'sw',x:10,y:10,w:1.2,h:2.4,shape:'rect',layer:'top'},
+    {id:'U1-2',netId:'gnd',x:10,y:16,w:1.2,h:2.4,shape:'rect',layer:'top'},
+    {id:'U1-3',netId:'vbat',x:7,y:24,w:6.5,h:7,shape:'rect',layer:'top'},
+    {id:'J1-1',netId:'vbat',x:40,y:8,w:2,h:2,shape:'circle',layer:'both',holeR:0.6},
+    {id:'J1-2',netId:'gnd',x:40,y:20,w:2,h:2,shape:'circle',layer:'both',holeR:0.6}
+  ];
+  const arr = core.thermalViaArray(d, 'U1');
+  assertEq(arr.pad, 'U1-3', '选面积最大焊盘（散热盘）');
+  assertEq(arr.cols, 6); assertEq(arr.rows, 7);
+  assertEq(arr.added, 42, '6×7=42 孔全落盘');
+  assertEq(arr.skipped, 0, '无越界跳过');
+  for (const v of arr.vias) {
+    assert(Math.abs(v.x - 7) <= 6.5/2 - 0.3 + 1e-6 && Math.abs(v.y - 24) <= 7/2 - 0.3 + 1e-6,
+      '孔心收进 viaOuter/2');
+    assertEq(v.netId, 'vbat', '阵列属散热盘网');
+  }
+  const gaps = [];
+  for (let i = 0; i < arr.vias.length; i++) for (let j = i+1; j < arr.vias.length; j++)
+    gaps.push(Math.hypot(arr.vias[i].x - arr.vias[j].x, arr.vias[i].y - arr.vias[j].y));
+  assert(Math.min(...gaps) >= 1.0 - 1e-9, '阵内最小间距=pitch');
+  const arr2 = core.thermalViaArray(d, 'U1', { cols: 3, rows: 3 });
+  assertEq(arr2.added, 9, '显式 3×3=9');
+  let threw = false;
+  try { core.thermalViaArray(d, 'U1', { pitch: 0.5 }); } catch (e) { threw = true; }
+  assert(threw, 'pitch < viaOuter+viaEdgeMin 必须报错');
+  threw = false;
+  try { core.thermalViaArray(d, 'U1', { drill: 0.4 }); } catch (e) { threw = true; }
+  assert(threw, 'drill 不等于 viaDrill 必须报错');
+  threw = false;
+  try { core.thermalViaArray(d, 'NOPE'); } catch (e) { threw = true; }
+  assert(threw, '无焊盘元件报错');
+  d.stitching = arr.vias;
+  d.grid = Math.max(d.grid, core.minimumRoutingGrid(d));
+  const r = core.routeBoard(d, { maxIter: 25 }).result;
+  const drc = core.checkDRC(d, { ...r, nets: [...r.nets, ...core.manualRouteEntries(d)] }, { dfm: false })
+    .filter(i2 => i2.sev === 'error');
+  assertEq(drc.length, 0, '散热阵列 + 布线 DRC 干净');
+  const holes = core.manufacturingHoles(d, r);
+  const inDrill = holes.filter(h => arr.vias.some(v => Math.abs(v.x-h.x) < 1e-6 && Math.abs(v.y-h.y) < 1e-6));
+  assertEq(inDrill.length, 42, '42 阵列孔全进钻孔表（Gerber 链）');
+});
+t('21c. thermalViaArray TO-220 舌孔滤除（孔边距同网不豁免）', () => {
+  const d = core.designDefaults();
+  d.width = 40; d.height = 30; d.grid = 0.6; d.trackW = 0.4; d.clearance = 0.25;
+  d.viaDrill = 0.3; d.viaOuter = 0.6;
+  d.nets = [{id:'tab',name:'TAB'},{id:'sig',name:'SIG'}];
+  d.pads = [
+    {id:'U1-1',netId:'tab',x:10,y:15,w:10,h:8,shape:'rect',layer:'top',holeR:1.6},
+    {id:'U1-2',netId:'sig',x:30,y:10,w:1.2,h:2.4,shape:'rect',layer:'top'},
+    {id:'U1-3',netId:'sig',x:30,y:15,w:1.2,h:2.4,shape:'rect',layer:'top'}
+  ];
+  const arr = core.thermalViaArray(d, 'U1', { cols: 5, rows: 5 });
+  assert(arr.added > 0, '阵列有孔落盘');
+  assert(arr.skipped > 0, '靠近舌孔的位置被滤除');
+  for (const v of arr.vias)
+    assert(Math.hypot(v.x-10, v.y-15) >= 1.6 + 0.15 + core.JLC.viaEdgeMin - 1e-9,
+      '孔心距插件孔至少孔边距口径');
+  d.stitching = arr.vias;
+  const r = core.routeBoard(d, { maxIter: 15 }).result;
+  const drc = core.checkDRC(d, { ...r, nets: [...r.nets, ...core.manualRouteEntries(d)] }, { dfm: false })
+    .filter(i2 => i2.sev === 'error');
+  assertEq(drc.length, 0, '舌孔滤除后 DRC 干净');
+});
+t('21d. 热设计检查表行：无孔 warn / 达标 ok / THT 插件孔不误报', () => {
+  const d = core.designDefaults();
+  d.width = 40; d.height = 30; d.grid = 0.6; d.trackW = 0.4; d.clearance = 0.25;
+  d.nets = [{id:'gnd',name:'GND'},{id:'sig',name:'SIG'}];
+  d.pads = [
+    {id:'U1-1',netId:'gnd',x:10,y:15,w:3.4,h:3,shape:'rect',layer:'top'},
+    {id:'U2-1',netId:'sig',x:28,y:15,w:2,h:2,shape:'circle',layer:'both',holeR:0.5}
+  ];
+  let cl = core.fabChecklist(d, null);
+  let row = cl.find(x => x.group === '热设计' && x.item.includes('U1-1'));
+  assert(row, '散热盘行存在');
+  assertEq(row.status, 'warn', '无过孔 warn');
+  assert(row.note.includes('thermal'), 'note 指向 thermal 命令');
+  assert(!cl.some(x => x.group === '热设计' && x.item.includes('U2-1')),
+    'THT 插件孔（holeR>0）不进热设计行');
+  const arr = core.thermalViaArray(d, 'U1', { cols: 3, rows: 3 });
+  d.stitching = arr.vias;
+  cl = core.fabChecklist(d, null);
+  row = cl.find(x => x.group === '热设计' && x.item.includes('U1-1'));
+  assertEq(row.status, 'ok', '3×3=9 孔 ok');
+  assertEq(row.value, '9 孔', '值=孔数（stitching 计入）');
+});
+
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

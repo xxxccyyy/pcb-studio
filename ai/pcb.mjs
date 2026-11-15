@@ -544,6 +544,37 @@ switch (cmd) {
       pitchWarning: core.minimumRoutingGrid(d) > d.grid ? 'L37：线宽加大 → 栅格/影响区变粗——全板节距需 ≥ 2×(padR + maxTrackW/2 + clearance)，细间距焊盘可能被影响区封死，见手册 L37' : null });
     break;
   }
+  case 'thermal': {
+    // 散热盘过孔阵列（批次 2）：thermal <design> <compId> [--pitch 1] [--cols N] [--rows M] [--apply]
+    // 找该元件面积最大焊盘（散热盘）生成 0.3mm 过孔阵（缺省按焊盘尺寸自适应、3×3 起），
+    // 写入 design.stitching（固定孔/路由避让/DRC/Gerber/IPC-356 全链复用缝合孔通道）。
+    // --apply 回写 -o（或原地）。行载流口径：0.3mm 孔 1A/孔（JLC.viaAmp）。
+    if (!args[0] || !args[1]) throw new Error('用法：thermal <design> <compId> [--pitch 1] [--cols 3] [--rows 3] [--apply]');
+    const d = loadDesign(args[0]);
+    const apply = rest.includes('--apply');
+    const opts = {};
+    if (options.has('--pitch')) opts.pitch = parseFloat(options.get('--pitch'));
+    if (options.has('--cols')) opts.cols = parseInt(options.get('--cols'), 10);
+    if (options.has('--rows')) opts.rows = parseInt(options.get('--rows'), 10);
+    const arr = core.thermalViaArray(d, args[1], opts);
+    const netName = (d.nets || []).find(n => n.id === arr.netId);
+    let written = null;
+    if (apply) {
+      d.stitching = [...(d.stitching || []), ...arr.vias];
+      // 孔数变化可能改变固定孔表 → 重算最小栅格（L37 所见即所得口径与 currents 一致）
+      d.grid = Math.max(d.grid, core.minimumRoutingGrid(d));
+      const outP = outPath || args[0];
+      writeFileSync(outP, JSON.stringify(d, null, 1));
+      written = outP;
+    }
+    out({ ok: true, comp: arr.comp, pad: arr.pad, net: netName ? netName.name : arr.netId,
+      drill: arr.drill, pitch: arr.pitch, cols: arr.cols, rows: arr.rows,
+      added: arr.added, skipped: arr.skipped,
+      perViaAmp: core.JLC.viaAmp, parallelAmp: +(arr.added * core.JLC.viaAmp).toFixed(2),
+      vias: arr.vias, applied: apply, written,
+      note: arr.skipped > 0 ? (arr.skipped + ' 个位置越界/触孔被跳过（收进 viaOuter/2 + 孔边距滤除）') : null });
+    break;
+  }
   case 'schema': {
     out({
       ok: true,
@@ -1342,7 +1373,7 @@ switch (cmd) {
     break;
   }
   default:
-    die('未知命令：' + cmd + '（可用：schema rules spec place route tune diffz drc drop pdn advise export device schem pour bom pos erc autopcb import deliver part verify render）');
+    die('未知命令：' + cmd + '（可用：schema rules spec place route tune diffz drc drop pdn currents thermal advise export device schem pour bom pos erc autopcb import deliver part verify render）');
 }
 }
 main().catch(e => die(e && e.message ? e.message : String(e)));

@@ -7,6 +7,7 @@ const flagCommands={
   '--net':['pour','drop','pdn'],'--result':['pour','autopcb'],'--layer':['pour'],'--stitch-spacing':['pour'],'--no-stitch':['pour'],
   '--group':['tune'],'--serp-gap':['tune'],'--tol':['tune'],
   '--target':['tune'],'--max-amp':['tune'],
+  '--pitch':['thermal'],'--cols':['thermal'],'--rows':['thermal'],
   '--parallel':['route','autopcb'],'--no-nb-ripup':['route'],'--iter-workers':['route','autopcb'],
   '--iter-waves':['route','autopcb'],'--shard':['route','autopcb'],
   '--shape-patch':['route','autopcb'],'--shape-window':['route','autopcb'],'--shape-nets':['route','autopcb'],
@@ -18,7 +19,7 @@ const flagCommands={
   '--check':['bom'],'--scale':['render'],'--export':['verify'],'--project':['deliver'],'--force':['deliver'],
   '--current':['drop'],'--entries':['drop'],'--auto-return':['pour'],'--return-reach':['pour'],
   '--vdd':['pdn'],'--itrans':['pdn'],'--ripple':['pdn'],'--dt-us':['pdn'],'--esl-nh':['pdn'],'--cap-uf':['pdn'],'--pkg-lnh':['pdn'],
-  '--plan':['pdn'],'--apply':['currents'],'--plane-pf':['pdn'],'--fmin':['pdn'],'--fmax':['pdn'],'--plan-esl-nh':['pdn']
+  '--plan':['pdn'],'--apply':['currents','thermal'],'--plane-pf':['pdn'],'--fmin':['pdn'],'--fmax':['pdn'],'--plan-esl-nh':['pdn']
 };
 const numericFlags={'--via-cost':[0,100000,false],'--max-iter':[1,1000,true],
   '--iterations':[1,1000000,true],'--rounds':[1,20,true],
@@ -29,6 +30,7 @@ const numericFlags={'--via-cost':[0,100000,false],'--max-iter':[1,1000,true],
   '--min-island-area':[0,1e6,false],'--grid-w':[0.254,10,false],'--grid-gap':[0.254,10,false],
   '--clearance':[0.05,10,false],'--edge-margin':[0,10,false],'--min-width':[0.025,10,false],
   '--serp-gap':[0,50,false],'--tol':[0.001,100,false],
+  '--pitch':[0.3,10,false],'--cols':[1,100,true],'--rows':[1,100,true],
   '--target':[0,5000,false],'--max-amp':[0,100,false],
   '--z':[1,500,false],'--parallel':[0,64,true],'--iter-workers':[0,64,true],
   '--iter-waves':[1,8,true],'--shard':[0,32,true],

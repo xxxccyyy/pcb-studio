@@ -9182,6 +9182,21 @@ function fabChecklist(design, result, opts){
     R('载流','网 '+dc.name+'：声明 '+dc.current+'A',
       dc.w.toFixed(2)+' mm', '需 '+dc.required.toFixed(2)+'（极限 '+dc.requiredLimit.toFixed(2)+'）',
       st, 'IPC-2152 外层 ΔT10℃'+(dc.vias>1?'；需 ≥'+dc.vias+' 个 0.3mm 过孔并联':''));
+    // 过孔载流（批次 2）：0.3mm 过孔保守 1A/孔（JLC.viaAmp）——换层过孔是大电流
+    // 路径的载流瓶颈（线宽自动抬宽管不住孔）。实际并联数 = 布线换层孔 + 同网
+    // stitching（热过孔阵列计入并联）。布线器不自动加孔（几何约束复杂），报告给调用方。
+    if(result&&result.nets&&dc.vias>1){
+      const rn=result.nets.find(x=>x.netId===dc.netId);
+      const act=(rn?(rn.vias||[]).length:0)
+        +(design.stitching||[]).filter(s=>s.netId===dc.netId).length;
+      if(act>0) R('载流','网 '+dc.name+'：换层过孔并联', act+' 孔',
+        '需 ≥'+dc.vias+' 孔 0.3mm',
+        act>=dc.vias?'ok':'warn',
+        act>=dc.vias?'并联满足（布线换层孔 + stitching/热过孔阵列）'
+          :'单孔 >'+JLC.viaAmp+'A 有过热失效风险——大电流走同层、加大孔径，或用 thermal 命令在换层处补并联孔');
+      else R('载流','网 '+dc.name+'：换层过孔并联', '0 孔', '需 ≥'+dc.vias+' 孔 0.3mm', 'ok',
+        '同层走线，无过孔载流瓶颈');
+    }
   }
   if(result&&result.nets){
     if(design.layers<4){
@@ -9195,6 +9210,27 @@ function fabChecklist(design, result, opts){
     R('载流','高频载流（趋肤效应）', 'δ(1GHz)='+skinDepth(1e9).toFixed(3)+' mm', 'AC 电阻≈ρ/(周长×δ)',
       'info', '发热仍按 DC 载流；信号完整性主要看阻抗与端接（工具 skinDepth/acTraceR 可查）');
   }
+  // 热设计（批次 2）：大铜散热盘（≥6mm² 无孔 SMD）下应有散热过孔阵列——垂直
+  // 热通道（DPAK/TO-220/QFN 散热盘）兼作大电流并联路径。阵列经 thermal 命令
+  // 生成写入 stitching（路由避让/DRC/Gerber 钻孔全链复用缝合孔通道）。
+  {
+    const netNameOf=id=>{const n=(design.nets||[]).find(x=>x.id===id);return n?n.name:id;};
+    const inPad=(x,y,p)=>p.shape==='circle'
+      ? Math.hypot(x-p.x,y-p.y)<=p.w/2+1e-6
+      : Math.abs(x-p.x)<=p.w/2+1e-6&&Math.abs(y-p.y)<=((p.shape==='circle'?p.w:p.h)/2)+1e-6;
+    for(const p of design.pads||[]){
+      const a=p.w*(p.shape==='circle'?p.w:p.h);
+      if(a<6||(p.holeR||0)>0) continue;
+      const same=(result&&result.nets||[]).filter(n=>n.netId===p.netId)
+        .reduce((s,n)=>s+(n.vias||[]).filter(v=>inPad(v.x,v.y,p)).length,0)
+        +(design.stitching||[]).filter(s=>s.netId===p.netId&&inPad(s.x,s.y,p)).length;
+      R('热设计','散热盘 '+p.id+'（'+netNameOf(p.netId)+'）',
+        same+' 孔', '建议 ≥9 孔（3×3 阵列 0.3mm）',
+        same>=9?'ok':'warn',
+        same===0?'大铜盘下无过孔：热阻高且换层载流受限——thermal 命令生成过孔阵列'
+          :(same<9?'有散热孔但不足 3×3——热阻仍偏高，可加密阵列':''));
+    }
+  }
   R('人工确认','传输线判据：走线 > Tr·v/6（FR-4 1ns≈24mm）须端接/控阻（nets[].tr 标注后 advise 自动核对）','—','—','info');
   R('人工确认','板边装配净空 ≥2mm：连接器/把手/外壳干涉区；成排元件同向便于焊接','—','—','info');
   R('人工确认','PDN 验证（RTF2 附录2）：裸板平面电容→装电容阻抗曲线→最坏工况纹波；板内留低感测试点（禁热焊盘、≥2处、间距≥1in）','—','—','info');
@@ -9205,6 +9241,50 @@ function fabChecklist(design, result, opts){
   R('人工确认','高压间距按 IEC 62368-1 / 60664-1 单独计算（板厂参数不含安规）','—','—','info');
   R('人工确认','阻抗：仅多层板支持，±10%，须用官方层压结构计算；铜厚/阻焊每 +1mil 约使阻抗 −2Ω（Bogatin B.43/44），估算器未含这两项修正', multi?'需要':'两层板不做阻抗控制','—','info');
   return rows;
+}
+
+/* ---------- 散热盘过孔阵列（批次 2：热过孔）----------
+   DPAK/TO-220/QFN 散热盘下生成 N×M 过孔阵：垂直热通道 + 大电流并联路径。
+   输出 [{x,y,netId}] 写入 design.stitching——固定孔/路由避让/DRC/Gerber 钻孔/
+   IPC-356 全链复用缝合孔通道，零新增管线。
+   几何约束（逐孔校验，不满足跳过并计入 skipped）：
+   - 孔心收进 viaOuter/2：整颗过孔盘含在焊盘铜内（异网间距由焊盘既有间距保证）；
+   - 距焊盘自身插件孔（holeR>0，TO-220 舌片）≥ holeR+drill/2+viaEdgeMin
+     （DRC 孔边距同网不豁免——先滤掉再落盘）；
+   - 阵内 pitch ≥ viaOuter+viaEdgeMin（过孔-过孔 DRC 间距）。 */
+function thermalViaArray(design, compId, opts){
+  opts=opts||{};
+  const pads=(design.pads||[]).filter(p=>String(p.id||'').split('-')[0]===compId);
+  if(!pads.length) throw new Error('元件 '+compId+' 无焊盘');
+  // 散热盘 = 该元件面积最大的焊盘（DPAK 舌片/QFN 底盘远大于信号脚）
+  let pad=null,area=-1;
+  for(const p of pads){ const a=p.w*(p.shape==='circle'?p.w:p.h); if(a>area){area=a;pad=p;} }
+  const drill=design.viaDrill;
+  if(opts.drill!=null&&Math.abs(opts.drill-drill)>1e-9)
+    throw new Error('drill '+opts.drill+' 与 design.viaDrill '+drill+' 不一致——缝合孔通道按 viaDrill 钻孔，请改 design.viaDrill');
+  const pitch=opts.pitch!=null?opts.pitch:1.0;
+  const minPitch=design.viaOuter+JLC.viaEdgeMin;
+  if(pitch<minPitch-1e-9) throw new Error('pitch '+pitch+' < 孔边距要求 '+minPitch.toFixed(2)+'（viaOuter+viaEdgeMin）');
+  const halfW=pad.w/2, halfH=(pad.shape==='circle'?pad.w:pad.h)/2;
+  const inset=design.viaOuter/2;            // 孔心收进量
+  const cols=opts.cols!=null?opts.cols:Math.max(3,Math.floor((2*(halfW-inset))/pitch)+1);
+  const rows=opts.rows!=null?opts.rows:Math.max(3,Math.floor((2*(halfH-inset))/pitch)+1);
+  if(!(cols>=1&&rows>=1)) throw new Error('cols/rows 必须 ≥1');
+  const cap=opts.maxCount!=null?opts.maxCount:400;
+  const vias=[];let skipped=0;
+  const x0=pad.x-((cols-1)/2)*pitch, y0=pad.y-((rows-1)/2)*pitch;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const x=+(x0+c*pitch).toFixed(3), y=+(y0+r*pitch).toFixed(3);
+    const inPad=pad.shape==='circle'
+      ? Math.hypot(x-pad.x,y-pad.y)<=halfW-inset+1e-6
+      : Math.abs(x-pad.x)<=halfW-inset+1e-6&&Math.abs(y-pad.y)<=halfH-inset+1e-6;
+    const hr=pad.holeR||0;
+    const clearHole=hr<=0||Math.hypot(x-pad.x,y-pad.y)>=hr+drill/2+JLC.viaEdgeMin-1e-9;
+    if(!inPad||!clearHole||vias.length>=cap){skipped++;continue;}
+    vias.push({x,y,netId:pad.netId});
+  }
+  return {comp:compId,pad:pad.id,netId:pad.netId,drill,pitch,cols,rows,
+    added:vias.length,skipped,vias};
 }
 
 /* ---------- 覆铜缝合孔自动规划：在地铜皮上按间距打地孔 ----------
