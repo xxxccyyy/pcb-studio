@@ -323,6 +323,8 @@ function normalizeDesign(input){
   if(!Number.isFinite(d.clearance)||d.clearance<0) throw new Error('clearance must be a nonnegative finite number');
   if(![1,2,4].includes(d.layers)) throw new Error('layers must be 1, 2 or 4');
   if(d.viaDrill>d.viaOuter) throw new Error('viaDrill must not exceed viaOuter');
+  if(d.coating!=null&&d.coating!=='bare'&&d.coating!=='coated')
+    throw new Error('design.coating 必须是 "bare"|"coated"（缺省 bare=外层无涂层，IPC-2221B B4 最严档）');
   for(const key of ['nets','pads','keepouts','manual','stitching']){
     if(!Array.isArray(d[key])) throw new Error(key+' must be an array');
   }
@@ -388,7 +390,7 @@ function applyConstraintRules(d){
   if(typeof classes!=='object'||Array.isArray(classes)) throw new Error('rules.classes 必须是对象');
   for(const [cn,c] of Object.entries(classes)){
     if(!c||typeof c!=='object'||Array.isArray(c)) throw new Error('rules.classes.'+cn+' 必须是对象');
-    for(const key of ['w','tr'])
+    for(const key of ['w','tr','clr'])
       if(c[key]!=null&&(!Number.isFinite(c[key])||c[key]<=0))
         throw new Error('rules.classes.'+cn+'.'+key+' 必须是正数');
   }
@@ -407,6 +409,10 @@ function applyConstraintRules(d){
     if(classes[cn].tr!=null&&n.tr!=null&&Math.abs(n.tr-classes[cn].tr)>1e-12)
       throw new Error('网络 '+nm+' 上升时间 '+n.tr+' 与 class '+cn+' 的 tr='+classes[cn].tr+' 冲突——删掉一处');
     if(classes[cn].tr!=null&&n.tr==null) n.tr=classes[cn].tr;
+    // 类级间距（0.14.7 批次2 D2）：netClr 第三来源——经 netClr 进入影响区/DRC/检查表
+    if(classes[cn].clr!=null&&n.clr!=null&&Math.abs(n.clr-classes[cn].clr)>1e-12)
+      throw new Error('网络 '+nm+' 间距 '+n.clr+' 与 class '+cn+' 的 clr='+classes[cn].clr+' 冲突——删掉一处（二选一）');
+    if(classes[cn].clr!=null&&n.clr==null) n.clr=classes[cn].clr;
   }
   // 差分对：{ group, nets:[A,B], z? } → 成员网 pair=group、diffZ=z（KiCad/Altium 同语义）
   if(R.pairs!=null){
@@ -753,7 +759,10 @@ function buildModel(design){
   // 逐网电压间距（第十一轮后批次1，L48）：声明 nets[].voltage 的网 → IPC-2221B 安全间距
   // 半径 = netClr(design, netId) + maxTrackW/2（影响区扩展到安全间距覆盖范围）
   const _vMap=new Map();
-  for(const n of (design.nets||[])) if(n.voltage!=null&&Number.isFinite(+n.voltage)&&+n.voltage>0) _vMap.set(n.id, Math.max(design.clearance, ipc2221Clr(+n.voltage)));
+  for(const n of (design.nets||[])){
+    const c=netClr(design, n.id);
+    if(c>design.clearance+1e-9) _vMap.set(n.id, c);   // voltage 查表或 classClr 抬高的网 → 影响区加宽
+  }
   const padClr=p=>{ const v=_vMap.get(p.netId); return v!=null ? v + maxTrackW(design)/2 : halfClr; };
 
   for(const p of (design.pads||[])){
@@ -5765,34 +5774,51 @@ function netCurrentDecls(design){
    该网的最低安全间距。正反关系是"声明→标准查表→max(全局,标准)"。
    三档：B1 内层 / B2 外层有涂层 / B4 外层无涂层（打样默认最严格）。 */
 function ipc2221Clr(voltage, table){
-  // IPC-2221B Table 6-1 阶梯查表：V[i] 是档位上界，≤V[i] 用 C[i]（线性插值不适用——标准本身是阶梯表）
-  const T=table||'B4';
-  const V=JLC.ipc2221b.V, C=JLC.ipc2221b[T]||JLC.ipc2221b.B4;
+  // IPC-2221B Table 6-1 阶梯查表：V[i] 是档位上界，≤V[i] 用 C[i]（线性插值不适用——
+  // 标准本身是阶梯表）；>500V 按标准线性外推（perV mm/V）。缺省 B2=外层无涂层
+  // ≤3050m（打样缺省最严外层口径）。
+  const T=table||'B2';
+  const TBL=JLC.ipc2221b;
+  const V=TBL.V, C=TBL[T]||TBL.B2;
   if(!Number.isFinite(voltage)||voltage<=0) return C[0];
   for(let i=0;i<V.length;i++){
     if(voltage<=V[i]) return C[i];
   }
-  return C[C.length-1];   // >500V → 最大档（外推偏保守）
+  const pv=TBL.perV&&TBL.perV[T]!=null?TBL.perV[T]:(TBL.B2[TBL.B2.length-1]/TBL.V[TBL.V.length-1]);
+  return +(pv*voltage).toFixed(3);   // >500V：标准线性外推（B2 0.005mm/V）
 }
 function netClrDecls(design){
   // 声明了 voltage 的网（V）：[{netId,name,voltage,w,clr,globalClr,status}]
   const out=[];
   for(const n of (design.nets||[])){
     if(n.voltage==null||!Number.isFinite(+n.voltage)||+n.voltage<=0) continue;
-    const need=ipc2221Clr(+n.voltage);
+    const table=ipcTableFor(design);
+    const need=ipc2221Clr(+n.voltage, table);
     const w=netW(design,n.id);
     out.push({netId:n.id,name:n.name,voltage:+n.voltage,w,
-      clr:need,globalClr:design.clearance,
+      clr:Math.max(need, netClr(design,n.id)),table,globalClr:design.clearance,
       status:w>0&&design.clearance+1e-9>=need?'ok':'under'});
   }
   return out;
 }
+/* IPC-2221B 档位选择（0.14.7 批次2 A2，标准列语义）：design.coating 声明
+   三防漆（聚合物涂层）→ 外层走 B4（涂层）档，否则 B2（无涂层，最严）。
+   简化声明：B1 内层间距恒 ≤ 无涂层外层档，外层口径对内层恒保守——不区分布线层位。 */
+function ipcTableFor(design){
+  return design&&design.coating==='coated'?'B4':'B2';
+}
 function netClr(design, netId){
-  // 逐网有效间距：声明了 voltage 的网 → max(全局, IPC-2221B)；其余 → 全局
-  const n=(design.nets||[]).find(x=>x.id===netId);
-  if(n&&n.voltage!=null&&Number.isFinite(+n.voltage)&&+n.voltage>0)
-    return Math.max(design.clearance, ipc2221Clr(+n.voltage));
-  return design.clearance;
+  // 逐网有效间距：max(全局, IPC-2221B 电压查表[coating 档], classClr)——三来源单一事实源
+  let clr=design.clearance;
+  if(netId!=null){
+    const n=(design.nets||[]).find(x=>x.id===netId);
+    if(n){
+      if(n.clr!=null&&Number.isFinite(n.clr)&&n.clr>clr) clr=n.clr;
+      if(n.voltage!=null&&Number.isFinite(+n.voltage)&&+n.voltage>0)
+        clr=Math.max(clr, ipc2221Clr(+n.voltage, ipcTableFor(design)));
+    }
+  }
+  return clr;
 }
 
 /* ---------- 嘉立创器件库对接（LCSC/EasyEDA API）与原理图导出 ----------
@@ -6574,11 +6600,15 @@ const JLC = {
   // IPC-2221B Table 6-1 电压→导线间距（mm）——按工作电压查安全间距
   // V 断点（V）→ 三档间距（mm）
   ipc2221b: {
-    // V = 电压上界（≤V[i] 用 C[i]）；9 档
+    // IPC-2221B Table 6-1（0.14.7 批次2 修正：0.14.6 存表列语义与标准相反、数值为
+    // 旧 IPC-2221A 口径——经 EMA Design Automation 与 SF Circuits 两份独立复现一致核对）：
+    // B1=内层导线；B2=外层无涂层 ≤3050m（裸板最严，打样缺省档）；B4=外层聚合物涂层。
+    // V = 电压上界（≤V[i] 用 C[i]）；>500V 线性外推（perV，mm/V）。
     V: [15, 30, 50, 100, 150, 170, 250, 300, 500],
-    B1: [0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],   // 内层
-    B2: [0.05, 0.1, 0.1, 0.13, 0.3, 0.3, 0.8, 1.5, 2.0],   // 外层+涂层
-    B4: [0.1, 0.64, 0.64, 0.64, 0.64, 1.27, 1.27, 1.27, 2.5]  // 外层无涂层（打样口径）
+    B1: [0.05, 0.05, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.25],
+    B2: [0.1, 0.1, 0.6, 0.6, 0.6, 1.25, 1.25, 1.25, 2.5],
+    B4: [0.05, 0.05, 0.13, 0.13, 0.4, 0.4, 0.4, 0.4, 0.8],
+    perV: { B1: 0.0025, B2: 0.005, B4: 0.00305 }
   }
 };
 // 铜厚感知的线宽/线距极限与建议值
@@ -6776,6 +6806,14 @@ function checkDRC(design, result, opts){
   result={...result,nets:(result?.nets||[]).map(n=>({...n,paths:(n.paths||[]).map(mergePathPts),vias:n.vias||[]}))};
   const widths=new Map((design.nets||[]).map(n=>[n.id,netW(design,n.id)]));
   const wOf=id=>widths.get(id)||design.trackW;
+  // 逐对间距（0.14.7 批次2 A2）：声明网（voltage 查表/class clr）与异网导体的间距
+  // 取 max(两网 netClr)——布线期影响区推开是必要条件，DRC 在此闭环复核。
+  // 无声明设计 clrMap 全为全局值 → 所有点位级不变。
+  const clrMap=new Map((design.nets||[]).map(n=>[n.id,netClr(design,n.id)]));
+  const clrOf=id=>(id!=null&&clrMap.get(id))||design.clearance;
+  const clrBetween=(a,b)=>Math.max(clrOf(a),clrOf(b));
+  let _clrMax=design.clearance;
+  for(const c of clrMap.values()) if(c>_clrMax) _clrMax=c;
   const issues=[];
   const add=(sev,type,msg)=>{ if(issues.length<200) issues.push({sev,type,msg}); };
   // 未连通（铺铜语义升级 0.11.7）：网内全部焊盘落入同网铜皮 = 已被铜皮接通，
@@ -6801,7 +6839,7 @@ function checkDRC(design, result, opts){
   // 逐轴分量同界——轴距超界者必不违规，直接跳过（candidates 是保守超集，findings 不变）。
   let _maxPadR=0;
   for(const p of pads) _maxPadR=Math.max(_maxPadR, Math.hypot(p.w,p.h)/2);
-  const _padR2=design.clearance+2*_maxPadR+1e-9;
+  const _padR2=_clrMax+2*_maxPadR+1e-9;
   const _layerList=Array.from({length:design.layers},(_,l)=>l);
   for(let i=0;i<pads.length;i++)for(let j=i+1;j<pads.length;j++){
     const a=pads[i], b=pads[j];
@@ -6809,10 +6847,11 @@ function checkDRC(design, result, opts){
     if(_extSameComp && a.id.split('-')[0]===b.id.split('-')[0]) continue;   // external 同元件豁免
     if(Math.abs(a.x-b.x)>_padR2||Math.abs(a.y-b.y)>_padR2) continue;
     if(!_layerList.some(l=>padOnLayer(a,l,design.layers)&&padOnLayer(b,l,design.layers))) continue;
+    const need=clrBetween(a.netId,b.netId);
     const gap=padGap(a,b);
     if(gap<-1e-9) add('error','焊盘重叠','焊盘 '+a.id+' 与 '+b.id+' 重叠');
-    else if(gap<design.clearance-1e-9)
-      add('error','焊盘间距','焊盘 '+a.id+' 与 '+b.id+' 铜边间距 '+Math.max(0,gap).toFixed(3)+'mm < 设计间距 '+design.clearance+'mm');
+    else if(gap<need-1e-9)
+      add('error','焊盘间距','焊盘 '+a.id+' 与 '+b.id+' 铜边间距 '+Math.max(0,gap).toFixed(3)+'mm < 设计间距 '+need+'mm');
   }
   // 焊盘出板 / 落入禁布区（class keepout：本类网焊盘自由，roadmap #10）
   const _drcCls=netClsMap(design);
@@ -6854,27 +6893,28 @@ function checkDRC(design, result, opts){
     const a=vias[i], b=vias[j];
     if(a.net===b.net) continue;
     if(!spanHit(a.span,b.span)) continue;                 // 层跨度不相交：不比较
-    if(Math.hypot(a.x-b.x,a.y-b.y) < (a.outer+b.outer)/2+design.clearance)
+    if(Math.hypot(a.x-b.x,a.y-b.y) < (a.outer+b.outer)/2+clrBetween(a.net,b.net))
       add('error','过孔间距','(' + a.x.toFixed(2) + ',' + a.y.toFixed(2) + ') 与 (' + b.x.toFixed(2) + ',' + b.y.toFixed(2) + ') 过孔间距不足');
   }
   for(const v of vias){
     if(Math.min(v.x,design.width-v.x,v.y,design.height-v.y)<v.outer/2-1e-9)
       add('warn','过孔出板','过孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+') 超出板框');
-    const _vR=v.outer/2+design.clearance+_maxPadR;   // 过孔-焊盘违规对的最大轴距界
+    const _vR=v.outer/2+_clrMax+_maxPadR;   // 过孔-焊盘违规对的最大轴距界（含声明网逐对口径）
     for(const p of pads){
       if(p.netId!=null && p.netId===v.net) continue;
       // 焊盘不在该过孔的跨度内 ⇒ 不同层，无间距约束
       if(!shpLayerInSpan(p, v.span, L_)) continue;
       if(Math.abs(v.x-p.x)>_vR||Math.abs(v.y-p.y)>_vR) continue;
       const d=pointPadDistance(v.x,v.y,p);
-      if(d < v.outer/2+design.clearance-1e-9)   // -1e-9：恰在边界(=clearance)不算违规，H1 教训
+      const need=clrBetween(v.net,p.netId);
+      if(d < v.outer/2+need-1e-9)   // -1e-9：恰在边界(=间距)不算违规，H1 教训
         add('error','过孔-焊盘间距','过孔 ('+v.x.toFixed(2)+','+v.y.toFixed(2)+') 距焊盘 ' + p.id + ' 过近');
     }
     for(const n of result.nets){
       if(n.netId===v.net) continue;
       let hit=false;
       const _nw2=wOf(n.netId)/2;   // 深优 2026-11-14：复用 widths 缓存，免逐段重复 netW 查找
-      const _vsR=v.outer/2+design.clearance+_nw2+1e-9;   // 违规时 via 中心距段 bbox ≤ 此界
+      const _vsR=v.outer/2+_clrMax+_nw2+1e-9;   // 违规时 via 中心距段 bbox ≤ 此界（含声明网逐对口径）
       for(const path of n.paths){
         for(let k=1;k<path.length;k++){
           const a=path[k-1], b=path[k];
@@ -6883,7 +6923,7 @@ function checkDRC(design, result, opts){
           if(v.x<Math.min(a.x,b.x)-_vsR||v.x>Math.max(a.x,b.x)+_vsR||
              v.y<Math.min(a.y,b.y)-_vsR||v.y>Math.max(a.y,b.y)+_vsR) continue;
           const d=segDist(v.x,v.y,a.x,a.y,b.x,b.y);
-          if(d < design.viaOuter/2+design.clearance+_nw2-1e-9){ hit=true; break; }
+          if(d < design.viaOuter/2+clrBetween(v.net,n.netId)+_nw2-1e-9){ hit=true; break; }
         }
         if(hit) break;
       }
@@ -6923,13 +6963,13 @@ function checkDRC(design, result, opts){
     const a=path[i-1],b=path[i];
     if(a.l!==b.l) continue;
     const half=wOf(n.netId)/2;
-    const _sR=half+design.clearance+_segMaxPadR;   // 违规时焊盘中心距段 bbox ≤ 此界（保序快速过滤）
+    const _sR=half+_clrMax+_segMaxPadR;   // 违规时焊盘中心距段 bbox ≤ 此界（保序快速过滤；含声明网逐对口径）
     const _sMinX=Math.min(a.x,b.x)-_sR, _sMaxX=Math.max(a.x,b.x)+_sR;
     const _sMinY=Math.min(a.y,b.y)-_sR, _sMaxY=Math.max(a.y,b.y)+_sR;
     for(const p of pads){
       if((p.netId!=null&&p.netId===n.netId)||!padOnLayer(p,a.l,design.layers)) continue;
       if(p.x<_sMinX||p.x>_sMaxX||p.y<_sMinY||p.y>_sMaxY) continue;
-      if(segmentPadDistance(a,b,p)<half+design.clearance-1e-9){
+      if(segmentPadDistance(a,b,p)<half+clrBetween(n.netId,p.netId)-1e-9){
         add('error',n.manual?'手动布线冲突':'走线-焊盘间距','走线距焊盘 '+p.id+' 过近');break;
       }
     }
@@ -6958,12 +6998,12 @@ function checkDRC(design, result, opts){
     segs.sort((a,b)=>a.l-b.l || a.minX-b.minX);
     const maxW=segs.reduce((w,s)=>Math.max(w,s.w),design.trackW);
     for(let i=0;i<segs.length && issues.length<200;i++){
-      const s=segs[i], reach=(s.w+maxW)/2+design.clearance;
+      const s=segs[i], reach=(s.w+maxW)/2+_clrMax;
       for(let j=i+1;j<segs.length;j++){
         const t=segs[j];
         if(t.l!==s.l || t.minX>s.maxX+reach) break;
         if(s.net===t.net) continue;
-        const need=(s.w+t.w)/2+design.clearance;
+        const need=(s.w+t.w)/2+clrBetween(s.net,t.net);
         if(t.minX>s.maxX+need || t.minY>s.maxY+need || t.maxY<s.minY-need) continue;
         if(segSegDist(s.x1,s.y1,s.x2,s.y2, t.x1,t.y1,t.x2,t.y2)<need-1e-9){
           add('error','走线间距','走线段 ('+s.x1.toFixed(2)+','+s.y1.toFixed(2)+') 与其它网络走线间距不足');
@@ -9239,6 +9279,16 @@ function fabChecklist(design, result, opts){
     }
     R('载流','高频载流（趋肤效应）', 'δ(1GHz)='+skinDepth(1e9).toFixed(3)+' mm', 'AC 电阻≈ρ/(周长×δ)',
       'info', '发热仍按 DC 载流；信号完整性主要看阻抗与端接（工具 skinDepth/acTraceR 可查）');
+  }
+  // 电压组（0.14.7 批次2 A2 补全）：netClrDecls 消费方——声明 voltage 的网逐行
+  // 确认 per-net 间距已按 IPC-2221B 档位（coating → B2/B4）生效。
+  for(const dc of netClrDecls(design)){
+    R('电压','网 '+dc.name+'：'+dc.voltage+'V',
+      dc.clr.toFixed(2)+' mm', '全局 '+dc.globalClr.toFixed(2)+' mm（IPC-2221B '+dc.table+'档）',
+      'ok',
+      dc.clr>dc.globalClr+1e-9
+        ?'per-pad 影响区已按 '+dc.clr.toFixed(2)+'mm 推开异网（布线期生效）+ DRC 逐对 max(两网间距) 复检闭环'
+        :'全局间距已覆盖标准需求，无需逐网加宽');
   }
   // 阻抗自动定档（批次 3）：差分对逐组行——目标 Zdiff / 线宽 / 有效耦合间隙 /
   // 可达性。反查不可达时如实 warn（2 层板 90Ω 经典口径不可达是物理事实）。

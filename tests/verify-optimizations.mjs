@@ -513,14 +513,17 @@ t('20d. IPC-2221B 查表 + per-pad 影响区 + 混合电压端到端', () => {
     {id:'LV-1', netId:'lv', x:30, y:10, w:1.0, h:1.0, shape:'rect', layer:'top'},
     {id:'G1-1', netId:'gnd', x:45, y:10, w:1.7, h:1.7, shape:'circle', layer:'both', holeR:0.45}
   ];
-  // 查表数值校验（IPC-2221B B4 外层无涂层）
-  assertEq(core.ipc2221Clr(170, 'B4'), 1.27, '170V@B4 → 1.27mm');
-  assertEq(core.ipc2221Clr(220, 'B4'), 1.27, '220V@B4 → 1.27mm');
-  assertEq(core.ipc2221Clr(400, 'B4'), 2.5, '400V@B4 → 2.5mm');
-  assertEq(core.ipc2221Clr(5, 'B4'), 0.1, '5V@B4 → 0.1mm');
-  assertEq(core.ipc2221Clr(220, 'B2'), 0.8, '220V@B2（有涂层）→ 0.8mm');
+  // 查表数值校验（IPC-2221B Table 6-1，0.14.7 修正后标准值——两份独立复现一致：
+  // B2=外层无涂层 ≤3050m 缺省档；B4=外层聚合物涂层）
+  assertEq(core.ipc2221Clr(170), 1.25, '170V@B2（缺省无涂层）→ 1.25mm');
+  assertEq(core.ipc2221Clr(220), 1.25, '220V@B2 → 1.25mm');
+  assertEq(core.ipc2221Clr(400), 2.5, '400V@B2 → 2.5mm');
+  assertEq(core.ipc2221Clr(50), 0.6, '50V@B2 → 0.6mm');
+  assertEq(core.ipc2221Clr(800), 4, '800V@B2 → 线性外推 4.0mm');
+  assertEq(core.ipc2221Clr(170, 'B4'), 0.4, '170V@B4（涂层）→ 0.4mm');
+  assertEq(core.ipc2221Clr(300, 'B1'), 0.2, '300V@B1（内层）→ 0.2mm');
   // per-net clearance
-  assertEq(core.netClr(d, 'hv'), 1.27, 'HV 170V → 1.27mm');
+  assertEq(core.netClr(d, 'hv'), 1.25, 'HV 170V → 1.25mm');
   assertEq(core.netClr(d, 'lv'), 0.2, 'LV 无电压声明 → 全局 0.2mm');
   // per-pad 影响区：HV 焊盘推开异网更远
   const m = core.buildModel(d);
@@ -846,6 +849,128 @@ t('23b. 热设计阈值智能化：载流声明网 3mm² 触发，普通网仍 6
   d2.pads = [{id:'U3-1',netId:'pwr',x:10,y:10,w:1,h:1,shape:'rect',layer:'top'}];  // 1mm²
   assert(!core.fabChecklist(d2, null).some(x => x.group === '热设计'),
     '1mm² 小脚不触发');
+});
+
+// ===== 24a-24c. 涂层声明 + DRC 逐对校验 + class clr（0.14.7 批次2）=====
+
+t('24a. design.coating → IPC-2221B 档位切换（B2 无涂层 / B4 三防漆）', () => {
+  const mk = (coating) => {
+    const d = core.designDefaults();
+    d.width = 50; d.height = 30; d.grid = 0.6; d.trackW = 0.3; d.clearance = 0.2;
+    if (coating) d.coating = coating;
+    d.nets = [{id:'hv',name:'HV',voltage:170},{id:'sig',name:'SIG'}];
+    d.pads = [
+      {id:'A1',netId:'hv',x:10,y:15,w:2,h:2,shape:'rect',layer:'top'},
+      {id:'A2',netId:'sig',x:30,y:15,w:2,h:2,shape:'rect',layer:'top'}
+    ];
+    return core.normalizeDesign(d);
+  };
+  const bare = mk();
+  const coated = mk('coated');
+  assertEq(core.netClr(bare, 'hv'), 1.25, '裸板 170V → B2 档 1.25mm');
+  assertEq(core.netClr(coated, 'hv'), 0.4, '三防漆 170V → B4 档 0.4mm');
+  // 涂层声明 → 影响区半径变小：焊盘外围环带（1.2~2.5mm）内被推开格数 bare > coated
+  const mb = core.buildModel(bare), mc = core.buildModel(coated);
+  const ringBlocked = (m, dd) => {
+    // 影响区 = padOwner 标记（焊盘矩形外扩 pClr 的格子）——异网不可用
+    let cnt = 0;
+    for (let j = 0; j < m.GH; j++) for (let i = 0; i < m.GW; i++) {
+      const cx = (i + 0.5) * dd.grid, cy = (j + 0.5) * dd.grid;
+      const dist = Math.hypot(cx - 10, cy - 15);
+      if (dist > 1.2 && dist < 2.5 && m.padOwner[j * m.GW + i] !== 0) cnt++;
+    }
+    return cnt;
+  };
+  const nb = ringBlocked(mb, bare), nc = ringBlocked(mc, coated);
+  assert(nb > nc, 'bare 影响区环带标记格数应大于 coated（bare 半径 2.4 vs coated 1.55）');
+  // 非法 coating 报错
+  let threw = false;
+  try { const d = mk(); d.coating = 'dip'; core.normalizeDesign(d); } catch (e) { threw = true; }
+  assert(threw, 'coating=dip 必须报错');
+  // 检查表电压组：档位标注
+  const cl = core.fabChecklist(coated, null);
+  const row = cl.find(x => x.group === '电压' && x.item.includes('HV'));
+  assert(row, '电压组行存在');
+  assert(row.limit.includes('B4'), 'coated 行标注 B4 档：' + row.limit);
+  const cl2 = core.fabChecklist(bare, null);
+  const row2 = cl2.find(x => x.group === '电压' && x.item.includes('HV'));
+  assert(row2.limit.includes('B2'), 'bare 行标注 B2 档：' + row2.limit);
+});
+t('24b. checkDRC 逐对校验：声明网间距闭环（影响区必要条件 → DRC 充分复核）', () => {
+  const mk = (voltage) => {
+    const d = core.designDefaults();
+    d.width = 40; d.height = 20; d.grid = 0.6; d.trackW = 0.3; d.clearance = 0.2;
+    d.nets = [{id:'hv',name:'HV'},...(voltage?[{id:'hv2',name:'HV2',voltage}]:[]),{id:'sig',name:'SIG'}];
+    // HV2（声明网）焊盘与 SIG 焊盘 0.5mm 间距——全局 0.2 通过，声明网 1.25 拦截
+    d.pads = [
+      {id:'A1',netId:voltage?'hv2':'sig',x:10,y:10,w:2,h:2,shape:'rect',layer:'top'},
+      {id:'A2',netId:'sig',x:12.5,y:10,w:2,h:2,shape:'rect',layer:'top'}
+    ];
+    return d;
+  };
+  // 无声明：0.5mm 间距 > 全局 0.2 → 干净
+  const d0 = mk();
+  const r0 = core.checkDRC(d0, {nets: []});
+  assertEq(r0.filter(x => x.sev === 'error' && x.type === '焊盘间距').length, 0,
+    '无声明 0.5mm 间距不报');
+  // 声明 170V：0.5mm < 1.25mm → 焊盘间距 error（DRC 逐对闭环）
+  const d1 = mk(170);
+  const r1 = core.checkDRC(d1, {nets: []});
+  const errs = r1.filter(x => x.sev === 'error' && x.type === '焊盘间距');
+  assertEq(errs.length, 1, '声明网 0.5mm 间距必须被 DRC 拦截');
+  assert(errs[0].msg.includes('0.5'), '报错含实际间距值');
+  // 走线-走线逐对：HV 手动走线 vs SIG 手动走线 0.5mm
+  const d2 = core.designDefaults();
+  d2.width = 40; d2.height = 20; d2.grid = 0.6; d2.trackW = 0.3; d2.clearance = 0.2;
+  d2.nets = [{id:'hv2',name:'HV2',voltage:170},{id:'sig',name:'SIG'}];
+  d2.manual = [
+    {netId:'hv2', pts:[{x:8,y:5,l:0},{x:30,y:5,l:0}]},
+    {netId:'sig', pts:[{x:8,y:5.5,l:0},{x:30,y:5.5,l:0}]}   // 边到边 0.2 < 1.25
+  ];
+  // manual 走线按 CLI drc 同口径并入 result（否则走线-走线检查看不到 manual 段）
+  const r2 = core.checkDRC(d2, { nets: core.manualRouteEntries(d2) });
+  assert(r2.some(x => x.sev === 'error' && x.type === '走线间距'),
+    '声明网走线对 0.2mm 间距必须被拦截（走线-走线逐对）');
+  // 同几何无声明 → 干净
+  const d3 = core.designDefaults();
+  d3.width = 40; d3.height = 20; d3.grid = 0.6; d3.trackW = 0.3; d3.clearance = 0.2;
+  d3.nets = [{id:'hv2',name:'HV2'},{id:'sig',name:'SIG'}];
+  d3.manual = [
+    {netId:'hv2', pts:[{x:8,y:5,l:0},{x:30,y:5,l:0}]},
+    {netId:'sig', pts:[{x:8,y:5.5,l:0},{x:30,y:5.5,l:0}]}
+  ];
+  const r3 = core.checkDRC(d3, { nets: core.manualRouteEntries(d3) });
+  assertEq(r3.filter(x => x.sev === 'error' && x.type === '走线间距').length, 0,
+    '同几何无声明 → 位级不变不报');
+});
+t('24c. rules.classes[].clr → netClr 第三来源（影响区 + DRC + 检查表）', () => {
+  const d = core.designDefaults();
+  d.width = 40; d.height = 20; d.grid = 0.6; d.trackW = 0.3; d.clearance = 0.2;
+  d.nets = [{id:'pwr',name:'PWR'},{id:'sig',name:'SIG'}];
+  d.pads = [
+    {id:'A1',netId:'pwr',x:10,y:10,w:2,h:2,shape:'rect',layer:'top'},
+    {id:'A2',netId:'sig',x:12.4,y:10,w:2,h:2,shape:'rect',layer:'top'}   // 0.4mm 间距 < class 0.5
+  ];
+  d.rules = { classes: { pwr: { clr: 0.5 } }, netClass: { PWR: 'pwr' } };
+  const n = core.normalizeDesign(d);
+  assertEq(n.nets[0].clr, 0.5, 'class clr 展开到成员网');
+  assertEq(core.netClr(n, 'pwr'), 0.5, 'netClr 三来源 max');
+  assertEq(core.netClr(n, 'sig'), 0.2, '未声明网不受影响');
+  // DRC 逐对：PWR-SIG 0.4mm 间距 < class 0.5 → error（恰在 0.5 不算违规——严格 < 口径）
+  const r = core.checkDRC(n, {nets: []});
+  assert(r.some(x => x.sev === 'error' && x.type === '焊盘间距'), 'class clr 0.5 逐对拦截');
+  // 三来源 max：同网 voltage + class clr 取大
+  const d2 = core.designDefaults();
+  d2.width = 40; d2.height = 20; d2.grid = 0.6; d2.trackW = 0.3; d2.clearance = 0.2;
+  d2.nets = [{id:'mix',name:'MIX',voltage:170}];
+  d2.pads = [{id:'A1',netId:'mix',x:10,y:10,w:2,h:2,shape:'rect',layer:'top'}];
+  d2.rules = { classes: { hi: { clr: 1.5 } }, netClass: { MIX: 'hi' } };
+  const n2 = core.normalizeDesign(d2);
+  assertEq(core.netClr(n2, 'mix'), 1.5, 'max(IPC 1.25, class 1.5) = 1.5');
+  // 检查表 class 行
+  const cl = core.fabChecklist(n2, null);
+  const row = cl.find(x => x.group === '电压' && x.item.includes('MIX'));
+  assert(row && row.value.includes('1.50'), '电压组行显示有效间距 1.50mm');
 });
 
 console.log('\n优化验证结果：' + pass + ' 通过, ' + fail + ' 失败');
