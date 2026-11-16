@@ -1190,13 +1190,67 @@ function createSession(design, opts){
   // adoptShared/commitRoutes/optimize 回滚/compactPairs pairBand 置位。多失效无害，
   // 漏失效为正确性 bug——探针逐 astar 重算比对验证完备性（.scratch probe）。
   let passMaskEpoch=0, maskCacheEpoch=-1, maskCacheNet=-1, maskCacheHard=null;
+  // 0.14.12 增量启发式场：组合场 = 组合图多源精确距离（可采纳+一致，0.14.10）。
+  // Prim 的 goal=生长树（commitPath 只增）→ 目标集只增时新场 = min(旧场, 新源 BFS)，
+  // label-correcting FIFO 只松弛"能改善"的格（hMap[t]>d 严格下降才入队）——更新成本
+  // ∝ 改善区域而非全场。终值与全量重算逐位一致（同一数学对象：旧场是旧源的精确
+  // 距离，min(旧, 新源 BFS) = 全源精确距离）→ astar 行为不变。RMST 逐边换 goal
+  // （目标集替换）→ 收缩/成员检测失败即全量重建。掩码重建（epoch 变）→ 场重建。
+  // 重建/更新的松弛集逐字段同源（8 平面邻 mask 门控 + diag 门控 + 2 换层双端门控）。
+  let hFieldEpoch=-1, hFieldNet=-1, hFieldHard=null, hStampGen=0;
+  const hGoalStamp=new Int32Array(TS);
+  let hStamped=new Set();
   function computeH(goalSet, net, hard){
     if(obstacleH && passMask){
       if(maskCacheEpoch!==passMaskEpoch || maskCacheNet!==net.i || maskCacheHard!==hard){
         buildPassMask(net, hard);
         maskCacheEpoch=passMaskEpoch; maskCacheNet=net.i; maskCacheHard=hard;
       }
-      fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue,passMask);
+      if(hFieldEpoch!==passMaskEpoch || hFieldNet!==net.i || hFieldHard!==hard){
+        fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue,passMask);
+        hStampGen++;
+        hStamped=new Set(goalSet);
+        for(const g of goalSet) hGoalStamp[g]=hStampGen;
+        hFieldEpoch=passMaskEpoch; hFieldNet=net.i; hFieldHard=hard;
+        return;
+      }
+      // 目标集收缩/替换检测（RMST 逐边换 goal）：任一已收录格不在当前集合 → 全量重建
+      let shrunk=hStamped.size>goalSet.size;
+      if(!shrunk) for(const g of hStamped) if(!goalSet.has(g)){ shrunk=true; break; }
+      if(shrunk){
+        fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue,passMask);
+        hStampGen++;
+        hStamped=new Set(goalSet);
+        for(const g of goalSet) hGoalStamp[g]=hStampGen;
+        return;
+      }
+      // 增量：新目标 = goalSet − 已收录
+      const newGoals=[];
+      for(const g of goalSet) if(hGoalStamp[g]!==hStampGen) newGoals.push(g);
+      if(!newGoals.length) return;   // 目标集与场一致：直接复用
+      const q=[]; let head=0;
+      for(const g of newGoals){
+        hGoalStamp[g]=hStampGen; hStamped.add(g);
+        if(hMap[g]>0){ hMap[g]=0; q.push(g); }   // 新源置 0；已为 0（不可能，防御）不入队
+      }
+      while(head<q.length){
+        const s=q[head++];
+        if(!passMask[s]) continue;               // 种子门（mask=0 目标只置 0 不外扩，与全量口径一致）
+        const c=s%NC, d=hMap[s]+1;
+        const left=c%GW>0, right=c%GW<GW-1, up=c>=GW, down=c<NC-GW;
+        if(left && passMask[s-1] && hMap[s-1]>d){ hMap[s-1]=d; q.push(s-1); }
+        if(right && passMask[s+1] && hMap[s+1]>d){ hMap[s+1]=d; q.push(s+1); }
+        if(up && passMask[s-GW] && hMap[s-GW]>d){ hMap[s-GW]=d; q.push(s-GW); }
+        if(down && passMask[s+GW] && hMap[s+GW]>d){ hMap[s+GW]=d; q.push(s+GW); }
+        if(diagOn){
+          if(left&&up && passMask[s-GW-1] && hMap[s-GW-1]>d){ hMap[s-GW-1]=d; q.push(s-GW-1); }
+          if(right&&up && passMask[s-GW+1] && hMap[s-GW+1]>d){ hMap[s-GW+1]=d; q.push(s-GW+1); }
+          if(left&&down && passMask[s+GW-1] && hMap[s+GW-1]>d){ hMap[s+GW-1]=d; q.push(s+GW-1); }
+          if(right&&down && passMask[s+GW+1] && hMap[s+GW+1]>d){ hMap[s+GW+1]=d; q.push(s+GW+1); }
+        }
+        if(s>=NC && passMask[s-NC] && hMap[s-NC]>d){ hMap[s-NC]=d; q.push(s-NC); }
+        if(s<TS-NC && passMask[s+NC] && hMap[s+NC]>d){ hMap[s+NC]=d; q.push(s+NC); }
+      }
     }else{
       fillDistanceMap(model,goalSet,viaCost,diagOn,hMap,hQueue);
     }
