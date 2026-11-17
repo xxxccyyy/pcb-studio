@@ -1,0 +1,37 @@
+name: 🐛 Bug report（缺陷报告）
+description: Something routes wrongly, crashes, or exports bad data. 中文/English both welcome.
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?（发生了什么）
+      description: Expected vs actual. A `render` PNG or screenshot helps a lot.
+      placeholder: |
+        Expected: ...
+        Actual: ...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduce steps（复现命令/步骤）
+      description: Exact commands or GUI steps, e.g. `node ai/pcb.mjs route design.json -o result.json`
+      placeholder: |
+        1. node ai/pcb.mjs spec design.json
+        2. node ai/pcb.mjs route ...
+    validations:
+      required: true
+  - type: textarea
+    id: design-json
+    attributes:
+      label: Minimal design.json（最小复现设计）
+      description: Paste or attach the smallest design that triggers it. Remove proprietary parts first — public Issues are visible to everyone.
+  - type: input
+    id: environment
+    attributes:
+      label: Environment（环境）
+      description: OS / Node version / exe or index.html or `node ai/pcb.mjs`
+      placeholder: "Windows 10, Node v24.21.0, CLI"
+    validations:
+      required: true

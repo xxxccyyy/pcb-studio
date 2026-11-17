@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & ideas（使用问题 / 想法 / 讨论）
+    url: https://github.com/xxxccyyy/pcb-studio/discussions
+    about: Questions, usage help, and feature ideas → Discussions. 中文/English both welcome. Bug reports please use the issue forms.

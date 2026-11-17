@@ -1,6 +1,8 @@
 # PCB Studio——零依赖、纯本地运行的 PCB 自动布局/布线/检查/交付工具（人机两用）
 
-[![CI](https://github.com/xxxccyyy/pcb-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/xxxccyyy/pcb-studio/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![Node.js ≥24](https://img.shields.io/badge/node-%E2%89%A524-blue)
+[English](README.en.md) | 简体中文
+
+[![CI](https://github.com/xxxccyyy/pcb-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/xxxccyyy/pcb-studio/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/xxxccyyy/pcb-studio)](https://github.com/xxxccyyy/pcb-studio/releases/latest) [![Downloads](https://img.shields.io/github/downloads/xxxccyyy/pcb-studio/total)](https://github.com/xxxccyyy/pcb-studio/releases) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![Node.js ≥24](https://img.shields.io/badge/node-%E2%89%A524-blue)
 
 一个零依赖、纯本地运行的 PCB 自动布局/布线/检查/交付工具。
 
