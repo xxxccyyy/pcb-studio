@@ -1,5 +1,7 @@
 # PCB Studio——零依赖、纯本地运行的 PCB 自动布局/布线/检查/交付工具（人机两用）
 
+[![CI](https://github.com/xxxccyyy/pcb-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/xxxccyyy/pcb-studio/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![Node.js ≥24](https://img.shields.io/badge/node-%E2%89%A524-blue)
+
 一个零依赖、纯本地运行的 PCB 自动布局/布线/检查/交付工具。
 
 - **给 AI 用**：`ai/pcb.mjs` 无头接口 + 《[AI-使用手册](docs/AI-使用手册.md)》——AI 代理从网表资料出发自主完成布局、布线、检查并交付嘉立创EDA文件，操作手册见下文「AI 代理接口」。
@@ -173,6 +175,17 @@ npm run test:bridge       # 58 项端到端（health/load/SSE/cmd/render/跨站�
 npm run exe               # 完整打包
 ```
 
+### exe 下载与校验（未代码签名）
+
+`dist/pcb-studio.exe` **未做代码签名**：Windows SmartScreen 可能提示「已保护你的电脑」——属预期现象（构建管线无签名证书，[发布审计](docs/release-audit-20261117.md)如实留痕，不宣称可信签名）。请从 [Releases](https://github.com/xxxccyyy/pcb-studio/releases) 下载，并与随附的 `SHA256SUMS.txt` 比对：
+
+```powershell
+Get-FileHash .\pcb-studio.exe -Algorithm SHA256   # PowerShell
+certutil -hashfile pcb-studio.exe SHA256           # cmd 亦可
+```
+
+哈希不一致请勿运行并开 Issue 反馈。`dist/` 不入库（.gitignore），exe 仅以 Release 附件分发。
+
 
 ## 学习资源（精选自 awesome-electronics）
 
@@ -296,5 +309,18 @@ npm test
 - 路由上限 4,000,000 个栅格状态；PNG 渲染上限 16,000,000 像素，超限需增大栅格或降低图像比例
 - 定位为学习/工具级布线器，复杂高密度板仍建议用专业 EDA（KiCad、立创 EDA 等）
 - 编辑设计后需整体重布（无局部增量重布）；手动走线增删后**单网重布会被拒绝**（worker 检出设计指纹变化，如实提示整体重布）
+
+## 第三方素材与许可边界
+
+本仓库 MIT 许可仅覆盖本项目原创代码与文档，**不自动覆盖以下第三方素材**，再分发/使用以各自来源标注的许可为准：
+
+| 素材 | 来源 | 说明 |
+|---|---|---|
+| `projects/ext-icebreaker/`（原始 `icebreaker-v1.0e.kicad_pcb` 及导入派生文件） | [icebreaker-fpga/icebreaker](https://codeberg.org/icebreaker-fpga/icebreaker)（Codeberg，1BitSquared，OSHW/CC0 声明） | 外部真实板案例（[案例 01](docs/案例-外部板01-iCEBreaker.md)） |
+| `projects/ext-oshwhub-01/PCB.json`、`真实源.json` 及导入派生文件 | [STM32最小系统](https://oshwhub.com/shaowp/STM32zui-xiao-ji-tong)（立创开源广场，作者 shaowp） | EasyEDA 接力案例（[案例 02](docs/案例-外部板02-开源广场接力.md)），许可以原项目页为准 |
+| `projects/ext-fable-*/devices/` 及各案例经 LCSC 拉取的器件符号/封装数据 | 嘉立创 EDA / EasyEDA 公开 API 与 LCSC 器件页 | 版权归符号/封装原始创建者（[案例 03](docs/案例-03-Fable复刻-USB会议扬声器.md)） |
+| 布线思想出处（Freerouting、KiCad、OpenROAD、pcb-rnd 等） | 各上游开源项目 | 仅研读借鉴、文档逐处标注 file:line，未复制代码；参考克隆放在仓库外 |
+
+素材权利人如不同意此处再分发，提 Issue 即撤下。
 
 欢迎在此基础上扩展：算法核心位于 `src/engine.mjs`，与 UI 解耦，CLI 与测试直接导入；`npm run build` 将其嵌入单文件应用。`tests/build-fragment.mjs` 可将应用打包为 ZCode 内嵌预览片段。

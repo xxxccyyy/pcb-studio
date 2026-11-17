@@ -1,5 +1,7 @@
 # PCB Studio — Zero-Dependency Local PCB Auto-Placement / Routing / DRC / Delivery (Human + AI)
 
+[![CI](https://github.com/xxxccyyy/pcb-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/xxxccyyy/pcb-studio/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![Node.js ≥24](https://img.shields.io/badge/node-%E2%89%A524-blue)
+
 A zero-dependency, fully local PCB **auto-placement / auto-routing / DRC / fabrication-delivery** tool.
 
 > **Language note:** this file is a compact English summary. The **Chinese
@@ -56,5 +58,20 @@ Use **Node.js 24+** and `npm ci` for locked development-only dependencies. Runti
 Edit `src/engine.mjs` (algorithm core, no DOM), `src/ui.js`, `src/index.template.html`, then `npm run build` regenerates the self-contained `index.html`. The CLI and tests import the same engine directly. Routing runs in a cancellable background Worker; the browser falls back to serial when workers are unavailable.
 
 Limits: routing capped at 4,000,000 grid states; PNG render at 16,000,000 pixels (clear errors before allocation). Grid ≥ track width + clearance guarantees inter-net spacing DRC compliance. Known boundaries (diagonal-only shape patch, BGA-64 2-layer saturation, EasyEDA via layer-pair downgrade, etc.) are documented honestly in the Chinese README §已知限制 and per-case "遗留" sections — read them before demanding those scenarios.
+
+## Windows executable (unsigned)
+
+`pcb-studio.exe` ships as a **GitHub Release attachment only** (`dist/` is not in the repository). It is **not code-signed**: Windows SmartScreen may show a "Windows protected your PC" notice — that is expected (no signing certificate; honestly recorded in [docs/release-audit-20261117.md](docs/release-audit-20261117.md)). Verify the download against the attached `SHA256SUMS.txt` (`certutil -hashfile pcb-studio.exe SHA256`); do not run on mismatch and please open an Issue.
+
+## Third-party material
+
+The MIT license covers this project's original code and documentation **only**; it does not automatically cover bundled third-party material. Redistribution/use follows each source's own license:
+
+- `projects/ext-icebreaker/` — original [icebreaker-fpga/icebreaker](https://codeberg.org/icebreaker-fpga/icebreaker) board (Codeberg, 1BitSquared, OSHW/CC0 declaration) plus files derived from importing it; case study: `docs/案例-外部板01-iCEBreaker.md`.
+- `projects/ext-oshwhub-01/` — PCB JSON from the [STM32 最小系统](https://oshwhub.com/shaowp/STM32zui-xiao-ji-tong) project on oshwhub (author shaowp) plus derived files; licensing per the original project page.
+- `projects/ext-fable-*/devices/` and LCSC-fetched symbol/footprint data — from the JLCEDA/EasyEDA public API and LCSC part pages; copyright remains with the original symbol/footprint authors.
+- Router design ideas studied from Freerouting / KiCad / OpenROAD / pcb-rnd are cited `file:line` in the docs; no upstream code was copied (reference clones live outside this repository).
+
+Rights holders who object to redistribution: open an Issue and it will be removed.
 
 MIT licensed (see `LICENSE`); CI runs the line-ending guard, `npm run check`, `npm test`, and headless browser tests on every push.
