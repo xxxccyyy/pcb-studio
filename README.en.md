@@ -9,6 +9,8 @@ A fully local, **zero-runtime-dependency** PCB **auto-placement / auto-routing /
 - **Humans**: double-click `index.html` (single file, works offline) — or grab the Windows exe from [Releases](https://github.com/xxxccyyy/pcb-studio/releases/latest) (≈93 MB, no Node.js install needed).
 - **AI agents**: headless JSON CLI (`ai/pcb.mjs`), a **MCP stdio server**, and a **realtime HTTP bridge** that drives the GUI live — AI routes, the browser shows it; the human edits, the AI reads it back.
 
+> **Frontier-style results on open Chinese models**: Anthropic's Fable 5.2 demoed three 4-layer boards designed end-to-end in Claude Code ("no circuit fixes" at the fab). This project drove the same agentic workflow with **GLM-5.3-Flash and other domestic (Chinese) LLMs** and replicated **all three boards** — LCSC-verified BOM → schematic → placement → 4-layer auto-route → pour → DRC → versioned delivery packages — at **88% / 90% / 92%** auto-connection. Per-category comparison vs Fable: part selection / real footprints / schematics / pour & checks / fab files grade **on par**; the honest gaps are negotiation convergence and fab validation (unreproduced claims and false-green corrections all archived) — see the [case study](docs/案例-03-Fable复刻-USB会议扬声器.md) (Chinese, with the full comparison table).
+
 ![PCB Studio workbench](docs/workbench/1600.png)
 
 > Language note: the **Chinese [README.md](README.md) is the canonical, fully detailed documentation** (plus ~40 Chinese docs: AI operator's manuals, per-router source-study notes, benchmark reports, case studies). This file is the English summary; the Chinese docs may be ahead of it.

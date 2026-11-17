@@ -3,6 +3,8 @@
 > 背景：Anthropic Fable 5.2（2026-11-09 文章，经第三方转述）在 Claude Code 里完成了
 > 三个 4 层板设备（USB 会议扬声器/语音中枢/手持宠物），Diode Computers 制造组装
 > "无需电路修复"。本文记录**用本项目 AI 工作流复刻其中第一个**的全过程与边界对比。
+> **驱动模型**：本案例（及本项目全程）的 AI 代理由国产大模型驱动——**GLM-5.3-Flash 等**
+> （ZCode 代理会话执行）；前沿演示的复刻不依赖封闭旗舰模型。
 > 参考：[CellCog 博客](https://cellcog.ai/blog/claude-fable-5-2-designs-electronics)、
 > [Reddit 讨论](https://www.reddit.com/r/ClaudeAI/comments/1xt1dfp/fable_52_is_a_competent_electrical_engineer)。
 
