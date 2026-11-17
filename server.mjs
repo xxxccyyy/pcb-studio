@@ -17,6 +17,15 @@ export function createPreviewServer({root=defaultRoot}={}){
   return http.createServer(async(req,res)=>{
     const end=(code,message)=>{res.writeHead(code,{'Content-Type':'text/plain; charset=utf-8'});res.end(req.method==='HEAD'?undefined:message);};
     try{
+      // Loopback binding alone does not stop DNS rebinding or cross-site reads.
+      const port=req.socket.localPort, host=req.headers.host;
+      const allowed=new Set([`127.0.0.1:${port}`,`localhost:${port}`,`[::1]:${port}`]);
+      if(!allowed.has(host)||(req.headers.origin&&!allowed.has(req.headers.origin.replace(/^http:\/\//,'')))
+          ||(req.headers.origin&&!req.headers.origin.startsWith('http://'))
+          ||req.headers['sec-fetch-site']==='cross-site'){
+        end(403,'forbidden origin');return;
+      }
+      res.setHeader('Cross-Origin-Resource-Policy','same-origin');
       if(req.method!=='GET'&&req.method!=='HEAD'){res.setHeader('Allow','GET, HEAD');end(405,'method not allowed');return;}
       let pathname;
       try{pathname=decodeURIComponent((req.url||'/').split('?')[0]).replace(/\\/g,'/');}

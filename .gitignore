@@ -6,5 +6,19 @@ __pycache__/
 # 剖析与日志
 *.cpuprofile
 *.log
-# 依赖（本项目零依赖，防御性保留）
+# 依赖（运行时零依赖；node_modules 仅有构建期 devDependencies：esbuild/postject/playwright）
 node_modules/
+# exe 打包产物（npm run exe 重新生成）
+dist/
+# AI 控制桥会话目录（运行时产物：设计/布线文件 + bridge.json）
+pcb-session/
+# Bridge discovery credentials in custom session directories
+bridge.json
+# Local configuration and editor/OS files
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

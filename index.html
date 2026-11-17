@@ -3755,7 +3755,15 @@ function powerDrop(design, result, netId, opts){
    引脚编号：贴片阻容 1 左 2 右；SOIC/SOT/DIP 逆时针（1 在左上）；
    排针 1×N / 2×N 从左到右、逐行。 */
 function footprintPads(name, n){
-  n=Math.max(2, Math.round(n||0));
+  if(n!=null&&!Number.isFinite(Number(n))) throw new Error('封装数量必须是有限数值');
+  n=Math.max(2, Math.min(2000, Math.round(n||0)));   // 下限 2，上限 2000 防误用（10^9 直接 OOM）
+  // 名称内的数量也须完整校验，不能让 parseFloat/parseInt 接受 Infinity 或 32junk。
+  const namedCount=prefix=>{
+    const text=name.slice(prefix.length), count=Number(text);
+    if(!/^\d+$/.test(text)||!Number.isSafeInteger(count)||count<2||count>2000)
+      throw new Error(name+' 引脚数必须是 2 到 2000 的整数');
+    return count;
+  };
   const R=(dx,dy,w,h,layer)=>({dx,dy,w,h,shape:'rect',layer:layer||'top'});
   const C=(dx,dy,d,hole)=>({dx,dy,w:d,h:d,shape:'circle',layer:'both',holeR:hole!=null?hole:0.45});
   const P=[];
@@ -3773,7 +3781,9 @@ function footprintPads(name, n){
     P.push(R(-2.3,1.75,1.2,1.8), R(0,1.75,1.2,1.8), R(2.3,1.75,1.2,1.8), R(0,-1.75,2.6,1.8));
   }
   else if(name.startsWith('SOIC-')){
-    const per=Math.round((parseFloat(name.slice(5))||8)/2);   // SOIC-8/14/16 参数化
+    const count=namedCount('SOIC-');
+    if(count%2) throw new Error(name+' 引脚数必须是 2 的倍数');
+    const per=count/2;   // SOIC-8/14/16 参数化
     for(let k=0;k<per;k++){          // 左列 1..per：上→下（pin1 左上）
       const y=(k-(per-1)/2)*1.27;
       P.push(R(-2.7,y,1.5,0.6));
@@ -3794,6 +3804,41 @@ function footprintPads(name, n){
       const y=(k-(per-1)/2)*2.54;
       P.push(C(3.81,y,1.7));
     }
+  }
+  else if(name.startsWith('QFP-')||name.startsWith('QFN-')){
+    const qfp=name.startsWith('QFP-');
+    const pitch=qfp?0.8:0.5;
+    n=namedCount(name.slice(0,4));
+    if(n%4) throw new Error(name+' 引脚数必须是 4 的倍数（如 QFP-32/QFN-48）');
+    const per=n/4;
+    if(per<2) throw new Error(name+' 每边至少 2 脚');
+    const out=(per-1)*pitch/2+(qfp?1.25:0.72);   // QFP 角部也须留开相邻两边焊盘（半长+半宽=1.025）
+    const pl=qfp?{long:1.5,wide:0.55}:{long:0.9,wide:0.3};  // 引脚焊盘（长×宽）
+    // 焊盘长边朝封装内外，短边沿引脚排列方向，避免相邻焊盘重叠。
+    const H=(dx,dy)=>P.push(R(dx,dy,pl.long,pl.wide));
+    const V=(dx,dy)=>P.push(R(dx,dy,pl.wide,pl.long));
+    for(let k=0;k<per;k++) H(-out,(k-(per-1)/2)*pitch);            // 左列 1..per：上→下
+    for(let k=0;k<per;k++) V((k-(per-1)/2)*pitch,out);             // 底行 per+1..2per：左→右
+    for(let k=0;k<per;k++) H(out,(per-1-k)*pitch-(per-1)*pitch/2); // 右列 2per+1..3per：下→上
+    for(let k=0;k<per;k++) V((per-1-k)*pitch-(per-1)*pitch/2,-out);// 顶行 3per+1..4per：右→左
+  }
+  else if(name.startsWith('BGA-')){
+    n=namedCount(name.slice(0,4));
+    if(n<4) throw new Error('BGA 至少 4 球（如 BGA-64）');
+    const cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols);
+    const total=rows*cols, skip=Math.floor((total-n)/2);   // 去掉的球对称居中（真实 BGA 去球习惯）
+    let k=0;
+    for(let r2=0;r2<rows;r2++)for(let c2=0;c2<cols;c2++){
+      if(k++<skip) continue;
+      if(P.length>=n) break;
+      P.push({dx:(c2-(cols-1)/2)*0.8, dy:(r2-(rows-1)/2)*0.8, w:0.45, h:0.45, shape:'circle', layer:'top'});   // BGA 球：无孔
+    }
+    if(P.length<n) throw new Error('BGA 阵列放不下 '+n+' 球（防御分支，正常不可达）');
+    P.length=n;
+  }
+  else if(name==='XTAL-3225'){
+    // 3225 贴片晶振（±0.1mm 级近似）：4 焊盘，1 左上 2 右上 3 右下 4 左下（常规 GND-OSC-GND-OSC 排布见 datasheet）
+    P.push(R(-1.575,-0.9,1.6,1.15), R(1.575,-0.9,1.6,1.15), R(1.575,0.9,1.6,1.15), R(-1.575,0.9,1.6,1.15));
   }
   else if(name==='排针 1×N'){
     for(let k=0;k<n;k++) P.push(C((k-(n-1)/2)*2.54,0,1.7));
@@ -6676,9 +6721,12 @@ function importEasyEdaPcb(eeText){
 function renderBoardPixels(design, result, opts){
   opts=opts||{};
   const pour=(result&&result.pour)||(result&&result.pours)||opts.pour||opts.pours||null;   // 覆铜：单块或数组
-  const scale=opts.scale||8;
+  const scale=opts.scale??8;
   const W=Math.ceil(design.width*scale), H=Math.ceil(design.height*scale);
-  if(!Number.isFinite(scale)||scale<=0||!Number.isSafeInteger(W*H)||W*H>16_000_000) throw new Error('Render exceeds 16000000 pixels; reduce scale or board size');
+  if(!Number.isFinite(scale)||scale<=0||!Number.isFinite(design.width)||design.width<=0||
+     !Number.isFinite(design.height)||design.height<=0||!Number.isSafeInteger(W)||W<=0||
+     !Number.isSafeInteger(H)||H<=0||!Number.isSafeInteger(W*H)||W*H>16_000_000)
+    throw new Error('Render dimensions must be positive and within 16000000 pixels; reduce scale or board size');
   const px=new Uint8Array(W*H*4);
   const set=(x,y,c)=>{
     if(x<0||y<0||x>=W||y>=H) return;
@@ -6694,7 +6742,7 @@ function renderBoardPixels(design, result, opts){
   const disc=(cx,cy,rad,c)=>{
     const a=Math.max(0,Math.floor((cx-rad)*scale)), b=Math.max(0,Math.floor((cy-rad)*scale));
     const u=Math.min(W,Math.ceil((cx+rad)*scale)), v=Math.min(H,Math.ceil((cy+rad)*scale));
-    const r2=rad*rad*scale*scale;
+    const r2=rad*rad;   // dx/dy 与投影距离均以 mm 计，不再乘像素比例
     for(let y=b;y<v;y++)for(let x=a;x<u;x++){
       const dx=(x+0.5)/scale-cx, dy=(y+0.5)/scale-cy;
       if(dx*dx+dy*dy<=r2) set(x,y,c);
@@ -6703,7 +6751,7 @@ function renderBoardPixels(design, result, opts){
   const seg=(x1,y1,x2,y2,rad,c)=>{
     const a=Math.max(0,Math.floor((Math.min(x1,x2)-rad)*scale)), b=Math.max(0,Math.floor((Math.min(y1,y2)-rad)*scale));
     const u=Math.min(W,Math.ceil((Math.max(x1,x2)+rad)*scale)), v=Math.min(H,Math.ceil((Math.max(y1,y2)+rad)*scale));
-    const r2=rad*rad*scale*scale;
+    const r2=rad*rad;   // dx/dy 与投影距离均以 mm 计，不再乘像素比例
     const dx=x2-x1, dy=y2-y1, L2=dx*dx+dy*dy;
     for(let y=b;y<v;y++)for(let x=a;x<u;x++){
       const px2=(x+0.5)/scale, py2=(y+0.5)/scale;
@@ -6715,6 +6763,7 @@ function renderBoardPixels(design, result, opts){
   };
   const C_BOARD=[0,16,35], C_POUR0=[0,80,0], C_POUR1=[64,64,0],
         C_TOP=[200,82,82], C_BOT=[77,127,196], C_PAD=[227,183,46], C_HOLE=[13,17,23];
+  const C_HL=[94,232,140];   // highlightNet 专用高亮色（AI 目检：该网从整板里跳出来）
   rect(0,0,design.width,design.height,C_BOARD);
   if(pour){
     // 多边形覆铜：逐像素行偶奇填充全部环（外环+孔），与 Gerber 渲染同源；支持多块铜皮
@@ -6762,6 +6811,36 @@ function renderBoardPixels(design, result, opts){
   for(const sv of design.stitching||[]){
     disc(sv.x,sv.y,design.viaOuter/2,C_PAD);
     disc(sv.x,sv.y,design.viaDrill/2,C_HOLE);
+  }
+  // highlightNet（AI 目检）：该网（支持逗号分隔多网，名字或 id）走线/过孔/焊盘用高亮色
+  // 重画在最上层——从整板里跳出来。焊盘高亮不依赖 result（未布线也亮）。
+  // 只在显式传入 opts.highlightNet 时生效，缺省输出位级不变。
+  if(opts.highlightNet){
+    const hlSet=String(opts.highlightNet).split(',').map(s=>s.trim()).filter(Boolean);
+    const hlIds=new Set(hlSet);
+    for(const n of design.nets||[]) if(hlSet.includes(n.name)||hlSet.includes(n.id)) hlIds.add(n.id);
+    const hlNets=(result&&result.nets||[]).filter(n=>hlIds.has(n.netId));
+    for(const hlNet of hlNets){
+      const hl=hlNet.netId;
+      for(const l of [layers-1, 0]){
+        for(const path of hlNet.paths||[]) for(let k=1;k<path.length;k++){
+          const a=path[k-1], b=path[k];
+          if(a.l!==l||b.l!==l) continue;
+          seg(a.x,a.y,b.x,b.y, netW(design,hl)/2+0.06, C_HL);
+        }
+      }
+      for(const v of hlNet.vias||[]){
+        disc(v.x,v.y,(v.outer!=null?v.outer:design.viaOuter)/2+0.05,C_HL);
+        disc(v.x,v.y,(v.drill!=null?v.drill:design.viaDrill)/2,C_HOLE);
+      }
+    }
+    for(const p of design.pads||[]){
+      if(!hlIds.has(p.netId)) continue;
+      if(p.shape==='circle') disc(p.x,p.y,p.w/2+0.05,C_HL);
+      else rect(p.x-p.w/2-0.05,p.y-p.h/2-0.05,p.x+p.w/2+0.05,p.y+p.h/2+0.05,C_HL);
+      const hr=p.layer==='both'?(p.holeR!=null?p.holeR:design.viaDrill/2):0;
+      if(hr>0) disc(p.x,p.y,hr,C_HOLE);
+    }
   }
   return {width:W, height:H, px};
 }
@@ -7754,7 +7833,7 @@ function cornerTurnCost(ax,ay,bx,by,cx,cy){
 function beautifyResult(design, result){
   if(!result||!result.nets) return result;
   const g=design.grid;
-  const maxCh=Math.min(2*g, 1.2);
+  const maxCh=Math.min(3*g, 1.5);   // 0.14.13：切角尺度对齐人工（原 min(2g,1.2) 偏碎）
   const clr=design.clearance, tw=design.trackW, vo=design.viaOuter/2, eps=1e-6;
   const pads=(design.pads||[]).map(p=>{
     const hh=p.shape==='circle'?p.w/2:p.h/2;
@@ -7902,10 +7981,25 @@ function beautifyResult(design, result){
           const newLen=dx+dy;
           if(newLen>oldLen+1e-9) continue;
           const straight=(dx<1e-9||dy<1e-9);
+          // 45° 斜线候选（人工布线形态，0.14.13）：|dx|≈|dy| → 单根斜线直连；
+          // 否则单 45° 角两段（m1 斜线在前 / m2 斜线在后，短轴取满）。
+          // 线长 min·√2+(max−min) < dx+dy 且拐角代价 ≤10——两项均严格优于
+          // 正交狗腿（dx+dy、30），故排在狗腿之前；斜段间距由 segClearOK 把关，
+          // 失败再回退狗腿/直角，保持"绝不退步"。
+          const diagCands=[];
+          if(!straight){
+            if(Math.abs(dx-dy)<1e-6) diagCands.push(null);
+            else{
+              const mn=Math.min(dx,dy);
+              const sx=Math.sign(pts[j].x-pts[i].x), sy=Math.sign(pts[j].y-pts[i].y);
+              diagCands.push({x:pts[i].x+mn*sx, y:pts[i].y+mn*sy, l:l0});
+              diagCands.push({x:pts[j].x-mn*sx, y:pts[j].y-mn*sy, l:l0});
+            }
+          }
           const cands=straight?[]:[{x:pts[i].x,y:pts[j].y,l:l0},{x:pts[j].x,y:pts[i].y,l:l0}];
           const ok=m=>{
-            const segs=straight?[[pts[i].x,pts[i].y,pts[j].x,pts[j].y]]
-                               :[[pts[i].x,pts[i].y,m.x,m.y],[m.x,m.y,pts[j].x,pts[j].y]];
+            const segs=m?[[pts[i].x,pts[i].y,m.x,m.y],[m.x,m.y,pts[j].x,pts[j].y]]
+                        :[[pts[i].x,pts[i].y,pts[j].x,pts[j].y]];
             for(const [ax,ay,bx,by] of segs) if(!segClearOK(netId,ax,ay,bx,by,l0)) return false;
             const oldSegs=[];
             for(let k=i;k<j;k++) oldSegs.push([pts[k].x,pts[k].y,pts[k+1].x,pts[k+1].y]);
@@ -7934,8 +8028,17 @@ function beautifyResult(design, result){
           };
           if(straight){
             if(ok(null)){ pts.splice(i+1,j-i-1); done=false; break outer; }
-          } else for(const mid of cands){
-            if(ok(mid)){ pts.splice(i+1,j-i-1,mid); done=false; break outer; }
+          } else {
+            for(const mid of diagCands){
+              if(ok(mid)){
+                if(mid) pts.splice(i+1,j-i-1,mid);
+                else pts.splice(i+1,j-i-1);
+                done=false; break outer;
+              }
+            }
+            for(const mid of cands){
+              if(ok(mid)){ pts.splice(i+1,j-i-1,mid); done=false; break outer; }
+            }
           }
         }
       }
@@ -7959,7 +8062,13 @@ function beautifyResult(design, result){
         const dVx=V.x-P.x, dVy=V.y-P.y, dNx=N.x-V.x, dNy=N.y-V.y;
         const lV=Math.hypot(dVx,dVy), lN=Math.hypot(dNx,dNy);
         if(lV<1e-9||lN<1e-9){ out.push(V); i++; continue; }
-        const d=Math.min(maxCh, lV/2, lN/2);
+        // 0.14.13：只切真 90° 角（dot≈0）。45° 角（横↔斜过渡）本身已是斜线形态，
+        // 再切会把一根 45° 折线换成两段 22.5° 斜线——机器味残渣（实测 5 板 211 处
+        // 非 45° 斜段全部源于此）；135° 折返同理不切。
+        if(Math.abs(dVx*dNx+dVy*dNy)>1e-6*lV*lN){ out.push(V); i++; continue; }
+        // 防残渣：切角后两腿残余段须 ≥0.5g（否则下一拐角处留下碎屑段）
+        const minRem=g*0.5;
+        const d=Math.min(maxCh, lV/2, lN/2, lV-minRem, lN-minRem);
         if(d<g*0.4){ out.push(V); i++; continue; }
         const A={x:V.x-dVx/lV*d, y:V.y-dVy/lV*d, l:V.l};
         const B={x:V.x+dNx/lN*d, y:V.y+dNy/lN*d, l:V.l};
@@ -7969,6 +8078,14 @@ function beautifyResult(design, result){
         i++;
       }
       if(pts.length) out.push(pts[pts.length-1]);
+      // 0.14.13：只合并内部近重复点；终点及换层前的孪点必须精确保留。
+      // 否则 A≈B(top), B(bottom) 会丢掉 B(top)，产生带 XY 位移的非法换层段。
+      for(let k=1;k<out.length-1;k++){
+        if(out[k].l===out[k-1].l && out[k].l===out[k+1].l &&
+           Math.hypot(out[k].x-out[k-1].x, out[k].y-out[k-1].y)<1e-4){
+          out.splice(k,1); k--;
+        }
+      }
       paths2.push(out);
       pIdx++;
     }
@@ -10507,8 +10624,8 @@ self.onmessage=event=>{
         return;
       }
       const outcome=session.rerouteSingle(netId),result=session.buildResult();
-      if(options.beautify!==false) beautifyResult(design,result);
-      self.postMessage({id,type:'result',result,outcome});
+      if(options.beautify!==false) beautifyResult(d,result);
+      self.postMessage({id,type:'result',result,outcome,design:d});
     }else throw new Error('Unknown worker command: '+command);
   }catch(error){ self.postMessage({id,type:'error',error:error.message||String(error)}); }
 };
@@ -12151,13 +12268,17 @@ class RoutingWorkerClient{
     }catch(e){ toast('导出失败：'+e.message); }
   });
   $('btnPng').addEventListener('click',()=>{
-    const d=app.design, s=Math.max(8,Math.min(40,1200/d.width));
+    const d=app.design;
+    // Keep UI exports within the same 16 MP budget as the headless renderer.
+    const s=Math.min(Math.max(8,Math.min(40,1200/d.width)),8192/d.width,8192/d.height,Math.sqrt(16000000/(d.width*d.height)));
     const off=document.createElement('canvas');
-    off.width=Math.round(d.width*s); off.height=Math.round(d.height*s);
-    const g=off.getContext('2d'); g.scale(s,s);
+    off.width=Math.max(1,Math.floor(d.width*s)); off.height=Math.max(1,Math.floor(d.height*s));
+    const g=off.getContext('2d');
+    if(!g){ toast('PNG 导出失败：浏览器无法分配画布'); return; }
+    g.scale(s,s);
     renderScene(g,d,{show:app.show, result:app.result, rats:app.ratsCache, teardrops:app.teardrops,
       pour:app.pour, sel:null, grid:false, pxPerMM:s, activeLayer:app.drawLayer, highlightNet:app.selNet});
-    off.toBlob(b=>download(b,'pcb.png'));
+    off.toBlob(b=>{ if(b) download(b,'pcb.png'); else toast('PNG 导出失败：浏览器画布尺寸超限'); });
   });
   $('btnNew').addEventListener('click',()=>{
     if(app.design&&(app.design.pads.length||app.design.nets.length)&&!confirm('新建将清空当前设计，确定？')) return;
@@ -12186,17 +12307,166 @@ class RoutingWorkerClient{
       const q=new URLSearchParams(location.search);
       const du=q.get('design'), ru=q.get('result');
       if(!du) return;
-      const d=JSON.parse(await (await fetch(du)).text());
-      let r=null;
-      if(ru){
-        r=JSON.parse(await (await fetch(ru)).text());
-        if(r&&typeof normalizeResult==='function') r=normalizeResult(r,d);
-      }
-      app.design=d; app.result=r; app.sel=null; app.dragging=null;
-      syncParamInputs(); sbMsg(); renderNets(); renderProps(); renderStats();
-      computeDerived(); fitView(); requestDraw();
+      const readJson=async url=>{ const response=await fetch(url); if(!response.ok) throw new Error('HTTP '+response.status); return response.json(); };
+      // Validate both objects before replacing the active design, just like file import.
+      const d=normalizeDesign(await readJson(du));
+      const r=ru?normalizeResult(await readJson(ru),d):null;
+      loadDesign(d);
+      if(r){ app.result=r; computeDerived(); renderNets(); renderStats(); requestDraw(); }
       toast('已通过 URL 载入工程'+(r?'与布线结果':''));
     }catch(e){ console.warn('URL 参数载入失败', e); }
+  })();
+  // ---------------- AI 控制桥客户端（仅 exe/bridge 服务模式激活；file:// 双击零影响） ----------------
+  // 服务端在 head 闭合标签前注入 window.__PCB_BRIDGE 后生效：SSE 实时应用 AI 推送的 design/result，
+  // 并把本端快照防抖回传（hash 去重，左下角芯片可开关）——人机同屏协作，双向可见。
+  (function(){
+    const B=window.__PCB_BRIDGE;
+    if(!B||location.protocol==='file:') return;
+    let es=null, pushTimer=null, lastHash=null, ready=false, stateInFlight=false, remoteVersion=0;
+    let pushOn=true;
+    try{ pushOn=(localStorage.getItem('pcb-bridge-push')||'1')==='1'; }catch{}
+    const hdr=()=>({'Content-Type':'application/json','X-PCB-Token':B.token||''});
+    const chip=document.createElement('div');
+    chip.style.cssText='position:fixed;left:10px;bottom:10px;z-index:9999;font:11px/1.4 sans-serif;padding:3px 9px;border-radius:10px;background:#141d2b;color:#8fa3c0;border:1px solid #2a3850;cursor:pointer;user-select:none;opacity:.85';
+    chip.title='AI 控制桥已连接（点击开/关快照与截图回传）';
+    const paint=(t,c)=>{ chip.textContent=t||'⬤ AI 桥'+(pushOn?'':'（回传关）'); chip.style.color=c||(pushOn?'#59d18b':'#7d90ad'); };
+    chip.onclick=()=>{ pushOn=!pushOn;
+      try{ localStorage.setItem('pcb-bridge-push',pushOn?'1':'0'); }catch{}
+      clearTimeout(pushTimer); clearTimeout(shotTimer);
+      if(pushOn){ lastHash=null; lastShotHash=null; pushBridgeState(); }
+      paint(); toast(pushOn?'AI 桥：快照与截图回传开':'AI 桥：快照与截图回传关'); };
+    document.body.appendChild(chip);
+    paint();
+    const snapshot=()=>JSON.stringify({app:'pcb-autorouter',version:1,design:app.design,result:app.result});
+    // 画布截图 = AI 的「眼睛」：人实际看到的界面（含视图缩放/图层开关/选中状态），
+    // 与 /api/render（引擎几何渲染，不受视图影响）互补。requestDraw 挂钩保证每次视觉变化都触发。
+    function captureCanvas(){
+      const c=document.getElementById('cv');
+      if(!c||!c.width) return null;
+      if(c.width<100||c.height<100){ window.dispatchEvent(new Event('resize')); return null; }  // 布局塌缩：先自愈，本次不截
+      try{ return c.toDataURL('image/png'); }catch(e){ return null; }
+    }
+    let shotTimer=null, lastShotHash=null;
+    function uploadShot(d, force){
+      if(!pushOn) return;
+      try{
+        let h=0; for(let i=0;i<d.length;i++) h=(h*31+d.charCodeAt(i))|0;
+        if(String(h)===lastShotHash && !force) return;
+        const b64=d.slice(d.indexOf(',')+1), bin=atob(b64), u8=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+        fetch('/api/ui-screenshot',{method:'POST',headers:{'Content-Type':'image/png','X-PCB-Token':B.token||''},body:u8})
+          .then(response=>{ if(response.ok) lastShotHash=String(h); }).catch(()=>{});
+      }catch(e){/* 截图失败静默 */}
+    }
+    function pushShot(){
+      clearTimeout(shotTimer);
+      shotTimer=setTimeout(()=>{
+        if(!pushOn) return;
+        const d=captureCanvas();
+        if(d) uploadShot(d);
+      },1200);
+    }
+    function pushBridgeState(){
+      if(!pushOn||!ready) return;
+      clearTimeout(pushTimer);
+      pushTimer=setTimeout(async()=>{
+        if(!pushOn||!ready) return;
+        if(stateInFlight){ pushBridgeState(); return; }
+        try{
+          const s=snapshot();
+          // Compare the actual snapshot: a 32-bit hash collision must not silently lose edits.
+          if(s!==lastHash){
+            stateInFlight=true;
+            const response=await fetch('/api/ui-state',{method:'POST',headers:hdr(),body:s});
+            if(response.ok) lastHash=s;
+          }
+        }catch(e){/* 桥断开时静默；下次变更/重连会重试 */}
+        finally{ stateInFlight=false; }
+        pushShot();   // 设计没变但视图变了（平移/缩放/图层开关）也要让 AI 看到
+      },800);
+    }
+    // 零侵入挂钩：状态与视觉变更的出口统一触发回传（其余入口都经它们转发）
+    const _loadDesign=loadDesign, _designChanged=designChanged, _applySnapshot=applySnapshot, _runRoute=runRoute, _requestDraw=requestDraw;
+    loadDesign=function(d){ _loadDesign(d); pushBridgeState(); };
+    designChanged=function(){ _designChanged(); pushBridgeState(); };
+    applySnapshot=function(s){ _applySnapshot(s); pushBridgeState(); };
+    runRoute=function(o){ return _runRoute(o).then(r=>{ pushBridgeState(); return r; }); };
+    requestDraw=function(){ _requestDraw(); pushBridgeState(); };
+    window.__pcbBridge={ snapshot, push:pushBridgeState, capture:captureCanvas, applyView:applyViewCmd, get connected(){ return !!es&&es.readyState===1; }, version:B.version||null, lastViewError:null };
+    // AI 镜头控制（/api/view → 服务端广播 view-cmd）：同步改视图 + draw() 直绘 + 截图上传，
+    // 不经 rAF 防抖——后台标签页也能用。视图口径与 fitView/平移一致（mm*scale+ox/oy，画布 CSS 盒内）。
+    function applyViewCmd(c){
+      const cvE=document.getElementById('cv');
+      if(!cvE||!app.design) return;
+      window.dispatchEvent(new Event('resize'));            // 塌缩自愈
+      const area=canvasArea();
+      const availW=area.width-area.left-area.right, availH=area.height-area.top-area.bottom;
+      const cx=area.left+availW/2, cy=area.top+availH/2;
+      const clampS=s=>Math.min(Math.max(s,0.1),150);
+      const d=app.design;
+      if(c.net!=null){
+        const n=d.nets.find(n=>n.id===c.net);
+        if(n){ app.selNet=n.id; app.show.highlight=true; renderNets(); }   // 未知网络：只跳过高亮，视图照常
+      }
+      if(c.fit){
+        const s=clampS(Math.min(availW/d.width, availH/d.height));
+        app.view.scale=s; app.view.ox=cx-d.width*s/2; app.view.oy=cy-d.height*s/2;
+      }
+      if(c.region){
+        const [x,y,w,h]=c.region, m=1.5;
+        const s=clampS(Math.min(availW/(w+2*m), availH/(h+2*m)));
+        app.view.scale=s; app.view.ox=cx-(x+w/2)*s; app.view.oy=cy-(y+h/2)*s;
+      }
+      if(c.pad){
+        const p=d.pads.find(p=>p.id===c.pad);
+        if(!p) return;
+        const s=clampS(c.scale||app.view.scale||20);
+        app.view.scale=s; app.view.ox=cx-p.x*s; app.view.oy=cy-p.y*s;
+      } else if(c.scale&&!c.fit&&!c.region){
+        app.view.scale=clampS(c.scale);
+      }
+      draw();                                                // 同步直绘（不等 rAF）
+      const shot=captureCanvas();
+      if(shot) uploadShot(shot, true);                       // force：视图无像素变化也要回传（否则服务端 viewShot 干等超时）
+    }
+    // 后台/隐藏面板期间画布后备存储可能被压扁且 rAF 暂停不自愈：
+    // 恢复可见时主动自愈 + 补推截图；隐藏期间截图守卫跳过（服务端保留最后一张好的）
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState!=='visible') return;
+      window.dispatchEvent(new Event('resize'));
+      setTimeout(pushBridgeState,300);
+    });
+    setInterval(()=>{ const c=document.getElementById('cv');
+      if(c&&c.width&&(c.width<100||c.height<100)) window.dispatchEvent(new Event('resize')); },3000);
+    function applyRemote(st){
+      try{
+        if(!st||!st.design) return;
+        const design=normalizeDesign(st.design);
+        const result=st.result?normalizeResult(st.result,design):null;
+        loadDesign(design);
+        if(result){ app.result=result; computeDerived(); renderNets(); renderStats(); requestDraw(); }
+        window.dispatchEvent(new Event('resize'));   // 自愈可能的布局塌缩（后台标签页里画布后备存储可能被压扁）
+        toast('AI 已更新设计'+(st.name?'：'+st.name:'')+(result?'（含布线）':''));
+      }catch(e){ toast('AI 推送应用失败：'+e.message); }
+    }
+    (async()=>{
+      try{
+        const h=await fetch('/api/health',{headers:hdr()}).then(r=>r.json());
+        if(!h||!h.ok) return;
+        es=new EventSource('/api/events');        // 先订阅，再拉当前状态补齐（次序防漏）
+        es.addEventListener('state',ev=>{ try{ remoteVersion++; applyRemote(JSON.parse(ev.data)); }catch(e){} });
+        es.addEventListener('busy',ev=>{ try{ paint('⬤ AI 运行中：'+JSON.parse(ev.data).cmd+'…','#e8b34b'); }catch(e){} });
+        es.addEventListener('cmd-done',ev=>{ try{ const c=JSON.parse(ev.data); paint(); if(!c.ok) toast('AI 命令未成功：'+c.cmd); }catch(e){} });
+        es.addEventListener('view-cmd',ev=>{ try{ applyViewCmd(JSON.parse(ev.data)); }catch(e){ window.__pcbBridge.lastViewError=e && (e.stack||e.message); } });
+        es.onerror=()=>{ paint('⬤ AI 桥：重连中','#e8b34b'); };
+        es.onopen=()=>{ paint(); lastHash=null; lastShotHash=null; pushBridgeState(); };
+        const version=remoteVersion;
+        const st=await fetch('/api/state',{headers:hdr()}).then(r=>r.json());
+        // An SSE update received during the request is newer than this bootstrap snapshot.
+        if(version===remoteVersion&&st&&st.ok&&st.design) applyRemote({design:st.design,result:st.result,name:st.name,source:st.source});
+        ready=true; pushBridgeState();
+      }catch(e){ /* 无桥环境（如静态 server.mjs 预览）：静默不动 */ }
+    })();
   })();
   window.__pcbViewTest=Object.freeze({palette:CAD_PALETTE,renderScene});
   window.__pcbApp=app;   // 调试/自动化钩子（只读使用）

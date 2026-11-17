@@ -1,4 +1,4 @@
-const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch','--blind-vias','--no-compact-pairs','--no-joint-reroute','--obstacle-h','--no-obstacle-h','--apply']);
+const booleanFlags=new Set(['--check','--no-stitch','--auto-return','--plan','--no-nb-ripup','--force','--shape-patch','--blind-vias','--no-compact-pairs','--no-joint-reroute','--obstacle-h','--no-obstacle-h','--apply','--save-design']);
 const flagCommands={
   '-o':['place','route','export','device','schem','pour','tune','bom','pos','autopcb','render','import','deliver'],
   '--via-cost':['route','autopcb'],'--max-iter':['route','autopcb'],
@@ -21,7 +21,9 @@ const flagCommands={
   '--check':['bom'],'--scale':['render'],'--export':['verify'],'--project':['deliver'],'--force':['deliver'],
   '--current':['drop'],'--entries':['drop'],'--auto-return':['pour'],'--return-reach':['pour'],
   '--vdd':['pdn'],'--itrans':['pdn'],'--ripple':['pdn'],'--dt-us':['pdn'],'--esl-nh':['pdn'],'--cap-uf':['pdn'],'--pkg-lnh':['pdn'],
-  '--plan':['pdn'],'--apply':['currents','thermal'],'--plane-pf':['pdn'],'--fmin':['pdn'],'--fmax':['pdn'],'--plan-esl-nh':['pdn']
+  '--plan':['pdn'],'--apply':['currents','thermal'],'--plane-pf':['pdn'],'--fmin':['pdn'],'--fmax':['pdn'],'--plan-esl-nh':['pdn'],
+  '--save-design':['place','route'],
+  '--x':['fp'],'--y':['fp'],'--prefix':['fp']
 };
 const numericFlags={'--via-cost':[0,100000,false],'--max-iter':[1,1000,true],
   '--iterations':[1,1000000,true],'--rounds':[1,20,true],
@@ -37,14 +39,17 @@ const numericFlags={'--via-cost':[0,100000,false],'--max-iter':[1,1000,true],
   '--target':[0,5000,false],'--max-amp':[0,100,false],
   '--z':[1,500,false],'--parallel':[0,64,true],'--iter-workers':[0,64,true],
   '--iter-waves':[1,8,true],'--shard':[0,32,true],
-  '--shape-window':[0,100,false]};
+  '--shape-window':[0,100,false],
+  '--x':[-5000,5000,false],'--y':[-5000,5000,false]};
 export function parseArguments(command,argv){
   const args=[],options=new Map();
   for(let i=0;i<argv.length;i++){
     const token=argv[i];
     if(token==='--'){args.push(...argv.slice(i+1));break;}
     if(!token.startsWith('-')){args.push(token);continue;}
-    if(!flagCommands[token]?.includes(command)) throw new Error('Unknown option for '+command+': '+token);
+    if(!flagCommands[token]?.includes(command)) throw new Error('Unknown option for '+command+': '+token
+      +(flagCommands[token]&&flagCommands[token].length?'（该旗标仅用于：'+flagCommands[token].join(', ')+'）':'')
+      +'（'+command+' 可用旗标：'+Object.entries(flagCommands).filter(([,v])=>v.includes(command)).map(([k])=>k).join(' ')+'）');
     if(options.has(token)) throw new Error('Duplicate option: '+token);
     if(booleanFlags.has(token)){options.set(token,true);continue;}
     const value=argv[++i];

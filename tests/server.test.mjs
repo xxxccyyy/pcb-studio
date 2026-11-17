@@ -39,6 +39,13 @@ test('preview server handles requests and containment boundaries',async t=>{
     for(const url of ['/../public-other/secret.txt','/%2e%2e/public-other/secret.txt','/..%5cpublic-other%5csecret.txt','/.hidden','/linked/secret.txt'])
       assert.equal((await request(url)).status,403,url);
   });
+  await t.test('loopback preview rejects DNS rebinding and cross-site browser requests',async()=>{
+    const port=server.address().port;
+    for(const headers of [{Host:`attacker.example:${port}`},{Origin:`https://127.0.0.1:${port}`},{Origin:'null'},{'Sec-Fetch-Site':'cross-site'}])
+      assert.equal((await request('/','GET',headers)).status,403);
+    assert.equal((await request('/','GET',{Origin:`http://127.0.0.1:${port}`})).status,200);
+    assert.equal((await request('/')).headers['cross-origin-resource-policy'],'same-origin');
+  });
   await t.test('Unicode paths, missing files and disallowed methods have defined responses',async()=>{
     assert.equal((await request('/'+encodeURIComponent('空 格.json'))).body,'{}');
     assert.equal((await request('/missing')).status,404);assert.equal((await request('/','POST')).status,405);

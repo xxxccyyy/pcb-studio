@@ -138,6 +138,83 @@ for (const ex of core.EXAMPLES) {
   });
 }
 
+console.log('— 人工形态美化（0.14.13 humanize）—');
+
+// 走线段方向判定：轴对齐或精确 45° 才是"人画的"形态；
+// 非 45° 斜段 = 切角/坍缩残渣（机器味核心指标，0.14.13 前 5 真板 211 处）。
+function segKind(a, b) {
+  const dx = Math.abs(b.x - a.x), dy = Math.abs(b.y - a.y);
+  if (dx < 1e-9 && dy < 1e-9) return 'point';
+  if (dx < 1e-9 || dy < 1e-9) return 'axis';
+  if (Math.abs(dx - dy) < 1e-6) return 'diag45';
+  return 'kink';
+}
+function countKinds(r) {
+  const kinds = { axis: 0, diag45: 0, kink: 0 };
+  for (const n of r.nets) for (const p of n.paths) for (let i = 1; i < p.length; i++) {
+    if (p[i].l !== p[i - 1].l) continue;                 // 过孔换层孪点
+    const k = segKind(p[i - 1], p[i]);
+    if (kinds[k] != null) kinds[k]++;
+  }
+  return kinds;
+}
+
+t('全部示例布线无非 45° 斜段（切角残渣清零）', () => {
+  for (const ex of core.EXAMPLES) {
+    const d = ex.build();
+    const r = run(d);
+    const kinds = countKinds(r);
+    assertEq(kinds.kink, 0, ex.name + ' 非 45° 斜段（机器味残渣）');
+  }
+});
+
+t('beautify 台阶坍缩：E,N,W 折线 → 45° 斜线直连', () => {
+  const d = core.designDefaults();
+  d.width = 30; d.height = 24;
+  d.nets = [net('a')];
+  d.pads = [pad('p1', 'a', 10.25, 10.25, 1, 1, 'rect', 'top'), pad('p2', 'a', 12.25, 14.25, 1, 1, 'rect', 'top')];
+  // 合成结果：开阔区手工台阶（E4,N4,W2——拐角代价 30+30=60，满足拉直门槛）
+  const result = { nets: [{ netId: 'a', name: 'a', connected: 2, total: 2, vias: [], paths: [[
+    { x: 10.25, y: 10.25, l: 0 }, { x: 14.25, y: 10.25, l: 0 },
+    { x: 14.25, y: 14.25, l: 0 }, { x: 12.25, y: 14.25, l: 0 }]] }], stats: {} };
+  core.beautifyResult(d, result);
+  const p = result.nets[0].paths[0];
+  const kinds = countKinds(result);
+  assertEq(kinds.kink, 0, '坍缩后无非 45° 斜段');
+  const lenBefore = 4 + 4 + 2, lenAfter = p.reduce((s, pt, i) => i ? s + Math.hypot(pt.x - p[i - 1].x, pt.y - p[i - 1].y) : 0, 0);
+  assert(lenAfter < lenBefore - 1, '台阶坍缩显著缩短：' + lenAfter.toFixed(2) + ' < ' + lenBefore);
+  const hasDiag = p.some((pt, i) => i && segKind(p[i - 1], pt) === 'diag45');
+  assert(hasDiag, '含 45° 斜段');
+  assertEq(p[0].x, 10.25); assertEq(p[0].y, 10.25);   // 端点保持
+  assertEq(p[p.length - 1].x, 12.25); assertEq(p[p.length - 1].y, 14.25);
+});
+
+t('beautify 45° 角不切：横↔斜过渡保持单拐角（无 22.5° 斜线）', () => {
+  const d = core.designDefaults();
+  d.width = 30; d.height = 24;
+  d.nets = [net('a')];
+  d.pads = [];
+  // 横段接 45° 斜段——旧切角会把它切成两段 22.5° 斜线（机器味残渣来源）
+  const result = { nets: [{ netId: 'a', name: 'a', connected: 0, total: 0, vias: [], paths: [[
+    { x: 10, y: 10, l: 0 }, { x: 14, y: 10, l: 0 }, { x: 16, y: 12, l: 0 }]] }], stats: {} };
+  core.beautifyResult(d, result);
+  const kinds = countKinds(result);
+  assertEq(kinds.kink, 0, '45° 角不得产生 22.5° 斜线');
+  assertEq(kinds.diag45, 1, '45° 斜段原样保留');
+});
+
+t('beautify 近重复点合并（<0.0001mm 同层残渣点）', () => {
+  const d = core.designDefaults();
+  d.width = 30; d.height = 24;
+  d.nets = [net('a')];
+  d.pads = [];
+  const result = { nets: [{ netId: 'a', name: 'a', connected: 0, total: 0, vias: [], paths: [[
+    { x: 10, y: 10, l: 0 }, { x: 10.00001, y: 10, l: 0 }, { x: 14, y: 10, l: 0 }]] }], stats: {} };
+  core.beautifyResult(d, result);
+  const p = result.nets[0].paths[0];
+  assertEq(p.length, 2, '残渣点合并后 2 点');
+});
+
 console.log('— 稳健性与输出 —');
 
 t('随机压力测试：12 网络无崩溃、结果自洽', () => {

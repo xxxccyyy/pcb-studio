@@ -1,5 +1,202 @@
 # 更新日志
 
+## 0.15.0（2026-11-17）—— 单文件 exe + AI 实时控制桥：免装 Node 双击即用，AI 与人同屏协作
+
+目标命题「让 AI 实时操作、控制」。Node SEA 打包单文件 `pcb-studio.exe`（约 93MB，免装 Node），
+一 exe 三模式：双击 = 内置服务 + 自动开浏览器工作台 + **AI 控制桥**；带参 = 无头 CLI（与
+`node ai/pcb.mjs` 完全同参，实测冷启动 0.16s vs node 0.19s，`useCodeCache` 生效）；`mcp` 子命令 =
+MCP stdio 服务。GUI、CLI 与 exe 共用引擎；本版发布前另修复了封装、渲染和路径美化边界，
+不宣称与旧版所有输出逐位一致。并行布线（`--parallel/--iter-workers`）使用内嵌引擎源码，
+首次使用解包至随机私有临时目录，传 file URL 给 worker，正常退出时清理。
+
+### 发布前深度加固（2026-11-17）
+
+- 修复 QFP/QFN 焊盘方向和角部间隙；封装名称/数量有界验证，拒绝无穷、畸形与超大输入。
+- 修复 PNG 渲染毫米/像素半径混用；编码器校验字节视图长度，防越 view 读取；GUI 导出限制 16 MP / 单边 8192 像素。
+- 美化近重复点时保留端点和换层孪点；单网重布统一归一化设计。
+- 语义编辑先草稿验证再提交；修正中心坐标 bbox/禁布区、整段走线与过孔冲突失效、精确元件归属，保留钻孔元数据。
+- HTTP/MCP CLI 白名单、参数数量、目录/符号链接/Windows 特殊路径和输出覆盖保护；单文件原子写入；MCP 有界串行，HTTP 修改互斥。
+- 桥全端点及静态预览校验本机 Host/Origin，防 DNS rebinding；SSE 连接/背压和子进程输出设限。
+- CLI `main(argv)` 可重入、返回退出码，不强退截断 stdout；修复迭代并行的 `--save-design`。
+- 浏览器回传关闭时取消待发状态/截图；禁用 storage 不崩溃、异步网络失败不产生未处理拒绝、初始化不覆盖较新 SSE。
+- 实测并修复 SEA argv 分发；严格 serve 参数、跨平台浏览器启动器错误处理、正常信号关闭清理。
+- 锁文件/版本对齐、固定 Playwright、要求源码开发 Node 24+；CI 增加 Windows/Linux、重建桥测试及真实 SEA 冒烟。HTML 检查扩为四段脚本语法守卫。
+- 补充 SECURITY/CONTRIBUTING 与中英文开发说明。本轮不承诺未经测量的整体提速；局限与发布验证详见 `docs/release-audit-20261117.md`。
+
+### AI 控制桥（exe/bridge.mjs，新增）
+
+- **HTTP API**（仅绑 127.0.0.1；带 Origin 的跨站请求 403 防浏览器 drive-by；token 见 `<会话目录>/bridge.json`）：
+  `POST /api/load`（design/result 对象或会话内路径，内联对象自动落 `design.json`/`result.json`）→
+  SSE `state` 事件 → 界面即时应用；`POST /api/cmd`（spawn 自身跑 CLI，cwd=会话目录，串行队列 +
+  超时 kill，stderr 逐行 SSE `log` 直播，`autoLoad` 成功后自动推产物上屏）；`GET /api/render?scale=8`
+  （进程内 `renderBoardPixels`+PNG 编码器，多模态 AI 目检）；`GET /api/state`（含界面回传快照——
+  **AI 能看到人的手动编辑**）；`GET /api/files`；`GET /api/events`（SSE）
+- **浏览器桥客户端**（src/ui.js 启动段，零侵入挂钩 loadDesign/designChanged/applySnapshot/runRoute）：
+  SSE 收 `state` 按 fileInput 配方应用（normalizeDesign→normalizeResult→loadDesign→result→
+  computeDerived/renderNets/renderStats/requestDraw）+ toast；本端快照防抖 800ms + hash 去重回传
+  （左下角「AI 桥」芯片点击开关，localStorage 持久）；**file:// 双击 index.html 完全不受影响**
+  （桥仅在 http 服务下激活；boot 脚本注入 head 闭合标签前，pcb-ui 之前执行）
+- **MCP 模式**（exe/mcp.mjs）：MCP 2025-06-18 必要子集零依赖实现（newline-delimited JSON-RPC over
+  stdio），工具 pcb_info/pcb_load/pcb_cmd/pcb_state/pcb_render(image)/pcb_files——Claude Desktop/
+  ZCode 等 MCP 客户端直连；与 HTTP 桥共用会话目录与命令配方
+- **打包管线**（scripts/build-exe.mjs）：esbuild bundle exe/entry.mjs → CJS（engine/index.html/版本号
+  text 内嵌；ai/pcb.mjs 打包期补丁：两处并行 engineUrl → `globalThis.__PCB_ENGINE_URL()`、deliver
+  版本 fallback → `globalThis.__PCB_VERSION__`，源文件不动）→ `--experimental-sea-config` →
+  复制 node.exe → postject 注入。esbuild/postject 为**构建期** devDependency，运行时保持零依赖
+- **小重构（行为不变）**：PNG 编码器 crc32/pngChunk/pngEncode 从 ai/pcb.mjs 抽出为 src/png.mjs
+  （CLI render/deliver 与桥 /api/render 同源）；ai/pcb.mjs 尾部裸 `main().catch` 改 main-module
+  守卫（server.mjs 同款惯用法）+ `export { main }`——使其可被 entry 导入，直跑行为不变
+- **端口/会话**：默认 8931 被占自动 +1（`--port` 覆盖，0=临时端口）；会话目录默认 `<cwd>/pcb-session/`
+  （`--session-dir` 覆盖）；启动即写 `bridge.json`（AI 发现入口：端口/token/pid/版本）
+- **验证**：tests/bridge.test.mjs 15 项端到端（bridge.json 发现/health/页面注入位置/load 落盘/SSE
+  state/state 回读/cmd 子进程/产物落盘/files/render PNG 魔数/跨站 403/路径越界拒绝/MCP initialize/
+  tools/list/tools/call）全绿；cli.test 17/17、server.test、worker-session 不回归；浏览器实测
+  SSE 推送设计实时上屏（toast「AI 已更新设计」）+ UI 快照回传；exe 冒烟 schema/serve/route
+  --parallel（mode:"parallel"）/render 全过。手册：docs/AI-桥接手册.md
+- **AGENTS.md 交互规则（新增）**：「画图前先问观众」——AI 即将通过桥接接口开始实时画图
+  （place/route/pour/tune 等改变画面的操作）前，必须先问用户「要不要看着 AI 画图」：
+  要 → 确认 serve 已起、浏览器已开工作台并告知可旁观；不要 → 改走无头 CLI（不开界面）
+  静默完成。纯检查类命令（drc/spec/advise/render）不算画图。同款规则已写入
+  AI-使用手册 §2 与 AI-桥接手册 §3；AGENTS.md 由 AI 代理会话自动加载，跨会话生效
+- **AI 视觉通道（AGENTS.md 第二条硬性规则：画完必须视觉自检）**：界面画布自动截图回传——
+  `POST /api/ui-screenshot`（ui.js 画布 toDataURL，requestDraw 挂钩触发，防抖 1.2s + hash 去重，
+  画布塌缩守卫跳过）→ `GET /api/screenshot.png`（工作台真实截图，AI 所见即人所见，含视图/
+  图层/选中态）；与 `/api/render`（引擎几何渲染）双通道互补，目检分工与规程写入桥接手册 §4；
+  SSE 新增 `ui-state`/`screenshot` 事件（人端一有变化 AI 即被通知，按需拉取）；bridge body 改
+  Buffer 以承载 PNG；浏览器实测闭环：AI route+autoLoad → 界面刷新 → AI 拉截图确认布线出现。
+  附带修复：autoLoad 误传 respond=false 导致产物永不广播上屏；后台标签页 rAF 暂停 + ResizeObserver
+  延迟投递导致画布后备存储塌缩不自愈——visibilitychange/3s 守卫 interval 主动 resize 自愈，
+  AI 推送后也补发 resize
+- **AI 布线增强四件套**（§6 新章，实测全部闭环）：
+  ① **镜头控制 `GET /api/view`**——`net` 高亮 + `region`/`pad` 推近 + `fit` 复位：服务端 SSE
+  `view-cmd` → 客户端同步改视图（app.view/app.selNet/app.show.highlight，与 fitView 同口径）+
+  **draw() 直绘**（不经 rAF，后台标签页可用）+ 截图上传 → 服务端等 shot 更新返 PNG；无界面/超时
+  返 `{fallback:'/api/render'}`。整板图看密集板是浆糊的时代结束（实测 GND 高亮特写 ✓）
+  ② **失败法医报告 `POST /api/why`**——computeRatsnest 逐未连通边直连采样 21 点，报告
+  blockers（异网焊盘/走线含手动/禁布区，按命中排序）+ worstPoint + 三档 advice + hotspots；
+  **修复幻影边**：routeBoard 入口会原地抬高 design.grid（engine.mjs:4442）而 design 文件不变，
+  result.cells 与旧栅格索引错位——why/estimate 按同款口径先抬高+snap 再算（实测：修复前
+  3 条幻影边，修复后 0，真实阻断场景（禁布墙+清 GND 走线）blockers 精确报出 keepout+track:VCC）
+  ③ **语义编辑 `POST /api/edit`**——set-net/add-net/remove-net/move-comp（bbox 中心口径+comps
+  同步）/set-pad/add-pad/clear-net-tracks/add-keepout：副本 normalizeDesign 校验非法拒绝提交 →
+  落盘 design.json/result.json → SSE 实时上屏；服务重启后自动从会话文件恢复内存态
+  ④ **布线前预估 `POST /api/estimate`**——各网 netLowerBound RMST 下界求和 vs
+  「满铺/栅格×0.35 利用率×层数」容量，margin 三档判定（ok2/tight/need4）+ jlcTrackRule 细网名单 +
+  免责声明；布线前 1 秒替代几分钟的注定失败
+  tests/bridge.test.mjs 扩到 **27 项**（estimate/why/edit×4/view fallback）；桥接手册新 §6 +
+  §3 工作流整合（estimate 前置、why 后置、view 目检）；AGENTS.md 新增第三条硬性规则
+  「布线失败先看法医报告，partial 不许盲目重跑」
+- **痛点修复批次（正确性三修 + 三组增强，tests 42 项）**：
+  ① **--save-design（正确性根修）**：place/route 原地改 design（栅格抬高/焊盘 snap/布局旋转）
+  而文件不写回 → 后续 why/drc/render 坐标系错位（幻影边根因家族）。CLI 新旗标 `--save-design`
+  （saveDesignBack 与 routeBoard 入口同款口径），**桥 /api/cmd 对 place/route 自动附加**——
+  实测 place 后 design.json grid 0.5→0.8
+  ② **几何编辑 result 修剪**：move-comp/set-pad/add-pad/add-keepout/set-net(w) 影响域内的
+  走线自动清除 + `result.stale` 标记——不再显示悬空走线骗 AI
+  ③ **why.partialReasons**：partial 语义分解（fails/overuse/drcErrors + note）——「6/6 连通
+  却 partial」= route 内部 DRC 错误，AI 不再误判为布线失败
+  ④ **fp 封装生成器**：CLI `fp <名> [脚数] --x --y --prefix` + `GET /api/fp`——内置库
+  （0402/0603/0805/1206/SOT-23/SOT-223/SOIC-N/DIP-N/hdr1/hdr2 别名）出绝对坐标焊盘（通孔
+  holeR 自动），规格阶段最大手算错误源消除（DIP-14 实测 14 焊盘全带 holeR）
+  ⑤ **持久布线 worker**：engine+route-worker 源码拼接 eval worker（与 build.mjs 内联同款剥壳 +
+  self 适配 shim），复用 UI 同款协议——`POST /api/route-live` 进程内布线：SSE `progress` 直播
+  （实测 13 条事件至「完成」）+ `POST /api/cancel` 中断 + 会话驻留 → `POST /api/reroute-net`
+  秒级单网重布；edit/load 使会话失效（stale 拒绝，宁可靠重建不出旧结果）；返回变异后 design
+  自动落盘（route-live 路径天然无错位）
+  ⑥ **A/B 判分 `POST /api/diff`**：routeScore 六维分项 delta + scoreBetter 字典序裁决——
+  改参重跑后修复是否真有效有了客观裁判
+  ⑦ **undo/history**：edit/load 前自动快照（深度 20），`/api/undo` 回滚 + `/api/history` 轨迹——
+  AI 大胆试错有安全网
+  tests/bridge.test.mjs 扩到 **42 项**；手册 §6 扩至 6.1–6.8、§3 工作流改 route-live 主路径；
+  AGENTS.md 新增「fp 不手算坐标 / route-live 优先 / diff 必判分 / undo 兜底」硬性口径
+- **深度优化批次（token 效率 + 视觉深度 + 规格防错 + DRC 定位，tests 54 项）**：
+  ⑧ **/api/summary + /api/query**——token 效率三件套之一：状态摘要（统计+每网连通+stale/session）
+  替代全量 /api/state 轮询（大板 MB 级→KB 级）；`?net=/?comp=/?pad=` 结构化单对象查询
+  （焊盘坐标清单/引脚表+bbox/网路由状态+lbMm/routedLenMm/未连通边）——AI 不必拉全量 JSON 自己翻
+  ⑨ **render crop + highlightNet（引擎小改）**——视觉深度：`GET /api/render?crop=x,y,w,h`（mm
+  像素裁剪，桥端切片）+ `highlight=<网>`（renderBoardPixels 新 opts：该网走线/过孔/焊盘亮绿
+  [94,232,140] 重画最上层，**缺省输出位级不变**）——与界面镜头 /api/view 互补（确定性/无浏览器）
+  实测 GND 全网亮绿特写
+  ⑩ **comps 自动同步**——规格防错：load 自动从焊盘前缀聚合补齐 design.comps（只补缺失不覆盖，
+  响应带 compsAutoSynced）+ edit sync-comps 幂等 op——AI 漏写 comps 不再炸 ERC/BOM/CPL
+  ⑪ **/api/drc-live**——DRC 定位闭环：进程内 checkDRC+fabChecklist，findings 每条带 **where
+  坐标**（msg "(x.xx, y.yy) mm" 正则解析 + located 成功率计数）——配合 /api/view region 目检特写
+  ⑫ **封装库扩 QFP/QFN/BGA/XTAL**（引擎 footprintPads 新增分支，零回归 router 84/84）：
+  QFP-32/44/64/100（0.8 间距）、QFN-48（0.5）、BGA-64（0.8 阵列无孔）、XTAL-3225——从名字解析
+  脚数（同 SOIC 惯例）；fp CLI/桥同源生效（QFP-32 实测 32 焊盘四边各 8）
+  tests/bridge.test.mjs 扩到 **54 项**；手册 §6.5 更新支持列表 + 新 §6.9；AGENTS.md 增补
+  token 纪律/DRC 闭环/comps 兜底口径
+
+- **AI 工效批次（用着不顺手清单逐条消除，tests 58 项）**：
+  ⑬ **/api/help 自描述接口目录**——AI 冷启动第一站：24 端点速查 + cmdCommands 全清单 +
+  routeLiveOptions + 三套工作流配方（快速全流程/partial 修复环/目检三通道）+ tips；
+  不必先读手册即可开工（手册降级为细节规程）
+  ⑭ **/api/examples**——内置 3 块示例板 design JSON 直接喂 /api/load，AI 一条命令验证全流程
+  ⑮ **/api/drc-live/mark.png**——DRC 违规**红圈叠加渲染**（桥端像素画圈零引擎改动，X-Marked
+  响应头报定位数）；drcLive 回退定位增强：msg 无坐标时从「焊盘 X1-1」id 反查焊盘中心
+  ⑯ **highlight 多网**——renderBoardPixels highlightNet 支持逗号分隔（差分对一对亮绿），
+  缺省仍位级不变（本轮曾引入括号配平语法错误，router 84/84 复验通过）
+  ⑰ **cli-args 错误自纠错**——Unknown option 报错现在列出该命令全部可用旗标（AI 一次重试自愈）
+  ⑱ **MCP 工具集同步**——6→15 个工具（summary/query/why/estimate/edit/undo/fp/drc/diff…），
+  计算层与 HTTP 桥同源（新 exe/board-info.mjs 纯函数模块，桥/MCP 共用）；bridge.mjs 收敛为
+  状态管理+传输层
+  ⑲ banner 指引 /api/help；**stateOrFile 语义修复**——内存有设计时 result 以内存为准
+  （旧磁盘 result.json 与内存设计配错对曾致 drc-live 报错位设计）；
+  测试文件曾因调试脚本转义/块移动受损，已重写修复
+  tests/bridge.test.mjs 扩到 **58 项**；手册 §2 表 + §6.9 更新；AGENTS.md 新增「冷启动」节
+
+- **深度检查轮（双代理全量审查 + 修复，1 P0 + 9 P1 + 25 P2 全消）**：
+  - **[P0] route-live/reroute-net 挂死**：disposeRoutingWorker 先置空 routeWorkerReq 再 terminate →
+    exit 事件读到 null，Promise.race 永不 settle，/api/cancel|load|edit|undo 都会让进行中布线
+    挂 30 分钟超时——修为先 resolve 再置空（cancelMsg 透传）
+  - **[P1] bridge.mjs 双 applyEdit 定义**（重构手术残留，inline 版遮蔽 applyEditOp 委托版）——
+    删 inline 版收敛为单实现；pruneResultNets 闭包副本同删；applyEditOp/parseWhere 死导入清理
+  - **[P1] timer 泄漏**：route-live/reroute 的 race 超时 setTimeout 从不清理（每次布线漏一个，
+    port 0 自动化测试退出延迟最长 30 分钟）——加 finally clearTimeout
+  - **[P1] cmd 状态回读语义**：place 的 -o 是布好布局的 design（此前被当 result 塞进 state）；
+    place 后 result 置 null（布局变了旧走线全失效）、route 后 result 取 -o 文件——summary/why
+    不再拿旧 design 配新 result
+  - **[P1] remove-net 不标 result.stale**（board-info/bridge 双副本同修，收敛到 prune 统一路径）
+  - **[P1] boardSummary 空 pads 数组陷阱**：nets[].pads 为 [] 时统计 0——回退按 pads[].netId 计数
+  - **[P1] mcp pcb_load 旧 _mcp-result.json 残留**（新设计无 result 时错配旧连通数）+ pcb_undo
+    null 设计快照写坏文件 + pcb_edit 校验失败仍消耗快照——三处同修；bridge applyEdit 快照同样
+    移到校验后
+  - **[P2 清单]** mark.png 移入 guard（重计算端点防 drive-by）；ui-state 校验 JSON；SSE res
+    error 监听兜底；route-live busy 指示+快照（undo 可回布线）；estimateBoard Infinity margin
+    NaN 修复；boardSummary 空数组；syncComps 无 '-' pad id 用整个 id；add-net/add-pad 双网挂
+    同焊盘拦截；fp 引脚数上限 2000（防 10^9 OOM）；BGA 去球对称居中；highlightNet 焊盘高亮
+    不依赖 result（未布线也亮）+ 名字/ID 双口径；fp 错误清单补 QFP/QFN/BGA/XTAL；entry --port
+    NaN 报错 + --port= 形式；build-exe 补丁命中数构建期断言 + 死分支删除；tests spawnSyncOnce
+    未 await + 'node'→process.execPath；ui.js lastPushAt 死变量 + uploadShot force（view 无像素
+    变化不再干等 3.5s）；route-worker reroute 回传 design（beautify 对称）；文档同步（手册
+    15→58、§7 MCP 15 工具表、mark.png 入 §2 表）
+  - 审查同时确认无问题项：SSE clients 清理无泄漏、history 深拷贝、workerCode 拼装、helpPayload
+    24 端点逐一对应、mark.png/view 参数注入面、MCP 协议合规、双击 index.html 零影响
+  - 全量 npm test exit 0；bridge 58/58 + cli 17/17 + router 84/84 + fuzz 39/39 + check 绿
+
+## 0.14.13（2026-11-16）—— 人工形态美化（humanize）：走线残渣清零，AI 布的板像人布的
+
+目标命题「让 AI 用它画图像是人在画图一样」。几何审计定义四类机器味指标（kink=非 0°/45°/90°
+斜段、stairs=ENW 台阶、tiny=碎屑段、segs=顶点数），5 真板 fresh-route 实测定位到三处根因
+（全部在后处理 beautifyResult，搜索层零改动）：
+
+- **切角只切真 90° 角**：旧实现对每个拐角无差别斜切——45° 角（横↔斜过渡，八方向搜索的
+  正常产物）被切成两段 22.5° 斜线。正交判定 `|dot|≤1e-6·lV·lN`（格点整值精确），
+  45°/135° 角原样保留。**kink 211→0 全清零**（fable-01/02/03、h2-stm32、atmega：
+  9/42/15/133/12 处）。
+- **straightenPath 增加 45° 斜线候选**：|dx|≈|dy| 单斜线直连，否则单 45° 角两段；
+  线长与拐角代价两项均严格优于正交狗腿，排在狗腿之前，segClearOK 把关失败回退——
+  绝不退步。ENW 台阶坍缩为斜线（h2-stm32 1→0）。
+- **切角尺度 maxCh=min(3g,1.5)**（原 min(2g,1.2)）+ **防残渣双保险**：切角后两腿残余
+  ≥0.5g；切角后近重复点合并（<1e-4 同层，换层孪点除外）。
+
+实测（同 opts A/B）：连通/DRC/过孔/拥塞逐板逐例零退步；顶点数 −16~29%；线长 +0.4~1.0%
+——旧线长是靠把 45° 角切短人为压低的，还原真形态的代价。21 例质量基准：geometricErrors
+50→50、unconnected 0→0、vias 122→122，15 例 score 判退步仅来自线长分量。search-regression
+15 用例全部 unchanged（金标准捕获搜索层，与美化层解耦）。永久测试 4 项（全 EXAMPLES
+kinks=0 结构不变量 / 台阶坍缩端到端 / 45° 角不切 / 近重复点合并），router 84/84。
+报告：docs/深度优化报告-20261116f.md。
+
 ## 0.14.12（2026-11-16）—— 增量启发式场：Prim 目标树只增 → 场可精确增量更新（fable 11.9%/icebreaker 10.7%）
 
 0.14.9 曾将"按 goalSet 缓存场"证伪（命中率 1.3%）——那是对**整场缓存**的证伪。

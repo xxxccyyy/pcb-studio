@@ -34,8 +34,8 @@ self.onmessage=event=>{
         return;
       }
       const outcome=session.rerouteSingle(netId),result=session.buildResult();
-      if(options.beautify!==false) beautifyResult(design,result);
-      self.postMessage({id,type:'result',result,outcome});
+      if(options.beautify!==false) beautifyResult(d,result);
+      self.postMessage({id,type:'result',result,outcome,design:d});
     }else throw new Error('Unknown worker command: '+command);
   }catch(error){ self.postMessage({id,type:'error',error:error.message||String(error)}); }
 };

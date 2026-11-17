@@ -25,11 +25,14 @@ if(process.argv.includes('--check')){
   // 经典 <script> 解析守卫：引擎以经典脚本内联，ESM-only 语法会解析期炸掉整个
   // GUI（0.5.1 实测教训：import.meta 进了引擎，浏览器全灭而 CLI 全绿）
   const vm=await import('node:vm');
-  const engineScript=output.match(/<script id="pcb-engine">([\s\S]*?)<\/script>/);
-  try{
-    if(engineScript) new vm.Script(engineScript[1]);
-    console.log('Classic-script parse guard: OK');
-  }catch(e){ console.error('Classic-script parse FAILS (GUI 不可用):', e.message); process.exitCode=1; }
+  for(const id of ['pcb-engine','pcb-worker','pcb-worker-client','pcb-ui']){
+    const inline=output.match(new RegExp('<script id="'+id+'"[^>]*>([\\s\\S]*?)<\\/script>'));
+    try{
+      if(!inline) throw new Error('Missing embedded script: '+id);
+      new vm.Script(inline[1],{filename:id});
+      console.log('Classic-script parse guard: '+id+' OK');
+    }catch(e){ console.error('Classic-script parse FAILS (GUI 不可用):', e.message); process.exitCode=1; }
+  }
 }else{
   writeFileSync(target,output);
   console.log(`Built standalone index.html (${Buffer.byteLength(output)} bytes).`);

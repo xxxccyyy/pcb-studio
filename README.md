@@ -4,6 +4,7 @@
 
 - **给 AI 用**：`ai/pcb.mjs` 无头接口 + 《[AI-使用手册](docs/AI-使用手册.md)》——AI 代理从网表资料出发自主完成布局、布线、检查并交付嘉立创EDA文件，操作手册见下文「AI 代理接口」。
 - **给人用**：单个 HTML 文件即可使用——**双击 `index.html` 在浏览器中打开**即可开始，无需安装任何东西。
+- **人机同屏**：`pcb-studio.exe` 单文件打包（免装 Node）——双击启动界面 + **AI 实时控制桥**：AI 推设计/跑布线/渲染目检，界面即时刷新；人手动编辑，AI 实时回读。见下文「单文件 exe 与 AI 实时控制桥」与《[AI-桥接手册](docs/AI-桥接手册.md)》。
 
 ![PCB Studio 工作台](docs/workbench/1600.png)
 
@@ -36,7 +37,7 @@
   - PathFinder 协商拥塞（拆线重布）：初始布线失败时，多轮迭代协商让网络互相让路，直到零冲突
   - 支持单层 / 2 层 / 4 层布线，自动放置过孔（含过孔安全间距约束）
   - 在「栅格 ≥ 线宽 + 间距」时保证不同网络间距 DRC 合规
-  - **弦拉直 + 45° 拐角美化**：U 形/阶梯绕行段用直连或两段狗腿替换（KiCad mergeStep 思想：线长不增→拐角下降，保持本网焊盘接触、防自交），再对残余直角做斜切，全程逐段几何间距检查
+  - **弦拉直 + 45° 拐角美化（humanize）**：U 形/阶梯绕行段用直连、**45° 斜线**或两段狗腿替换（KiCad mergeStep 思想：线长不增→拐角下降，保持本网焊盘接触、防自交），再对真 90° 直角做斜切——45° 角本身已是斜线形态不切，杜绝 22.5° 斜线残渣（5 真板实测 kink 211→0、顶点数 −25%），全程逐段几何间距检查
   - **布线后优化（postroute）**：整板重跑候选（更高过孔代价 / 关闭首选方向）+ **逐网拆-重布优化器**（过孔优先、字典序接受准则绝不退步、奇偶轮切换方向、连续失败熔断——移植自 Freerouting BatchOptimizer），按"连通数→冲突→过孔数→线长"字典序取最优
 - **手动布线（手自动结合的专业工作流）**
   - 「✏️ 手动布线」工具：点击焊盘/格点起步（自动归入焊盘网络），45° 模式预览，单击加转折点，双击/回车结束
@@ -104,7 +105,7 @@
 
 ## 快速开始
 
-1. 双击打开 `index.html`（或运行 `node server.mjs` 后访问 <http://127.0.0.1:8931>）
+1. 双击打开 `index.html`（或运行 `node server.mjs` 后访问 <http://127.0.0.1:8931>；或直接双击 `dist/pcb-studio.exe`）
 2. 顶部下拉框选择一个示例电路
 3. 点击左侧「⚡ 自动布线」——几秒内完成布线，DRC 自动执行
 4. 有真实设计？顶部「导入 KiCad」选择 `.kicad_pcb` 文件，直接对真实工程自动布线
@@ -153,6 +154,26 @@ node ai/pcb.mjs export easyeda placed.json result.json -o 嘉立创EDA.json
 完整工作流、决策规程、证据分级与禁止事项见《[AI-使用手册](docs/AI-使用手册.md)》。
 架构借鉴：easyeda-agent（typed action/写后回读/工作流门禁）、kicad-happy（粗粒度 JSON 分析/证据分级/负面文档）、Konnect（可靠性契约/按需加载）。
 
+## 单文件 exe 与 AI 实时控制桥
+
+`npm run exe` 打包出 **`dist/pcb-studio.exe`**（约 93MB，免装 Node；esbuild/postject 仅构建期依赖，运行时仍零依赖）。一个 exe 三种用法：
+
+| 用法 | 形态 |
+|---|---|
+| 双击 / `pcb-studio.exe serve` | 启动界面（自动开浏览器）+ **AI 实时控制桥** |
+| `pcb-studio.exe route design.json -o result.json …` | 无头 CLI，与 `node ai/pcb.mjs` 完全同参（冷启动实测不慢于 node） |
+| `pcb-studio.exe mcp` | MCP stdio 服务（Claude Desktop / ZCode 等 MCP 客户端直连） |
+
+桥接工作流：AI `POST /api/load` 推设计 → 界面经 SSE 实时刷新；`POST /api/cmd` 跑 place/route/drc/pour/deliver（cwd=会话目录，产物经 `autoLoad` 自动上屏）；`GET /api/screenshot.png`（工作台真实截图）与 `GET /api/render?scale=8`（引擎几何渲染）双通道视觉确认；**AI 布线增强全家桶**：`GET /api/view`（镜头控制——网络高亮+区域推近截图）、`POST /api/why`（失败法医报告——谁挡的/在哪/怎么办，含 partialReasons 分解）、`POST /api/edit`（语义编辑——挪元件/改线宽不必重推整块 JSON，几何变更自动修剪失效走线）、`POST /api/estimate`（布线前 1 秒预估层数可行性）、`GET /api/fp`（内置封装库出绝对坐标焊盘，规格阶段零手算）、`POST /api/route-live`（进程内布线：SSE 进度直播+可取消+会话驻留）与 `/api/reroute-net`（秒级单网重布）、`POST /api/diff`（A/B 判分：routeScore 字典序裁决）、`/api/undo`（编辑快照回退）、`/api/summary`+`/api/query`（token 效率：摘要轮询+结构化查询）、`/api/drc-live`（DRC findings 带 where 坐标定位）、render `crop`/`highlight`（引擎级网络高亮+局部裁剪）、封装库扩 QFP/QFN/BGA/晶振；人在界面手动布线/调参数，AI 经 SSE `ui-state`/`screenshot` 事件与 `GET /api/state` 实时回读。接口、安全口径与标准工作流见《[AI-桥接手册](docs/AI-桥接手册.md)》。**交互规则（AGENTS.md）**：AI 实时画图前必须先问用户「要不要看着 AI 画图」——不看则改走无头 CLI 静默完成；画完必须视觉自检（截图 + 渲染双通道）。
+
+```bash
+npm run exe -- --no-exe   # 只产 dist/main.cjs（约 2MB，dev 用，node dist/main.cjs serve 等价 exe serve）
+npm run bridge            # dev 模式起桥
+npm run test:bridge       # 58 项端到端（health/load/SSE/cmd/render/跨站拒绝/越界拒绝/MCP 握手）
+npm run exe               # 完整打包
+```
+
+
 ## 学习资源（精选自 awesome-electronics）
 
 按工作流环节精选（完整清单见 [kitspace/awesome-electronics](https://github.com/kitspace/awesome-electronics)）：
@@ -172,20 +193,41 @@ pcb-autorouter/
 ├── index.html             自动生成的单文件应用（仍可直接双击）
 ├── kicad-plugin/          KiCad 7/8 一键布线 Action Plugin（roadmap #7）
 ├── src/engine.mjs         CLI / 浏览器共享的算法与布线策略
-├── src/ui.js              编辑器与界面逻辑
+├── src/ui.js              编辑器与界面逻辑（含 AI 桥客户端，http 服务下激活）
 ├── src/route-worker.js    后台布局/布线及单网络重布
 ├── src/worker-client.js   Worker 生命周期、进度与取消
+├── src/png.mjs            PNG 编码器（CLI render 与桥 /api/render 共用）
 ├── src/index.template.html 页面结构与样式
 ├── src/cli-args.mjs       CLI 参数解析与校验
 ├── scripts/build.mjs     零依赖单文件构建与一致性检查
+├── scripts/build-exe.mjs  单文件 exe 打包（SEA + esbuild + postject）
+├── exe/entry.mjs          exe 入口：serve / mcp / CLI 三模式分发
+├── exe/bridge.mjs         AI 控制桥 HTTP 服务 + SSE
+├── exe/mcp.mjs            MCP stdio 服务
 ├── ai/pcb.mjs             无头接口
 ├── server.mjs             可选本地预览服务器
-└── tests/                 核心、几何、可靠性、HTTP、CLI 与浏览器回归
+└── tests/                 核心、几何、可靠性、HTTP、CLI、桥接与浏览器回归
 ```
 
 修改 `src/` 后运行 `npm run build`；`npm run check` 检查 `index.html` 是否与源文件一致。不要直接修改生成的 `index.html`。后台 Worker 执行布局与布线，Stop/Esc 可在搜索或优化过程中取消。GUI 与 CLI 的 Gerber 清单统一：双层八件套，四层十件套（含两个内层铜文件）。
 
-可选浏览器回归：`npm run test:browser`（需 Playwright 与 Chromium；可用 `PCB_PLAYWRIGHT_MODULE` 指定 Playwright 的 `index.mjs` 绝对路径）。实际覆盖 HTTP 和直接打开 HTML 两种方式，共 16 项检查。
+### 开发与发布前检查（Node.js 24+）
+
+HTML 双击与已打包 exe 的运行时仍不需要安装依赖。**从源码开发/构建**需先安装锁定的开发依赖（esbuild/postject/Playwright）：
+
+```bash
+npm ci
+npm run check             # 检查已提交 HTML 同步及四段内嵌脚本语法
+npm test                  # 核心、CLI、安全、几何、回归
+npm run test:bridge       # 自动重建 bundle，再测试 HTTP 桥与 MCP
+npx playwright install chromium
+npm run test:browser      # HTTP 与 file:// 两条路径，无头浏览器
+npm run exe               # 仅 Windows：构建单文件可执行程序
+```
+
+`npm run build:cli` 可在各平台生成 CLI bundle；`npm run bridge` 会先重建，避免运行过期 bundle。Windows PowerShell 若拦截 npm 脚本，使用 `npm.cmd`，不必更改系统执行策略。浏览器测试也可通过 `PCB_PLAYWRIGHT_MODULE` 指定已有 Playwright 的 `index.mjs` 绝对路径。
+
+发布清单见 [CONTRIBUTING.md](CONTRIBUTING.md)，控制桥的本机信任范围及漏洞反馈方式见 [SECURITY.md](SECURITY.md)。
 
 
 ## 运行测试

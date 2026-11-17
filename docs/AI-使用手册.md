@@ -4,6 +4,9 @@
 > AI 应通过无头接口 `ai/pcb.mjs` 完成全部工作。本手册 = 工作流 + 决策规程 + 证据分级。
 > 设计哲学借鉴三个一线项目：easyeda-agent 的 typed action 与写后回读、kicad-happy 的
 > "脚本算事实、LLM 做判断" 与证据分级、Konnect 的可靠性契约（Complete/Partial/Refused）。
+>
+> **exe/serve 模式下**（`pcb-studio.exe serve` 或 `npm run bridge`）：优先用桥接接口实时操控
+> （/api/load、/api/cmd、/api/render），本手册的命令与决策规程原样适用——见《[AI-桥接手册](AI-桥接手册.md)》。
 
 ## 0. 你能做什么
 
@@ -46,6 +49,11 @@
 约定：exit 0 = 成功；所有 JSON 顶层有 `ok`；写文件用 `-o`，否则内容随 JSON 返回。
 
 ## 2. 标准工作流（每步都要看输出再决定下一步）
+
+> **画图前先问观众（硬性交互规则，AGENTS.md 同款）**：即将通过桥接接口开始实时画图
+> （place/route/pour 等改变画面的操作）前，必须先问用户「要不要看着 AI 画图」——
+> 要 → 确认 serve 已起、浏览器已开工作台并告知可旁观；不要 → 改走无头 CLI 静默完成。
+> 纯检查类命令（drc/spec/advise/render）不算画图，无需询问。
 
 ```
 资料 → 器件选型(device) → 连接关系 spec（含 rules 约束 schema）→ spec 校验 → place → route

@@ -1,19 +1,7 @@
 {
- "reason": "0.14.9 obstacle-aware A* heuristic (net-gated passable mask; admissible+consistent, dominates the blind field). Deliberate negotiated-route change; recorded once against the new engine. Previous reason: Corrected soft-search row/column decoding and no-cache fallback; historical allocating baseline retained separately.",
+ "reason": "0.14.13 humanize beautify: 45-degree diagonal span candidates in straightenPath + chamfer restricted to true 90-degree corners (45-degree corners are already diagonal-shaped) + larger chamfer scale min(3g,1.5) + leg-remainder sliver guard. Deliberate output-geometry change: eliminates 22.5-degree kink segments (5 real boards: 211 -> 0), vertex count -16~29%, connectivity/DRC/vias unchanged, track length +0.6% (previously shortened by bogus 45-degree-corner cuts). Recorded against the new engine.",
  "historical": "search-baseline.json",
- "changedCases": [
-  "e555 {}",
-  "e555 {\"diag\":false}",
-  "e555 {\"viaCost\":17.3,\"layerDir\":false}",
-  "eled {}",
-  "eled {\"diag\":false}",
-  "emcu {}",
-  "emcu {\"diag\":false}",
-  "emcu {\"viaCost\":17.3,\"layerDir\":false}",
-  "crossing 1L diag=false",
-  "crossing 2L diag=false",
-  "crossing 4L diag=false"
- ],
+ "changedCases": [],
  "cases": {
   "e555 {}": [
    {

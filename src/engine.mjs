@@ -3454,7 +3454,15 @@ function powerDrop(design, result, netId, opts){
    引脚编号：贴片阻容 1 左 2 右；SOIC/SOT/DIP 逆时针（1 在左上）；
    排针 1×N / 2×N 从左到右、逐行。 */
 function footprintPads(name, n){
-  n=Math.max(2, Math.round(n||0));
+  if(n!=null&&!Number.isFinite(Number(n))) throw new Error('封装数量必须是有限数值');
+  n=Math.max(2, Math.min(2000, Math.round(n||0)));   // 下限 2，上限 2000 防误用（10^9 直接 OOM）
+  // 名称内的数量也须完整校验，不能让 parseFloat/parseInt 接受 Infinity 或 32junk。
+  const namedCount=prefix=>{
+    const text=name.slice(prefix.length), count=Number(text);
+    if(!/^\d+$/.test(text)||!Number.isSafeInteger(count)||count<2||count>2000)
+      throw new Error(name+' 引脚数必须是 2 到 2000 的整数');
+    return count;
+  };
   const R=(dx,dy,w,h,layer)=>({dx,dy,w,h,shape:'rect',layer:layer||'top'});
   const C=(dx,dy,d,hole)=>({dx,dy,w:d,h:d,shape:'circle',layer:'both',holeR:hole!=null?hole:0.45});
   const P=[];
@@ -3472,7 +3480,9 @@ function footprintPads(name, n){
     P.push(R(-2.3,1.75,1.2,1.8), R(0,1.75,1.2,1.8), R(2.3,1.75,1.2,1.8), R(0,-1.75,2.6,1.8));
   }
   else if(name.startsWith('SOIC-')){
-    const per=Math.round((parseFloat(name.slice(5))||8)/2);   // SOIC-8/14/16 参数化
+    const count=namedCount('SOIC-');
+    if(count%2) throw new Error(name+' 引脚数必须是 2 的倍数');
+    const per=count/2;   // SOIC-8/14/16 参数化
     for(let k=0;k<per;k++){          // 左列 1..per：上→下（pin1 左上）
       const y=(k-(per-1)/2)*1.27;
       P.push(R(-2.7,y,1.5,0.6));
@@ -3493,6 +3503,41 @@ function footprintPads(name, n){
       const y=(k-(per-1)/2)*2.54;
       P.push(C(3.81,y,1.7));
     }
+  }
+  else if(name.startsWith('QFP-')||name.startsWith('QFN-')){
+    const qfp=name.startsWith('QFP-');
+    const pitch=qfp?0.8:0.5;
+    n=namedCount(name.slice(0,4));
+    if(n%4) throw new Error(name+' 引脚数必须是 4 的倍数（如 QFP-32/QFN-48）');
+    const per=n/4;
+    if(per<2) throw new Error(name+' 每边至少 2 脚');
+    const out=(per-1)*pitch/2+(qfp?1.25:0.72);   // QFP 角部也须留开相邻两边焊盘（半长+半宽=1.025）
+    const pl=qfp?{long:1.5,wide:0.55}:{long:0.9,wide:0.3};  // 引脚焊盘（长×宽）
+    // 焊盘长边朝封装内外，短边沿引脚排列方向，避免相邻焊盘重叠。
+    const H=(dx,dy)=>P.push(R(dx,dy,pl.long,pl.wide));
+    const V=(dx,dy)=>P.push(R(dx,dy,pl.wide,pl.long));
+    for(let k=0;k<per;k++) H(-out,(k-(per-1)/2)*pitch);            // 左列 1..per：上→下
+    for(let k=0;k<per;k++) V((k-(per-1)/2)*pitch,out);             // 底行 per+1..2per：左→右
+    for(let k=0;k<per;k++) H(out,(per-1-k)*pitch-(per-1)*pitch/2); // 右列 2per+1..3per：下→上
+    for(let k=0;k<per;k++) V((per-1-k)*pitch-(per-1)*pitch/2,-out);// 顶行 3per+1..4per：右→左
+  }
+  else if(name.startsWith('BGA-')){
+    n=namedCount(name.slice(0,4));
+    if(n<4) throw new Error('BGA 至少 4 球（如 BGA-64）');
+    const cols=Math.ceil(Math.sqrt(n)), rows=Math.ceil(n/cols);
+    const total=rows*cols, skip=Math.floor((total-n)/2);   // 去掉的球对称居中（真实 BGA 去球习惯）
+    let k=0;
+    for(let r2=0;r2<rows;r2++)for(let c2=0;c2<cols;c2++){
+      if(k++<skip) continue;
+      if(P.length>=n) break;
+      P.push({dx:(c2-(cols-1)/2)*0.8, dy:(r2-(rows-1)/2)*0.8, w:0.45, h:0.45, shape:'circle', layer:'top'});   // BGA 球：无孔
+    }
+    if(P.length<n) throw new Error('BGA 阵列放不下 '+n+' 球（防御分支，正常不可达）');
+    P.length=n;
+  }
+  else if(name==='XTAL-3225'){
+    // 3225 贴片晶振（±0.1mm 级近似）：4 焊盘，1 左上 2 右上 3 右下 4 左下（常规 GND-OSC-GND-OSC 排布见 datasheet）
+    P.push(R(-1.575,-0.9,1.6,1.15), R(1.575,-0.9,1.6,1.15), R(1.575,0.9,1.6,1.15), R(-1.575,0.9,1.6,1.15));
   }
   else if(name==='排针 1×N'){
     for(let k=0;k<n;k++) P.push(C((k-(n-1)/2)*2.54,0,1.7));
@@ -6375,9 +6420,12 @@ function importEasyEdaPcb(eeText){
 function renderBoardPixels(design, result, opts){
   opts=opts||{};
   const pour=(result&&result.pour)||(result&&result.pours)||opts.pour||opts.pours||null;   // 覆铜：单块或数组
-  const scale=opts.scale||8;
+  const scale=opts.scale??8;
   const W=Math.ceil(design.width*scale), H=Math.ceil(design.height*scale);
-  if(!Number.isFinite(scale)||scale<=0||!Number.isSafeInteger(W*H)||W*H>16_000_000) throw new Error('Render exceeds 16000000 pixels; reduce scale or board size');
+  if(!Number.isFinite(scale)||scale<=0||!Number.isFinite(design.width)||design.width<=0||
+     !Number.isFinite(design.height)||design.height<=0||!Number.isSafeInteger(W)||W<=0||
+     !Number.isSafeInteger(H)||H<=0||!Number.isSafeInteger(W*H)||W*H>16_000_000)
+    throw new Error('Render dimensions must be positive and within 16000000 pixels; reduce scale or board size');
   const px=new Uint8Array(W*H*4);
   const set=(x,y,c)=>{
     if(x<0||y<0||x>=W||y>=H) return;
@@ -6393,7 +6441,7 @@ function renderBoardPixels(design, result, opts){
   const disc=(cx,cy,rad,c)=>{
     const a=Math.max(0,Math.floor((cx-rad)*scale)), b=Math.max(0,Math.floor((cy-rad)*scale));
     const u=Math.min(W,Math.ceil((cx+rad)*scale)), v=Math.min(H,Math.ceil((cy+rad)*scale));
-    const r2=rad*rad*scale*scale;
+    const r2=rad*rad;   // dx/dy 与投影距离均以 mm 计，不再乘像素比例
     for(let y=b;y<v;y++)for(let x=a;x<u;x++){
       const dx=(x+0.5)/scale-cx, dy=(y+0.5)/scale-cy;
       if(dx*dx+dy*dy<=r2) set(x,y,c);
@@ -6402,7 +6450,7 @@ function renderBoardPixels(design, result, opts){
   const seg=(x1,y1,x2,y2,rad,c)=>{
     const a=Math.max(0,Math.floor((Math.min(x1,x2)-rad)*scale)), b=Math.max(0,Math.floor((Math.min(y1,y2)-rad)*scale));
     const u=Math.min(W,Math.ceil((Math.max(x1,x2)+rad)*scale)), v=Math.min(H,Math.ceil((Math.max(y1,y2)+rad)*scale));
-    const r2=rad*rad*scale*scale;
+    const r2=rad*rad;   // dx/dy 与投影距离均以 mm 计，不再乘像素比例
     const dx=x2-x1, dy=y2-y1, L2=dx*dx+dy*dy;
     for(let y=b;y<v;y++)for(let x=a;x<u;x++){
       const px2=(x+0.5)/scale, py2=(y+0.5)/scale;
@@ -6414,6 +6462,7 @@ function renderBoardPixels(design, result, opts){
   };
   const C_BOARD=[0,16,35], C_POUR0=[0,80,0], C_POUR1=[64,64,0],
         C_TOP=[200,82,82], C_BOT=[77,127,196], C_PAD=[227,183,46], C_HOLE=[13,17,23];
+  const C_HL=[94,232,140];   // highlightNet 专用高亮色（AI 目检：该网从整板里跳出来）
   rect(0,0,design.width,design.height,C_BOARD);
   if(pour){
     // 多边形覆铜：逐像素行偶奇填充全部环（外环+孔），与 Gerber 渲染同源；支持多块铜皮
@@ -6461,6 +6510,36 @@ function renderBoardPixels(design, result, opts){
   for(const sv of design.stitching||[]){
     disc(sv.x,sv.y,design.viaOuter/2,C_PAD);
     disc(sv.x,sv.y,design.viaDrill/2,C_HOLE);
+  }
+  // highlightNet（AI 目检）：该网（支持逗号分隔多网，名字或 id）走线/过孔/焊盘用高亮色
+  // 重画在最上层——从整板里跳出来。焊盘高亮不依赖 result（未布线也亮）。
+  // 只在显式传入 opts.highlightNet 时生效，缺省输出位级不变。
+  if(opts.highlightNet){
+    const hlSet=String(opts.highlightNet).split(',').map(s=>s.trim()).filter(Boolean);
+    const hlIds=new Set(hlSet);
+    for(const n of design.nets||[]) if(hlSet.includes(n.name)||hlSet.includes(n.id)) hlIds.add(n.id);
+    const hlNets=(result&&result.nets||[]).filter(n=>hlIds.has(n.netId));
+    for(const hlNet of hlNets){
+      const hl=hlNet.netId;
+      for(const l of [layers-1, 0]){
+        for(const path of hlNet.paths||[]) for(let k=1;k<path.length;k++){
+          const a=path[k-1], b=path[k];
+          if(a.l!==l||b.l!==l) continue;
+          seg(a.x,a.y,b.x,b.y, netW(design,hl)/2+0.06, C_HL);
+        }
+      }
+      for(const v of hlNet.vias||[]){
+        disc(v.x,v.y,(v.outer!=null?v.outer:design.viaOuter)/2+0.05,C_HL);
+        disc(v.x,v.y,(v.drill!=null?v.drill:design.viaDrill)/2,C_HOLE);
+      }
+    }
+    for(const p of design.pads||[]){
+      if(!hlIds.has(p.netId)) continue;
+      if(p.shape==='circle') disc(p.x,p.y,p.w/2+0.05,C_HL);
+      else rect(p.x-p.w/2-0.05,p.y-p.h/2-0.05,p.x+p.w/2+0.05,p.y+p.h/2+0.05,C_HL);
+      const hr=p.layer==='both'?(p.holeR!=null?p.holeR:design.viaDrill/2):0;
+      if(hr>0) disc(p.x,p.y,hr,C_HOLE);
+    }
   }
   return {width:W, height:H, px};
 }
@@ -7453,7 +7532,7 @@ function cornerTurnCost(ax,ay,bx,by,cx,cy){
 function beautifyResult(design, result){
   if(!result||!result.nets) return result;
   const g=design.grid;
-  const maxCh=Math.min(2*g, 1.2);
+  const maxCh=Math.min(3*g, 1.5);   // 0.14.13：切角尺度对齐人工（原 min(2g,1.2) 偏碎）
   const clr=design.clearance, tw=design.trackW, vo=design.viaOuter/2, eps=1e-6;
   const pads=(design.pads||[]).map(p=>{
     const hh=p.shape==='circle'?p.w/2:p.h/2;
@@ -7601,10 +7680,25 @@ function beautifyResult(design, result){
           const newLen=dx+dy;
           if(newLen>oldLen+1e-9) continue;
           const straight=(dx<1e-9||dy<1e-9);
+          // 45° 斜线候选（人工布线形态，0.14.13）：|dx|≈|dy| → 单根斜线直连；
+          // 否则单 45° 角两段（m1 斜线在前 / m2 斜线在后，短轴取满）。
+          // 线长 min·√2+(max−min) < dx+dy 且拐角代价 ≤10——两项均严格优于
+          // 正交狗腿（dx+dy、30），故排在狗腿之前；斜段间距由 segClearOK 把关，
+          // 失败再回退狗腿/直角，保持"绝不退步"。
+          const diagCands=[];
+          if(!straight){
+            if(Math.abs(dx-dy)<1e-6) diagCands.push(null);
+            else{
+              const mn=Math.min(dx,dy);
+              const sx=Math.sign(pts[j].x-pts[i].x), sy=Math.sign(pts[j].y-pts[i].y);
+              diagCands.push({x:pts[i].x+mn*sx, y:pts[i].y+mn*sy, l:l0});
+              diagCands.push({x:pts[j].x-mn*sx, y:pts[j].y-mn*sy, l:l0});
+            }
+          }
           const cands=straight?[]:[{x:pts[i].x,y:pts[j].y,l:l0},{x:pts[j].x,y:pts[i].y,l:l0}];
           const ok=m=>{
-            const segs=straight?[[pts[i].x,pts[i].y,pts[j].x,pts[j].y]]
-                               :[[pts[i].x,pts[i].y,m.x,m.y],[m.x,m.y,pts[j].x,pts[j].y]];
+            const segs=m?[[pts[i].x,pts[i].y,m.x,m.y],[m.x,m.y,pts[j].x,pts[j].y]]
+                        :[[pts[i].x,pts[i].y,pts[j].x,pts[j].y]];
             for(const [ax,ay,bx,by] of segs) if(!segClearOK(netId,ax,ay,bx,by,l0)) return false;
             const oldSegs=[];
             for(let k=i;k<j;k++) oldSegs.push([pts[k].x,pts[k].y,pts[k+1].x,pts[k+1].y]);
@@ -7633,8 +7727,17 @@ function beautifyResult(design, result){
           };
           if(straight){
             if(ok(null)){ pts.splice(i+1,j-i-1); done=false; break outer; }
-          } else for(const mid of cands){
-            if(ok(mid)){ pts.splice(i+1,j-i-1,mid); done=false; break outer; }
+          } else {
+            for(const mid of diagCands){
+              if(ok(mid)){
+                if(mid) pts.splice(i+1,j-i-1,mid);
+                else pts.splice(i+1,j-i-1);
+                done=false; break outer;
+              }
+            }
+            for(const mid of cands){
+              if(ok(mid)){ pts.splice(i+1,j-i-1,mid); done=false; break outer; }
+            }
           }
         }
       }
@@ -7658,7 +7761,13 @@ function beautifyResult(design, result){
         const dVx=V.x-P.x, dVy=V.y-P.y, dNx=N.x-V.x, dNy=N.y-V.y;
         const lV=Math.hypot(dVx,dVy), lN=Math.hypot(dNx,dNy);
         if(lV<1e-9||lN<1e-9){ out.push(V); i++; continue; }
-        const d=Math.min(maxCh, lV/2, lN/2);
+        // 0.14.13：只切真 90° 角（dot≈0）。45° 角（横↔斜过渡）本身已是斜线形态，
+        // 再切会把一根 45° 折线换成两段 22.5° 斜线——机器味残渣（实测 5 板 211 处
+        // 非 45° 斜段全部源于此）；135° 折返同理不切。
+        if(Math.abs(dVx*dNx+dVy*dNy)>1e-6*lV*lN){ out.push(V); i++; continue; }
+        // 防残渣：切角后两腿残余段须 ≥0.5g（否则下一拐角处留下碎屑段）
+        const minRem=g*0.5;
+        const d=Math.min(maxCh, lV/2, lN/2, lV-minRem, lN-minRem);
         if(d<g*0.4){ out.push(V); i++; continue; }
         const A={x:V.x-dVx/lV*d, y:V.y-dVy/lV*d, l:V.l};
         const B={x:V.x+dNx/lN*d, y:V.y+dNy/lN*d, l:V.l};
@@ -7668,6 +7777,14 @@ function beautifyResult(design, result){
         i++;
       }
       if(pts.length) out.push(pts[pts.length-1]);
+      // 0.14.13：只合并内部近重复点；终点及换层前的孪点必须精确保留。
+      // 否则 A≈B(top), B(bottom) 会丢掉 B(top)，产生带 XY 位移的非法换层段。
+      for(let k=1;k<out.length-1;k++){
+        if(out[k].l===out[k-1].l && out[k].l===out[k+1].l &&
+           Math.hypot(out[k].x-out[k-1].x, out[k].y-out[k-1].y)<1e-4){
+          out.splice(k,1); k--;
+        }
+      }
       paths2.push(out);
       pIdx++;
     }

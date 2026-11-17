@@ -90,53 +90,96 @@
                                              栅格化渲染 PNG（AI 视觉自检：红=顶层线/蓝=底层线/
                                              金=焊盘过孔/深绿=板区/浅绿=覆铜）
    ============================================================ */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { deflateSync } from 'node:zlib';
+import { readFileSync, writeFileSync as rawWrite, mkdirSync, renameSync, rmSync, realpathSync, lstatSync, existsSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { dirname, join, resolve, relative, isAbsolute, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import * as core from '../src/engine.mjs';
 import { parseArguments } from '../src/cli-args.mjs';
+import { pngEncode } from '../src/png.mjs';
 
-const out = (v, code = 0) => { process.stdout.write(typeof v === 'string' ? v : JSON.stringify(v, null, 1) + '\n'); process.exit(code); };
-const die = msg => out({ ok: false, error: msg }, 1);
-let args, options, outPath;
-const argFlag = (argv,name,dflt) => options.has(name)?options.get(name):dflt;
-const loadJson = f => JSON.parse(readFileSync(f, 'utf8'));
+// Shared by HTTP/MCP: cwd is not a filesystem sandbox. Check every path and
+// existing ancestor (including junctions), and reject Windows special filenames.
+export function safeSessionPath(root, value) {
+  if (typeof value !== 'string' || !value || /[\0-\x1f]/.test(value)) throw new Error('Invalid session path');
+  const abs = resolve(root, value), rel = relative(resolve(root), abs);
+  if (!rel || isAbsolute(rel) || rel === '..' || rel.startsWith('..' + sep)
+      || rel.split(/[\\/]/).some(p => /[:]|[. ]$/.test(p) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(p)))
+    throw new Error('路径越界或特殊文件名：' + value);
+  const realRoot = realpathSync(root);
+  let cursor = abs;
+  while (true) {
+    try {
+      const st = lstatSync(cursor);
+      if (st.isSymbolicLink()) throw new Error('会话路径不允许符号链接：' + value);
+      const real = realpathSync(cursor), r = relative(realRoot, real);
+      if (isAbsolute(r) || r === '..' || r.startsWith('..' + sep)) throw new Error('路径越界：' + value);
+    } catch (e) { if (e.code !== 'ENOENT') throw e; }
+    if (cursor === resolve(root)) break;
+    cursor = dirname(cursor);
+  }
+  return abs;
+}
+// Atomic single-file replacement: an interrupted write must not truncate designs.
+export function writeFileSync(file, data) {
+  file = resolve(file);
+  if (process.env.PCB_CLI_SESSION_DIR) safeSessionPath(process.env.PCB_CLI_SESSION_DIR, file);
+  if (existsSync(file) && !lstatSync(file).isFile()) throw new Error('Output must be a regular file');
+  const tmp = join(dirname(file), '.pcb-' + randomUUID() + '.tmp');
+  try { rawWrite(tmp, data, { flag: 'wx', mode: 0o600 }); renameSync(tmp, file); }
+  finally { rmSync(tmp, { force: true }); }
+}
+export function validateFootprint(name, n = 0, x = 0, y = 0) {
+  if (typeof name !== 'string' || !name || !Number.isInteger(n) || n < 0 || n > 512 || ![x,y].every(v => Number.isFinite(v) && Math.abs(v) <= 5000))
+    throw new Error('Invalid footprint parameters (pins 0..512; coordinates -5000..5000)');
+  const match = /^(?:SOIC|DIP|QFP|QFN|BGA)-(\d+)$/i.exec(name);
+  if (match && (+match[1] < 1 || +match[1] > 512)) throw new Error('pin count must be 1..512');
+}
+const commandArgs = {
+  schema:[0,0], rules:[0,0], spec:[1,1], place:[1,1], route:[1,1],
+  drc:[1,2], advise:[1,2], export:[2,3], import:[2,2], device:[1,1],
+  schem:[1,1], diffz:[1,1], tune:[2,2], pour:[2,2], bom:[1,1], pos:[1,1],
+  erc:[1,1], autopcb:[1,1], part:[1,1], verify:[1,2], deliver:[1,2],
+  render:[1,2], fp:[1,2], drop:[1,2], pdn:[1,2], currents:[1,1], thermal:[2,2]
+};
+export function validateCliInvocation(command, argv, root = null) {
+  if (!Object.hasOwn(commandArgs, command)) throw new Error('Unknown command: ' + command);
+  if (!Array.isArray(argv) || argv.some(x => typeof x !== 'string' || x.includes('\0'))) throw new Error('args must be strings');
+  const parsed = parseArguments(command, argv), {args, options} = parsed;
+  const [min,max] = commandArgs[command];
+  if (args.length < min || args.length > max) throw new Error(command + ': expected ' + min + '..' + max + ' positional arguments');
+  if (command === 'fp' && args[1] != null && (!/^\d+$/.test(args[1]) || +args[1] < 1 || +args[1] > 512)) throw new Error('pin count must be 1..512');
+  if (command === 'fp') validateFootprint(args[0], args[1] == null ? 0 : Number(args[1]), Number(options.get('--x') || 0), Number(options.get('--y') || 0));
+  const pathOf = f => { const p = resolve(root || process.cwd(), f); return process.platform === 'win32' ? p.toLowerCase() : p; };
+  if (options.has('-o') && ['route','render','schem','bom','pos'].includes(command) && pathOf(options.get('-o')) === pathOf(args[0]))
+    throw new Error('Output must not overwrite the input design');
+  if (['pour','tune','drc','advise','verify','deliver','render'].includes(command) && args[1] && pathOf(args[0]) === pathOf(args[1]))
+    throw new Error('Design and result must be different files');
+  if (command === 'autopcb' && options.has('--result') && pathOf(options.get('--result')) === pathOf(options.get('-o') || args[0]))
+    throw new Error('Design and result outputs must be different files');
+  if (command === 'pour' && options.has('-o') && pathOf(options.get('-o')) === pathOf(args[1]))
+    throw new Error('Design output must not overwrite the result');
+  if (command === 'tune' && options.has('-o') && pathOf(options.get('-o')) === pathOf(args[0]))
+    throw new Error('Result output must not overwrite the design');
+  if (command === 'export' && args[0] !== 'gerber' && options.has('-o') && args.slice(1).some(f => pathOf(f) === pathOf(options.get('-o'))))
+    throw new Error('Export output must not overwrite its input');
+  if (root) {
+    let files = ['schema','rules','fp','device','part'].includes(command) ? []
+      : command === 'export' || command === 'import' ? args.slice(1)
+      : command === 'thermal' ? args.slice(0,1) : args;
+    for (const f of files) safeSessionPath(root, f);
+    for (const key of ['-o','--result','--devices','--export']) if (options.has(key)) safeSessionPath(root, options.get(key));
+  }
+  return parsed;
+}
+const loadJson = f => {
+  if (process.env.PCB_CLI_SESSION_DIR) f = safeSessionPath(process.env.PCB_CLI_SESSION_DIR, f);
+  return JSON.parse(readFileSync(f, 'utf8'));
+};
 
 /* ---------- 完整布线流程（与 UI 的 runRoute 等价）：协商 → 候选重跑 → 逐网优化 → 弦拉直 ---------- */
-/* PNG 编码：RGBA → IHDR/IDAT(deflate)/IEND，零外部依赖（node:zlib） */
-function crc32(buf) {
-  let table = crc32.table;
-  if (!table) {
-    table = crc32.table = new Int32Array(256);
-    for (let n = 0; n < 256; n++) {
-      let c = n;
-      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-      table[n] = c;
-    }
-  }
-  let c = -1;
-  for (let i = 0; i < buf.length; i++) c = table[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
-  return (c ^ -1) >>> 0;
-}
-function pngChunk(type, data) {
-  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
-  const td = Buffer.concat([Buffer.from(type), data]);
-  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
-  return Buffer.concat([len, td, crc]);
-}
-function pngEncode(width, height, rgba) {
-  const raw = Buffer.alloc((width * 4 + 1) * height);
-  for (let y = 0; y < height; y++) {
-    raw[y * (width * 4 + 1)] = 0;
-    Buffer.from(rgba.buffer, rgba.byteOffset + y * width * 4, width * 4).copy(raw, y * (width * 4 + 1) + 1);
-  }
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8; ihdr[9] = 6;   // 8bit RGBA
-  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-  return Buffer.concat([sig, pngChunk('IHDR', ihdr), pngChunk('IDAT', deflateSync(raw)), pngChunk('IEND', Buffer.alloc(0))]);
-}
+/* PNG 编码在 src/png.mjs（与 exe 桥 /api/render 共用同一编码器） */
 
 /* ---------- erc：网表级规则检查（kicad-happy findings 风格）----------
    severity: error(必须修)/warning(需判断)/info；confidence: deterministic/heuristic */
@@ -495,7 +538,6 @@ function posCsvOf(rows) {
 }
 
 /* ---------- 命令分发 ---------- */
-const [, , cmd, ...rest] = process.argv;
 const loadDesign = f => {
   const j = loadJson(f);
   return core.normalizeDesign(j?.design ?? j);   // 兼容工程文件 {design,...} 与纯 design
@@ -505,10 +547,23 @@ const loadResult = (f,d) => {
   const result=core.normalizeResult(j.result||j,d);
   return {...result,nets:[...result.nets.filter(n=>!n.manual),...core.manualRouteEntries(d)]};
 };
+/* --save-design：place/route 原地改 d（栅格抬高/焊盘 snap/布局旋转），写回输入文件。
+   与 routeBoard 入口（engine.mjs 同款两行）口径一致，保证 result.cells 与 design 坐标系一致。 */
+const saveDesignBack = (f, d) => {
+  const mg = core.minimumRoutingGrid(d);
+  if (d.grid < mg - 1e-9) { d.grid = mg; core.snapPadsPreserveGroups(d); }
+  writeFileSync(f, JSON.stringify(d, null, 1));
+};
 
-async function main(){
-  ({args,options}=parseArguments(cmd,rest));
-  outPath=options.get('-o');
+async function main(argv = process.argv.slice(2)){
+  const [cmd, ...rest] = argv;
+  const completed = Symbol('cli-result');
+  const out = (value, code = 0) => { throw { completed, value, code }; };
+  const die = msg => out({ ok: false, error: msg }, 1);
+  try {
+  const {args,options} = validateCliInvocation(cmd, rest, process.env.PCB_CLI_SESSION_DIR);
+  const outPath = options.get('-o');
+  const argFlag = (_argv,name,dflt) => options.has(name)?options.get(name):dflt;
 switch (cmd) {
   case 'currents': {
     // 载流感知线宽定档（规格书 → 线宽）：读取 nets[].current 声明（A, RMS），
@@ -558,9 +613,9 @@ switch (cmd) {
     const d = loadDesign(args[0]);
     const apply = rest.includes('--apply');
     const opts = {};
-    if (options.has('--pitch')) opts.pitch = parseFloat(options.get('--pitch'));
-    if (options.has('--cols')) opts.cols = parseInt(options.get('--cols'), 10);
-    if (options.has('--rows')) opts.rows = parseInt(options.get('--rows'), 10);
+    if (options.has('--pitch')) opts.pitch = Number(options.get('--pitch'));
+    if (options.has('--cols')) opts.cols = Number(options.get('--cols'));
+    if (options.has('--rows')) opts.rows = Number(options.get('--rows'));
     const arr = core.thermalViaArray(d, args[1], opts);
     const netName = (d.nets || []).find(n => n.id === arr.netId);
     let written = null;
@@ -909,20 +964,22 @@ switch (cmd) {
   }
   case 'place': {
     const d = loadDesign(args[0]);
-    const r = core.autoPlace(d, { iterations: parseInt(argFlag(rest, '--iterations', '4000')),
+    const r = core.autoPlace(d, { iterations: Number(argFlag(rest, '--iterations', '4000')),
       anchor: (argFlag(rest, '--anchor', '') || '').split(',').filter(Boolean) });
     if (outPath) writeFileSync(outPath, JSON.stringify(d, null, 1));
+    // --save-design：place 会原地改 d（旋转/布局/栅格抬高），写回输入文件保持后续步骤坐标一致
+    if (argFlag(rest, '--save-design', '')) saveDesignBack(args[0], d);
     out({ ok: true, ...r, written: outPath || null, design: outPath ? undefined : d });
     break;
   }
   case 'route': {
     const d = loadDesign(args[0]);
     const viaCost = Number(argFlag(rest, '--via-cost', '15'));
-    const maxIter = parseInt(argFlag(rest, '--max-iter', '30'));
-    const parallel = parseInt(argFlag(rest, '--parallel', '0'));
-    const iterWorkers = parseInt(argFlag(rest, '--iter-workers', '0'));
+    const maxIter = Number(argFlag(rest, '--max-iter', '30'));
+    const parallel = Number(argFlag(rest, '--parallel', '0'));
+    const iterWorkers = Number(argFlag(rest, '--iter-workers', '0'));
     const iterWavesRaw = argFlag(rest, '--iter-waves', '');
-    const iterWaves = iterWavesRaw === '' ? undefined : parseInt(iterWavesRaw);
+    const iterWaves = iterWavesRaw === '' ? undefined : Number(iterWavesRaw);
     const nbRipup = !argFlag(rest, '--no-nb-ripup', '');
     // #15b 相邻层盲埋孔（opt-in）：开启后布线器换层自动记相邻层 span
     const blindVias = !!argFlag(rest, '--blind-vias', '');
@@ -944,12 +1001,13 @@ switch (cmd) {
     let result, via;
     if (iterWorkers > 0) {
       const engineUrl = new URL('../src/engine.mjs', import.meta.url).href;
-      const shard = parseInt(argFlag(rest, '--shard', '0'));
+      const shard = Number(argFlag(rest, '--shard', '0'));
       const par = await core.routeBoardIterParallel(d, { viaCost, maxIter, iterWorkers, iterWaves, shard, blindVias, fanoutFirst, compactPairs, jointReroute, obstacleH,
         engineUrl, neighbourhoodRipup: nbRipup });
       result = par.result; via = { mode: 'iter-parallel', blind: blindVias || undefined, fanout: fanoutFirst, compact: compactPairs ? undefined : 'off', workers: par.workers,
         iterations: par.iterations, waves: iterWaves ?? 2, shard: shard || 0 };
       if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
+      if (options.get('--save-design')) saveDesignBack(args[0], d);
       out({ ok: true, status: result.status, stats: result.stats, overuse: result.overuse.length,
         timeMs: result.timeMs, via, written: outPath || null, result: outPath ? undefined : result });
       break;
@@ -974,6 +1032,9 @@ switch (cmd) {
       result = sp.result; shape = sp.shape;
       if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
     }
+    // --save-design：routeBoard 入口会原地抬高栅格并 snap 焊盘（引擎同款口径），写回输入文件
+    // 保持 result.cells 与 design 的栅格/坐标一致——否则 ratsnest/DRC 用旧坐标读新 cells 会错位
+    if (argFlag(rest, '--save-design', '')) saveDesignBack(args[0], d);
     out({ ok: true, status: result.status, stats: result.stats, overuse: result.overuse.length,
       iterations: result.iterations, timeMs: result.timeMs, via, shape, written: outPath || null,
       result: outPath ? undefined : result });
@@ -1038,6 +1099,25 @@ switch (cmd) {
     out(advise(d, r));
     break;
   }
+  case 'fp': {
+    // 内置封装库 → 绝对坐标焊盘（规格阶段消除手算坐标的错误源）
+    let name = args[0];
+    let n = parseInt(args[1], 10);
+    if (!Number.isFinite(n)) n = 0;
+    if (!name) die('用法：fp <封装名> [引脚数] [-x 0 -y 0 --prefix U1] —— 0402/0603/0805/1206/SOT-23/SOT-223/SOIC-8|14|16/DIP-14/QFP-32|44|64|100/QFN-48/BGA-64/XTAL-3225/排针（hdr1|hdr2 + 引脚数）');
+    if (/^DIP-\d+$/.test(name)) { n = parseInt(name.slice(4), 10); name = 'DIP-N'; }
+    if (name === 'hdr1') name = '排针 1×N';
+    if (name === 'hdr2') name = '排针 2×N';
+    let rel;
+    try { rel = core.footprintPads(name, n); } catch (e) { die(e.message + '（可用：0402/0603/0805/1206/SOT-23/SOT-223/SOIC-8|14|16/DIP-14/QFP-32|44|64|100/QFN-48/BGA-64/XTAL-3225/hdr1/hdr2）'); }
+    const x = Number(argFlag(rest, '--x', '0')), y = Number(argFlag(rest, '--y', '0'));
+    const prefix = argFlag(rest, '--prefix', 'U1');
+    const pads = rel.map((p, i) => ({ id: prefix + '-' + (i + 1), x: +(x + p.dx).toFixed(3), y: +(y + p.dy).toFixed(3),
+      w: p.w, h: p.h, shape: p.shape, layer: p.layer, ...(p.holeR ? { holeR: p.holeR } : {}) }));
+    out({ ok: true, name, count: pads.length, pads,
+      note: 'netId 未分配——写 spec 时在 nets[].pads 引用这些 id（或桥内用 /api/edit add-net 挂网）' });
+    break;
+  }
   case 'export': {
     const fmt = args[0];
     const d = loadDesign(args[1]);
@@ -1064,7 +1144,7 @@ switch (cmd) {
   }
   case 'device': {
     const lcsc = (args[0]||'').trim();
-    if(!/^C\d+/i.test(lcsc)) die('用法：device <C编号>，如 device C1591');
+    if(!/^C\d+$/i.test(lcsc)) die('用法：device <C编号>，如 device C1591');
     const res = await fetch(`https://easyeda.com/api/products/${lcsc}/components`);
     const j = await res.json();
     if(!j.success || !j.result || !j.result.dataStr) die('嘉立创 API 未找到器件 '+lcsc);
@@ -1083,6 +1163,7 @@ switch (cmd) {
     const devices = {};
     for(const comp of Object.keys(d.devices||{})){
       const lcsc = d.devices[comp];
+      if (!/^C\d+$/i.test(lcsc)) throw new Error('Invalid device code: ' + lcsc);
       try{ devices[comp] = loadJson(`${dir}/${lcsc}.json`); }catch(e){ /* 无缓存→通用符号兜底 */ }
     }
     if(!dir) for(const comp of Object.keys(d.devices||{})){
@@ -1096,7 +1177,7 @@ switch (cmd) {
   }
   case 'diffz': {
     const d = loadDesign(args[0]);
-    const target = parseFloat(argFlag(rest, '--z', '90'));
+    const target = Number(argFlag(rest, '--z', '90'));
     const onlyPair = argFlag(rest, '--pair', null) || undefined;
     const pairs = new Map();
     for (const n of d.nets) if (n.pair) {
@@ -1127,10 +1208,10 @@ switch (cmd) {
     const report = core.serpentineTune(d, r, {
       pair: argFlag(rest, '--pair', null) || undefined,
       group: argFlag(rest, '--group', null) || undefined,
-      serpGap: parseFloat(argFlag(rest, '--serp-gap', '0')),
-      tol: parseFloat(argFlag(rest, '--tol', '0.05')),
-      target: parseFloat(argFlag(rest, '--target', '0')),      // Altium 固定 Length 规则口径
-      maxAmp: parseFloat(argFlag(rest, '--max-amp', '0')),     // KiCad/Altium Max Amplitude
+      serpGap: Number(argFlag(rest, '--serp-gap', '0')),
+      tol: Number(argFlag(rest, '--tol', '0.05')),
+      target: Number(argFlag(rest, '--target', '0')),      // Altium 固定 Length 规则口径
+      maxAmp: Number(argFlag(rest, '--max-amp', '0')),     // KiCad/Altium Max Amplitude
     });
     const resultOut = outPath || args[1];
     writeFileSync(resultOut, JSON.stringify(r, null, 1));
@@ -1157,17 +1238,17 @@ switch (cmd) {
     const tds = core.teardropPolys(d, r);   // 异网泪滴楔形也参与覆铜避让
     const pourOpts = {
       netId: net.id, layer, thermal: true, teardrops: tds,
-      islandMode, minIslandArea: parseFloat(argFlag(rest, '--min-island-area', '2')),
+      islandMode, minIslandArea: Number(argFlag(rest, '--min-island-area', '2')),
       fill: argFlag(rest, '--fill', 'solid'),                    // solid | grid（嘉立创：网格线宽/间距≥0.254）
-      gridW: parseFloat(argFlag(rest, '--grid-w', '0.254')),
-      gridGap: parseFloat(argFlag(rest, '--grid-gap', '0.254')),
-      clearance: parseFloat(argFlag(rest, '--clearance', String(d.clearance))),
-      edgeMargin: parseFloat(argFlag(rest, '--edge-margin', '0.2')),
-      minWidth: parseFloat(argFlag(rest, '--min-width', '0.25')),   // KiCad ZONE_THICKNESS_MM 同默认
+      gridW: Number(argFlag(rest, '--grid-w', '0.254')),
+      gridGap: Number(argFlag(rest, '--grid-gap', '0.254')),
+      clearance: Number(argFlag(rest, '--clearance', String(d.clearance))),
+      edgeMargin: Number(argFlag(rest, '--edge-margin', '0.2')),
+      minWidth: Number(argFlag(rest, '--min-width', '0.25')),   // KiCad ZONE_THICKNESS_MM 同默认
       avoidPours: prevPours,
     };
     const pour = core.computePour(d, r, pourOpts);
-    const stitches = argFlag(rest, '--no-stitch') ? [] : core.planStitching(d, r, pour, parseFloat(argFlag(rest, '--stitch-spacing', '5')));
+    const stitches = argFlag(rest, '--no-stitch') ? [] : core.planStitching(d, r, pour, Number(argFlag(rest, '--stitch-spacing', '5')));
     d.stitching = stitches;
     r.pour = pour;
     r.pours = [...prevPours.filter(p => !(p.netId === net.id && p.layer === layer)), pour];
@@ -1175,7 +1256,7 @@ switch (cmd) {
     // （黑魔书 ch7 对策③ / Bogatin A.55-57；reach 默认 1.6mm≈过孔长度）
     let returnVias = null;
     if (argFlag(rest, '--auto-return', '')) {
-      returnVias = core.autoReturnVias(d, r, { reach: parseFloat(argFlag(rest, '--return-reach', '1.6')) });
+      returnVias = core.autoReturnVias(d, r, { reach: Number(argFlag(rest, '--return-reach', '1.6')) });
       if (returnVias.ok && returnVias.added.length) {
         d.stitching = [...d.stitching, ...returnVias.added.map(v => ({ x: v.x, y: v.y, netId: v.netId }))];
         // 缝合孔变化需重写 pour（新孔会融入铜皮）——重新规划铺铜保持一致性
@@ -1261,7 +1342,7 @@ switch (cmd) {
     const r = loadResult(args[1] || null, d);
     const force = !!argFlag(rest, '--force', '');
     const projRaw = argFlag(rest, '--project', '') || (d.name || 'board');
-    const proj = String(projRaw).replace(/[\/:*?"<>|\s]+/g, '_').replace(/^\.+/, '_') || 'board';
+    const proj = String(projRaw).replace(/[\\/:*?"<>|\s\x00-\x1f]+/g, '_').replace(/^\.+/, '_') || 'board';
     const dir = outPath || ('交付包-' + proj);
     mkdirSync(dir, { recursive: true });
     const arts = [];
@@ -1349,9 +1430,9 @@ switch (cmd) {
   case 'autopcb': {
     const d = loadDesign(args[0]);
     const r = core.placeAndRoute(d, {
-      rounds: parseInt(argFlag(rest, '--rounds', '3')),
-      iterations: parseInt(argFlag(rest, '--iterations', '4000')),
-      maxIter: parseInt(argFlag(rest, '--max-iter', '60')),
+      rounds: Number(argFlag(rest, '--rounds', '3')),
+      iterations: Number(argFlag(rest, '--iterations', '4000')),
+      maxIter: Number(argFlag(rest, '--max-iter', '60')),
       viaCost: Number(argFlag(rest, '--via-cost', '15')),
       // 与 route 一致：已接受的策略开关不能在布局-布线循环中被静默忽略。
       blindVias: !!options.get('--blind-vias'),
@@ -1402,7 +1483,18 @@ switch (cmd) {
     break;
   }
   default:
-    die('未知命令：' + cmd + '（可用：schema rules spec place route tune diffz drc drop pdn currents thermal advise export device schem pour bom pos erc autopcb import deliver part verify render）');
+    die('未知命令：' + cmd + '（可用：schema rules spec fp place route tune diffz drc drop pdn currents thermal advise export device schem pour bom pos erc autopcb import deliver part verify render）');
 }
+  } catch (e) {
+    const result = e?.completed === completed ? e : { value: { ok:false, error:e?.message || String(e) }, code:1 };
+    process.stdout.write(typeof result.value === 'string' ? result.value : JSON.stringify(result.value, null, 1) + '\n');
+    return result.code;
+  }
+  return 0;
 }
-main().catch(e => die(e && e.message ? e.message : String(e)));
+/* 主模块守卫（与 server.mjs 同款惯用法）：被 exe/entry.mjs 等以库方式导入时不自动执行；
+   直接 `node ai/pcb.mjs <命令>` 行为不变 */
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+  main().then(code => { process.exitCode = code; });
+}
+export { main };

@@ -41,13 +41,17 @@ node ai/pcb.mjs deliver placed.json result.json -o 交付目录 --project 板名
 node ai/pcb.mjs autopcb design.json -o placed.json --result result.json
 ```
 
-24 subcommands total (also: `schem`, `device`, `part`, `bom`, `pos`, `erc`, `tune`, `diffz`, `import`, `advise`, `drop`, `pdn`, `export gerber|dsn|ses|svg|ipc356`). Exit 0 + top-level `ok` on success. See the AI manual §1 for the full table.
+Additional subcommands include `schem`, `device`, `part`, `bom`, `pos`, `erc`, `tune`, `diffz`, `import`, `advise`, `drop`, `pdn`, `export gerber|dsn|ses|svg|ipc356`. Exit 0 + top-level `ok` on success. See the AI manual §1 for the full table.
 
 ## Tests
 
 `npm test` is fully green at 0.14.4: 80 core + 281 node:test + 48 book-knowledge + 17 CLI + 39 fuzz (malformed inputs, zero crashes) + 7 deep-format validations + 22 optimization locks. `npm run check` guards that the standalone `index.html` matches sources (plus a classic-script parse guard and an LF line-ending guard — source-anchor tests read the engine as raw bytes). Browser QA: `npm run test:browser` (needs Playwright; set `PCB_PLAYWRIGHT_MODULE` if not on the module path). Benchmarks: `npm run bench`, plus `tests/bench-*.mjs` micro-benches. Bit-identical A/B harness for engine changes: `.scratch/ab-diff.mjs` pattern (11-case sha256 diff).
 
 ## Development
+
+Use **Node.js 24+** and `npm ci` for locked development-only dependencies. Runtime HTML/CLI usage remains dependency-free. Playwright is pinned in the lockfile; install Chromium with `npx playwright install chromium` before `npm run test:browser`.
+
+`npm run build:cli` rebuilds the standalone HTML and portable CLI bundle. `npm run test:bridge` always rebuilds before HTTP/MCP end-to-end tests. `npm run bridge` also rebuilds before starting. `npm run exe` packages the Windows executable **on Windows only**. CI runs the full suite and bridge tests on Linux and Windows, plus browser regression on Linux and an actual Windows SEA smoke test. See [CONTRIBUTING.md](CONTRIBUTING.md) for the release checklist and [SECURITY.md](SECURITY.md) for the local-only trust boundary.
 
 Edit `src/engine.mjs` (algorithm core, no DOM), `src/ui.js`, `src/index.template.html`, then `npm run build` regenerates the self-contained `index.html`. The CLI and tests import the same engine directly. Routing runs in a cancellable background Worker; the browser falls back to serial when workers are unavailable.
 
