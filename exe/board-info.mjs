@@ -62,8 +62,11 @@ export function syncComps(d) {
 
 /* DRC msg 里解析坐标（checkDRC 的间距类 finding 带 "(12.40, 8.40) mm 附近"） */
 export function parseWhere(msg) {
-  const m = /\((\d+\.?\d+),\s*(\d+\.?\d+)\)\s*mm/.exec(String(msg));
-  return m ? { x: +m[1], y: +m[2] } : null;
+  const S = String(msg);
+  const m = /\((\d+\.?\d+),\s*(\d+\.?\d+)\)\s*mm/.exec(S);
+  if (m) return { x: +m[1], y: +m[2] };
+  const m2 = /\((\d+\.?\d+),\s*(\d+\.?\d+)\)\s*与/.exec(S);   // 过孔间距双坐标格式，取第一个
+  return m2 ? { x: +m2[1], y: +m2[2] } : null;
 }
 
 /* 语义编辑核心（纯函数）：mutate 传入的 d/r 副本，返回 summary 与修剪信息。
@@ -314,6 +317,227 @@ function whyHit(d, r, netId, netName, w, clr, px, py, e, netTracks) {
   return best;
 }
 
+/* ---------- connected 重算：manual 注入/编辑后 result.nets 的静态快照会过期 ----------
+   2026-11-19 假绿整改：旧实现「逐点落走廊」只判焊盘是否落在某段走廊上，不判各段
+   彼此是否连通——n5/n6/n18 三网各断成 2 分量仍报 95/95（审计实锤）。现替换为
+   连通分量判定，与引擎 computeRatsnest 同口径：
+     铜格 = result.cells（权威）或 paths 走廊标记 ∪ manual 走廊 ∪ 铜皮逐格心判定
+     分量 = 4 邻域 BFS + 过孔跨层 + 同焊盘覆盖单元互连（engine.mjs:7360 同式）
+   connected = 最大分量的焊盘数（物理诚实口径，多组断链绝不虚高）；
+   另记 rn.groups = 分量数、rn.split = 各组焊盘清单（/api/why 断链定位用）。
+   无任何铜格的网报 0（与引擎路由统计 countConn 口径一致，unrouted 不虚报 1）。 */
+export function refreshConn(dRaw, rRaw) {
+  const d = engine.normalizeDesign(dRaw);
+  const minGrid = engine.minimumRoutingGrid(d);
+  if (d.grid < minGrid - 1e-9) { d.grid = minGrid; engine.snapPadsPreserveGroups(d); }
+  const r = engine.normalizeResult(rRaw, d);
+  const manualEntries = engine.manualRouteEntries(d);
+  const pourList = [...(Array.isArray(r.pours) ? r.pours : r.pour ? [r.pour] : [])].filter(Boolean);
+  const model = engine.buildModel(d);
+  const { GW, GH, L, NC } = model;
+  const grid = model.grid;
+  const cellOf = (x, y) => {
+    const i = Math.max(0, Math.min(GW - 1, Math.floor(x / grid - 0.5)));
+    const j = Math.max(0, Math.min(GH - 1, Math.floor(y / grid - 0.5)));
+    return j * GW + i;
+  };
+  // 走廊标记：段矩形遍历 + segDist ≤ 半线宽+半格对角（格方块与段相交即标记，
+  // 45° 斜线沿格角穿越不断链——engine computeRatsnest manual 标记同式）
+  const markCorridor = (cells, netId, a, b, l) => {
+    if (a.l !== b.l || a.l !== l) return;
+    const r2 = engine.netW(d, netId) / 2 + grid * 0.71 + 1e-6;
+    const x0 = Math.max(0, Math.floor((Math.min(a.x, b.x) - r2) / grid - 0.5));
+    const x1 = Math.min(GW - 1, Math.floor((Math.max(a.x, b.x) + r2) / grid - 0.5));
+    const y0 = Math.max(0, Math.floor((Math.min(a.y, b.y) - r2) / grid - 0.5));
+    const y1 = Math.min(GH - 1, Math.floor((Math.max(a.y, b.y) + r2) / grid - 0.5));
+    for (let yy = y0; yy <= y1; yy++) for (let xx = x0; xx <= x1; xx++) {
+      const cx = (xx + 0.5) * grid, cy = (yy + 0.5) * grid;
+      if (engine.segDist(cx, cy, a.x, a.y, b.x, b.y) <= r2) cells.add(l * NC + yy * GW + xx);
+    }
+  };
+  for (const net of d.nets) {
+    const rn = (r.nets || []).find(x => x.netId === net.id);
+    const pads = d.pads.filter(p => p.netId === net.id);
+    if (!rn || !pads.length) continue;
+    rn.total = pads.length;
+    if (pads.length < 2) { rn.connected = pads.length; continue; }
+    let vouchedIds = null;   // 每网重置——var 提升跨网残留会把别网的背书盘塞进本网组（实测回归）
+
+    // —— 本网铜格：result.cells 权威；无则 paths 端点+走廊标记（外部导入结果）——
+    const cells = new Set(), viaCells = new Set();
+    if (rn.cells && rn.cells.length) for (const s of rn.cells) cells.add(s);
+    else {
+      for (const poly of rn.paths || []) for (const pt of poly) cells.add(pt.l * NC + cellOf(pt.x, pt.y));
+      for (const poly of rn.paths || []) for (let k = 1; k < poly.length; k++) markCorridor(cells, net.id, poly[k - 1], poly[k], poly[k].l);
+    }
+    // manual 走廊（换层点按过孔计）
+    for (const m of manualEntries) {
+      if (m.netId !== net.id) continue;
+      for (const poly of m.paths || []) {
+        for (const pt of poly) cells.add(pt.l * NC + cellOf(pt.x, pt.y));
+        for (let k = 1; k < poly.length; k++) markCorridor(cells, m.netId, poly[k - 1], poly[k], poly[k].l);
+      }
+      for (const v of m.vias || []) viaCells.add(cellOf(v.x, v.y));
+    }
+    for (const v of rn.vias || []) viaCells.add(cellOf(v.x, v.y));
+    // 缝合/回流孔在 design.stitching（pour 命令写入，不进 rn.vias）——GND 顶层盘
+    // 靠它们接入底层铜皮，漏计会把已接好判成断链
+    for (const v of (d.stitching || [])) {
+      if (v.netId === net.id) viaCells.add(cellOf(v.x, v.y));
+    }
+    // 铜皮：逐格心 pourContains（含避让孔洞，焊盘落入即接入）
+    const mp = pourList.find(p => p.netId === net.id);
+    if (mp && Number.isInteger(mp.layer)) {
+      for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) {
+        if (engine.pourContains(mp, (i + 0.5) * grid, (j + 0.5) * grid)) cells.add(mp.layer * NC + j * GW + i);
+      }
+      // 热焊盘辐条语义（2026-11-20）：pour 自己的连通判定（unconnectedPads）认辐条
+      // 接触——格心采样会漏掉细辐条。背书盘（非 unconnectedPads）直接并入铜皮
+      // 主分量：BFS 后把背书盘指到铜格最多的分量（= pour 主片）。
+      const vouched = Array.isArray(mp.unconnectedPads)
+        ? pads.filter(p => !mp.unconnectedPads.includes(p.id))
+        : pads;
+      vouchedIds = new Set(vouched.map(p => p.id));
+    }
+
+    if (!cells.size) { rn.connected = 0; rn.groups = pads.length; continue; }
+
+    // —— 连通分量：4 邻域 BFS + viaCells 跨层 + 同焊盘覆盖单元互连 ——
+    const padStates = pads.map(p => model.padCells.get(p.id) || []);
+    const cellPads = new Map();
+    padStates.forEach((sts, pi) => { for (const s of sts) { if (!cellPads.has(s)) cellPads.set(s, []); cellPads.get(s).push(pi); } });
+    const relevant = new Set(cells);
+    for (const sts of padStates) for (const s of sts) relevant.add(s);
+    const comp = new Map();
+    let cid = 0;
+    for (const s0 of relevant) {
+      if (comp.has(s0)) continue;
+      cid++;
+      const q = [s0]; comp.set(s0, cid);
+      for (let qi = 0; qi < q.length; qi++) {
+        const cur = q[qi], c = cur % NC, l = (cur / NC) | 0;
+        const nbs = [];
+        if (c % GW > 0) nbs.push(cur - 1);
+        if (c % GW < GW - 1) nbs.push(cur + 1);
+        if (c >= GW) nbs.push(cur - GW);
+        if (c < GW * (GH - 1)) nbs.push(cur + GW);
+        if (viaCells.has(c)) for (let ll = 0; ll < L; ll++) if (ll !== l) nbs.push(ll * NC + c);
+        for (const pi of (cellPads.get(cur) || [])) for (const s of padStates[pi]) nbs.push(s);
+        for (const nb of nbs) if (relevant.has(nb) && !comp.has(nb)) { comp.set(nb, cid); q.push(nb); }
+      }
+    }
+    const groups = new Map();
+    for (let pi = 0; pi < pads.length; pi++) {
+      let g = 'iso' + pi;   // 无铜格交叠的焊盘自成一组
+      for (const s of padStates[pi]) if (comp.has(s)) { g = comp.get(s); break; }
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(pads[pi].id);
+    }
+    // 背书盘并入铜皮主分量（铜格数最多的组 = pour 主片；辐条接触的物理事实）。
+    // 并查合并语义（2026-11-20 fable-02 实测教训）：只做组间 UNION——背书盘若已在
+    // 某走线组里，把该组整个并进 pour 组，绝不把盘从既有连线组里拽出来。
+    if (vouchedIds && vouchedIds.size) {
+      const compCellCount = new Map();
+      for (const s of cells) {
+        const c = comp.get(s);
+        if (c != null) compCellCount.set(c, (compCellCount.get(c) || 0) + 1);
+      }
+      let pourComp = null, best = 0;
+      for (const [c, n] of compCellCount) if (n > best) { best = n; pourComp = c; }
+      if (pourComp != null) {
+        const pourKey = String(pourComp);
+        if (!groups.has(pourKey)) groups.set(pourKey, []);
+        const groupOf = new Map();
+        for (const [g, members] of groups) for (const id of members) groupOf.set(id, g);
+        const mergeInto = (from, to) => {
+          if (from === to || !groups.has(from)) return;
+          const fromArr = groups.get(from);
+          groups.set(to, [...groups.get(to), ...fromArr]);
+          groups.delete(from);
+          for (const id of fromArr) groupOf.set(id, to);
+        };
+        for (const id of vouchedIds) {
+          const g = groupOf.get(id);
+          if (g != null) mergeInto(g, pourKey);
+          else groups.get(pourKey).push(id);
+        }
+      }
+    }
+    let largest = 0;
+    for (const members of groups.values()) if (members.length > largest) largest = members.length;
+    rn.connected = largest;
+    rn.groups = groups.size;
+    if (groups.size > 1) rn.split = [...groups.values()].filter(g => g.length > 0);
+    else delete rn.split;
+  }
+  let connected = 0, total = 0;
+  for (const n of (r.nets || [])) { connected += n.connected || 0; total += n.total || 0; }
+  r.stats = { ...(r.stats || {}), connected, total };
+  r.manualTouched = true;
+  return r;
+}
+
+/* ---------- /api/verify-path：候选手工走线验证（视觉布线的安全网） ----------
+   逐点检查候选折线与异网焊盘/走线/禁布区的间距（层匹配；端点 1.5mm 近邻豁免——
+   逃逸的物理现实）。全部干净才允许注入。 */
+export function validatePath(dRaw, rRaw, netId, pts) {
+  const d = engine.normalizeDesign(dRaw);
+  const minGrid = engine.minimumRoutingGrid(d);
+  if (d.grid < minGrid - 1e-9) { d.grid = minGrid; engine.snapPadsPreserveGroups(d); }
+  const r = rRaw ? engine.normalizeResult(rRaw, d) : { nets: [] };
+  const net = d.nets.find(n => n.id === netId);
+  if (!net) throw new Error('未知网络：' + netId);
+  const w = net.w || d.trackW;
+  const need = (d.clearance ?? 0.3) + w / 2;
+  const violations = [];
+  const segs = [];
+  for (let i = 1; i < pts.length; i++) segs.push([pts[i - 1], pts[i]]);
+  for (const [a, b] of segs) {
+    const L = Math.hypot(b.x - a.x, b.y - a.y);
+    const N = Math.max(2, Math.ceil(L / 0.25));
+    for (let k = 0; k <= N; k++) {
+      const px = a.x + (b.x - a.x) * k / N, py = a.y + (b.y - a.y) * k / N;
+      const nearEndpoint = Math.hypot(px - pts[0].x, py - pts[0].y) < 1.5
+        || Math.hypot(px - pts[pts.length - 1].x, py - pts[pts.length - 1].y) < 1.5;
+      // 异网焊盘（层匹配：top 段撞 top/both；非顶层段撞 bottom/both）
+      for (const p of d.pads || []) {
+        if (p.netId === netId) continue;
+        const padTop = p.layer === 'top' || p.layer === 'both';
+        const padBottom = p.layer === 'bottom' || p.layer === 'both';
+        if (a.l === 0 && !padTop) continue;
+        if (a.l !== 0 && !padBottom) continue;
+        if (nearEndpoint) continue;
+        if (px > p.x - p.w / 2 - need && px < p.x + p.w / 2 + need && py > p.y - p.h / 2 - need && py < p.y + p.h / 2 + need)
+          violations.push({ kind: 'pad', id: p.id, net: p.netId, at: { x: +px.toFixed(2), y: +py.toFixed(2) } });
+      }
+      // 异网走线（同层）
+      for (const n2 of (r.nets || [])) {
+        if (n2.netId === netId) continue;
+        for (const poly of n2.paths || []) for (let s2 = 1; s2 < poly.length; s2++) {
+          const c = poly[s2 - 1], e = poly[s2];
+          if (c.l !== a.l) continue;
+          const dx = e.x - c.x, dy = e.y - c.y, L2 = dx * dx + dy * dy;
+          let t = L2 > 0 ? ((px - c.x) * dx + (py - c.y) * dy) / L2 : 0;
+          t = Math.max(0, Math.min(1, t));
+          const dist = Math.hypot(c.x + t * dx - px, c.y + t * dy - py) - w / 2 - ((d.nets.find(nn => nn.id === n2.netId) || {}).w || d.trackW) / 2;
+          if (dist < (d.clearance ?? 0.3))
+            violations.push({ kind: 'track', net: n2.netId, at: { x: +px.toFixed(2), y: +py.toFixed(2) }, dist: +dist.toFixed(3) });
+        }
+      }
+      // 禁布区
+      for (const kk of (d.keepouts || [])) {
+        if (px > kk.x - need && px < kk.x + kk.w + need && py > kk.y - need && py < kk.y + kk.h + need)
+          violations.push({ kind: 'keepout', at: { x: +px.toFixed(2), y: +py.toFixed(2) } });
+      }
+    }
+  }
+  // 去重（同一障碍物多点命中只留一条）
+  const seen = new Set();
+  const uniq = violations.filter(v => { const k = v.kind + ':' + (v.id || v.net) + ':' + v.at.x + ',' + v.at.y; if (seen.has(k)) return false; seen.add(k); return true; });
+  return { ok: uniq.length === 0, netId, violations: uniq.slice(0, 20), total: uniq.length,
+    hint: uniq.length ? '调整航点绕开违规点（换层/换走廊）；端点近邻已豁免' : '路径干净——可注入 design.manual' };
+}
+
 /* ---------- /api/estimate：布线前预估 ---------- */
 export function estimateBoard(dRaw) {
   const d = engine.normalizeDesign(dRaw);
@@ -345,7 +569,10 @@ export function estimateBoard(dRaw) {
 /* ---------- /api/summary：状态摘要 ---------- */
 export function boardSummary(dRaw, rRaw, meta = {}) {
   const d = engine.normalizeDesign(dRaw);
-  const r = rRaw ? engine.normalizeResult(rRaw, d) : null;
+  // 2026-11-20 假绿整改：摘要的连通口径必须实时诚实重算（连通分量 + 铜皮背书 +
+  // 缝合孔）——CLI recount 发生在 pour 之前，result.stats 里的旧值会把已接入的
+  // 铜皮网报成断链（fable-02 实测 63/112 vs 实际 109/112）。
+  const r = rRaw ? refreshConn(dRaw, rRaw) : null;
   const nets = d.nets.map(n => {
     const rn = r ? (r.nets || []).find(x => x.netId === n.id) : null;
     return { id: n.id, pads: (n.pads && n.pads.length ? n.pads : d.pads.filter(p => p.netId === n.id).map(p => p.id)).length,

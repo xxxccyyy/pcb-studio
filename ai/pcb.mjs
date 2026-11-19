@@ -1030,6 +1030,9 @@ switch (cmd) {
         shapeWindow: window === '' ? undefined : Number(window),
         shapeNets: nets.length ? nets : undefined });
       result = sp.result; shape = sp.shape;
+      // 2026-11-20 假绿整改：shape-patch 的协商计数可能引用未落盘/被级联回滚的铜，
+      // 落盘前按铜格连通分量重算（recountConnected）——空壳网绝不虚报
+      core.recountConnected(d, result);
       if (outPath) writeFileSync(outPath, JSON.stringify(result, null, 1));
     }
     // --save-design：routeBoard 入口会原地抬高栅格并 snap 焊盘（引擎同款口径），写回输入文件
@@ -1452,6 +1455,7 @@ switch (cmd) {
         shapeWindow: window === '' ? undefined : Number(window),
         shapeNets: nets.length ? nets : undefined });
       r.best = sp.result; shape = sp.shape;
+      core.recountConnected(d, r.best);   // 2026-11-20 假绿整改：同 route，落盘前重算
     }
     const designOut = outPath || args[0];
     writeFileSync(designOut, JSON.stringify(d, null, 1));

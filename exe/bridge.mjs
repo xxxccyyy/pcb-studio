@@ -14,7 +14,7 @@ import { mkdirSync, readFileSync, readdirSync, lstatSync, existsSync, rmSync } f
 import { resolve, join, isAbsolute, relative, sep } from 'node:path';
 import * as engine from '../src/engine.mjs';
 import { pngEncode } from '../src/png.mjs';
-import { fpPads, syncComps, applyEditOp, forensicWhy, estimateBoard, boardSummary, boardQuery, drcLive, diffResults } from './board-info.mjs';
+import { fpPads, syncComps, applyEditOp, forensicWhy, estimateBoard, boardSummary, boardQuery, drcLive, diffResults, refreshConn, validatePath } from './board-info.mjs';
 
   function markFindings(img, findings, scale) {
     const W = img.width, H = img.height, px = img.px;
@@ -59,6 +59,7 @@ import { fpPads, syncComps, applyEditOp, forensicWhy, estimateBoard, boardSummar
         { p: 'POST /api/cancel', d: '中断 route-live' },
         { p: 'POST /api/why', d: '失败法医报告：逐未连通边 blockers+advice；partialReasons 分解' },
         { p: 'POST|GET /api/estimate', d: '布线前预估：层数初判 ok2/tight/need4' },
+        { p: 'POST /api/verify-path', d: '候选手工走线验证：{netId, pts, inject?}——间距违规清单或注入成功（§6.10 视觉布线）' },
         { p: 'POST /api/edit', d: '语义编辑：set-net/add-net/remove-net/move-comp/set-pad/add-pad/clear-net-tracks/add-keepout/sync-comps' },
         { p: 'POST /api/drc-live', d: 'DRC+fabChecklist，findings 带 where 坐标' },
         { p: 'GET /api/drc-live/mark.png', d: 'DRC 违规红圈叠加渲染（配合 drc-live 的 where）' },
@@ -132,8 +133,11 @@ export function createBridgeServer({ indexHtml, version, sessionDir, token, self
   const history = [];                 // edit/load 前的 {design,result} 快照（/api/undo 用）
   const workerShim = "const __pp=require('node:worker_threads').parentPort;" +
     "const self={postMessage:m=>__pp.postMessage(m),set onmessage(fn){__pp.on('message',m=>fn({data:m}));}};";
+  // 剥离 ESM 语法：除 export {...} 列表外，引擎里的内联 export（如 recountConnected）
+  // 也必须剥掉——CJS eval worker 里残留 export 会整段解析失败（2026-11-20 实测回归）
   const workerCode = engineSrc && workerSrc
-    ? workerShim + engineSrc.replace(/^export \{[^]*?\};\s*$/m, '') + '\n'
+    ? workerShim + engineSrc.replace(/^export \{[^]*?\};\s*$/m, '')
+      .replace(/^export (?=(async\s+)?(function|const|class|let|var)\b)/gm, '') + '\n'
       + workerSrc.replace(/^import [^\n]*;[ \t]*$/gm, '')
     : null;
   function disposeRoutingWorker(cancelMsg) {
@@ -284,6 +288,7 @@ export function createBridgeServer({ indexHtml, version, sessionDir, token, self
     if (r) writeFileSync(safeSessionPath(sessionDir, rPath), JSON.stringify(r, null, 1));
     else if (existsSync(join(sessionDir, 'result.json'))) rmSync(safeSessionPath(sessionDir, 'result.json'));
     snapshot('load:' + dPath);
+    if (r && (d.manual || []).length) { try { refreshConn(d, r); } catch { /* 重算失败不阻断 */ } }
     state.design = d; state.result = r || null;
     state.name = name || (typeof design === 'string' ? design : dPath);
     state.source = source || 'api';
@@ -542,6 +547,32 @@ export function createBridgeServer({ indexHtml, version, sessionDir, token, self
         const dRaw = stateOrFile('design', b.design);
         if (!dRaw) throw new Error('缺少 design（当前无状态且会话目录无 design.json）');
         json(res, 200, drcLive(dRaw, stateOrFile('result', b.result)));
+        return;
+      }
+      if (p === '/api/verify-path' && req.method === 'POST') {
+        const b = JSON.parse((await body(req)).toString('utf8'));
+        const dRaw = stateOrFile('design', b.design);
+        if (!dRaw) throw new Error('缺少 design（当前无状态且会话目录无 design.json）');
+        if (!b.netId || !Array.isArray(b.pts) || b.pts.length < 2) throw new Error('需要 netId 与 pts:[{x,y,l?}]（≥2 点）');
+        const v = validatePath(dRaw, stateOrFile('result', b.result), b.netId, b.pts);
+        if (v.ok && b.inject) {
+          // 验证通过且要求注入：写入 manual 并广播（视觉布线的原子操作）
+          const st = { design: state.design || dRaw, result: state.result || stateOrFile('result', null) };
+          const d2 = JSON.parse(JSON.stringify(st.design));
+          d2.manual = d2.manual || [];
+          const key = JSON.stringify(b.pts.map(p => [+p.x.toFixed(2), +p.y.toFixed(2)]));
+          d2.manual = d2.manual.filter(m => !(m.netId === b.netId && JSON.stringify(m.pts.map(p => [+p.x.toFixed(2), +p.y.toFixed(2)])) === key));
+          d2.manual.push({ netId: b.netId, pts: b.pts.map(p => ({ x: p.x, y: p.y, l: p.l ?? 0 })) });
+          try { engine.normalizeDesign(JSON.parse(JSON.stringify(d2))); } catch (e) { throw new Error('注入后设计非法：' + e.message); }
+          snapshot('verify-path:' + b.netId);
+          state.design = d2; if (st.result) state.result = st.result;
+          disposeRoutingWorker();
+          writeFileSync(join(sessionDir, 'design.json'), JSON.stringify(d2, null, 1));
+          if (st.result) writeFileSync(join(sessionDir, 'result.json'), JSON.stringify(st.result, null, 1));
+          broadcast('state', { design: d2, result: st.result, name: state.name, source: 'verify-path' });
+          v.injected = true;
+        }
+        json(res, 200, v);
         return;
       }
       if (p === '/api/edit' && req.method === 'POST') {

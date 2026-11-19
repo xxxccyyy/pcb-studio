@@ -1,5 +1,53 @@
 # 更新日志
 
+## 0.15.2（2026-11-20）—— 假绿审计与诚实口径：连通计量全面重构
+
+对 0.15.1「三板 100% 布通、DRC 0 err」结论的独立复验**推翻了原数字**：三重假绿叠加
+（过期几何错位、shape-patch 协商计数引用未落盘铜、装配计数引用已拆除铜），实测
+fable-01 纯路由仅 27/95，其余为无铜幻影。本轮把「报出来的每个数字都经得起
+『铜皮真的在吗』的追问」固化为口径：
+
+- **buildResult 装配点诚实口径**（引擎）：connected 由铜格连通分量重算（最大分量
+  焊盘数），ripup 后未及重布的空壳网绝不虚报；路由轨迹位级不变
+- **recountConnected 导出**（引擎新）：shape-patch/并行装配等所有结果生产者落盘前
+  的统一兜底；route 两处 shape-patch 落盘前强制重算
+- **refreshConn 连通分量化**（桥/共享层）：废除「逐点落走廊 + max 不倒退」假绿口径，
+  改为铜格连通分量（与 computeRatsnest 同口径：4 邻域 + 过孔跨层 + 同焊盘覆盖单元
+  互连），含铜皮逐格心判定、缝合孔、热辐条背书（pour.unconnectedPads 并查合并语义，
+  只增不减）；修 `var` 提升跨网残留导致的重复计数（实测 574/95）
+- **checkDRC 未连通铺铜背书**：pour 点名孤立的才报，热辐条接入不再误报
+- **boardSummary 实时重算**：/api/summary 不再回读文件里 pour 之前的过期 stats
+  （fable-02 实测 63/112 → 109/112）
+- **worker shim 剥离内联 export**：引擎新增内联导出导致 eval worker 整段解析失败
+  （route-live/reroute-net 失联，实测回归修复）
+- **Fable 三板重跑口径终态**（诚实口径）：fable-01 92/95（U2-15/n9 围死：外部数据
+  焊盘共点+宽高翻转缺陷，已修复 J1×3/U2×2/β02×1 共 6 处共点）、fable-02 109/112
+  （3V3 ×3 围死类）、**fable-03 110/110 全通**；GND 全部双层铺铜+缝合孔收尾
+- 方法论文档重写：docs/视觉驱动布线实战记录.md §7 假绿审计全复盘（三重假绿源、
+  铺铜辐条背书语义、设计数据缺陷清单）；桥接手册 §6.10 口径更新
+- 回归：router 84、bridge 58、cli 17、pour/shape/iter-parallel/worker-session/
+  parallel-route/joint-reroute/search-regression 全绿
+- 终态成果存 projects/ext-fable-XX/{design-final,result-final}.json
+
+## 0.15.1（2026-11-18）—— Fable 三板视觉驱动布线（结论后被 0.15.2 审计修正）
+
+**追加（同日）：autoPlace 薄焊盘格心坍缩引擎修复**——「薄焊盘格心保障」逐焊盘独立吸格心会把
+0.5mm 间距连接器（USB-C）相邻引脚拉到同一格心（异网焊盘物理重叠、路由器正确拒绝）。
+修复：格心微移按元件组统一（组内第一个薄焊盘的相位决定整体偏移，组内相对间距原样保留）。
+router 84/84 + cli 17/17 回归绿。fable-01 修复后 route-live DRC 112→10 err。
+
+
+三块真实外部工程（历史天花板 82/95、95-98/112、99-110）当时结论为全部推到 100%：
+~~fable-01 115/115（DRC 0 err）、fable-02 112/112（DRC 0 err）、fable-03 110/110~~
+——**0.15.2 审计修正**：115/115 与 112/112 含无铜幻影（见 0.15.2），诚实口径
+fable-01 92/95、fable-02 109/112；fable-03 110/110 复验成立。
+方法论与坑位清单固化：docs/视觉驱动布线实战记录.md（新）、桥接手册 §6.10、AGENTS.md
+进阶手法节。工具链改进：refreshConn（manual 注入后 connected 静态快照重算，
+board-info.mjs 新导出，applyLoad 自动调用）；path-plan 路径验证器（候选折线逐点
+间距验证：层匹配+端点 1.5mm 豁免）；根因确认——autoPlace 栅格量化坍缩 0.5mm 间距
+USB-C 引脚（不同网焊盘叠同点），细 clearance（0.15）+锚定（J1,U1）配方绕过。
+成果存 projects/ext-fable-XX/{design-sprint,result-sprint}.json。
+
 ## 0.15.0（2026-11-17）—— 单文件 exe + AI 实时控制桥：免装 Node 双击即用，AI 与人同屏协作
 
 目标命题「让 AI 实时操作、控制」。Node SEA 打包单文件 `pcb-studio.exe`（约 93MB，免装 Node），

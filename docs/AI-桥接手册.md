@@ -258,6 +258,22 @@ route 一跑几十秒到几分钟——先花 1 秒预估，别烧在注定失�
 
 **`GET /api/drc-live/mark.png`**：DRC 违规**红圈叠加渲染**（where 坐标画红圈，响应头 `X-Marked`=定位数）——AI 一眼看到违规在哪，修复后重拉对比。`highlight` 支持逗号分隔多网（如差分对 `highlight=USB_P,USB_N`）。
 
+### 6.10 视觉驱动布线（render + manual 注入循环）
+
+自动布线 partial 卡壳时，用渲染看图人工规划，手工走线注入（完整实战记录与 2026-11-20
+假绿审计见《[视觉驱动布线实战记录](视觉驱动布线实战记录.md)》）：
+
+1. `GET /api/render?highlight=<网>&crop=x,y,w,h` → 确定性几何渲染目检（无浏览器可用）
+2. `GET /api/query?net=<网>` → 焊盘精确坐标（manual 端点必须用它）
+3. 规划折线 → `POST /api/verify-path` 逐点间距验证（异网焊盘/走线，层匹配）→ 干净才注入
+4. `design.manual.push({netId, pts:[{x,y,l}]})` → `POST /api/load`（连通/DRC/导出全链生效）
+5. `GET /api/summary` 复核——**连通分量是唯一裁判**（0.15.2 起 summary/drc-live 实时
+   诚实重算：铜格连通分量取最大组 + 铜皮辐条背书，绝不回读文件里的过期 stats）
+
+硬规则：端点精确到焊盘中心；内层段改正交 L 型；GND 类网（40+ 脚）用 `pour` 铺铜收尾
+（热辐条接入按 pour 的 unconnectedPads 背书，checkDRC 同口径）；trim 任何铜段前先确认
+每盘的替代通路；同网过孔入盘合法（围死盘的缝合孔逃生术），异网则是短路。
+
 ## 7. MCP 接入（Claude Desktop / ZCode 等）
 
 `pcb-studio.exe mcp` 以 stdio 运行 MCP 服务（协议 2025-06-18 必要子集，零依赖实现）。客户端配置示例：

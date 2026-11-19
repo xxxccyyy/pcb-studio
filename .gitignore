@@ -22,3 +22,9 @@ bridge.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# Fable 复刻工作产物（迭代/备份不入库，只收终态与 sprint 存档）
+projects/ext-fable-*/design-sprint-v*.json
+projects/ext-fable-*/manual-plan*.json
+projects/ext-fable-*.json.bak-*
+projects/ext-fable-*/*.bak-*

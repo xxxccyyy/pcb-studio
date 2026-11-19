@@ -2024,6 +2024,19 @@ function createSession(design, opts){
     });
     // 容量停滞签名（S 作用域内打标；advise 升级建议用）
     const capacityStall=S.capacityStall===true;
+    // 2026-11-20 假绿整改：connected 在装配点按铜格连通分量重算，绝不信任会话内
+    // 计数——ripup 后未及重布的网（ripNet 清铜不清计数）曾以空壳进入结果
+    // （fable-01 实测 n3 10/11、n4 38/40 声称连通而 paths/cells 全空，DRC/Gerber
+    // 全断）。仅改装配口径，路由轨迹位级不变；单焊盘网保持平凡连通语义。
+    // 口径与 computeRatsnest 一致：4 邻域 + 过孔跨层 + 同焊盘覆盖单元互连，
+    // connected = 最大分量的焊盘数。
+    const honestConn=net=>{
+      const pads=padsByNet.get(net.i)||[];
+      if(pads.length<2) return pads.length;
+      if(!net.cells.size) return 0;
+      const padStates=pads.map(p=>model.padCells.get(p.id)||[]);
+      return _padComponentAnalysis(net.cells, net.viaSet, padStates, GW, GH, L, NC).largest;
+    };
     let lenTop=0, lenBot=0, viaCount=0;
     const trackLayers=new Array(L).fill(0);
     const netOut=[];
@@ -2042,7 +2055,7 @@ function createSession(design, opts){
         paths:net.paths.map(p=>p.map(pt=>({x:pt.x,y:pt.y,l:pt.l}))),
         vias:[...net.viaSet.values()],
         cells:[...net.cells],
-        connected:net.connected, total:net.total
+        connected:honestConn(net), total:net.total
       });
     }
     let tc=0, tt=0;
@@ -4349,14 +4362,24 @@ function autoPlace(design, opts){
     const half=grid/2;
     const needsX=p.w<grid-1e-9, needsY=p.h<grid-1e-9;
     if(needsX||needsY){
+      // 组内统一偏移（第十三轮 J1 教训）：逐焊盘独立吸格心会把 0.5mm 间距连接器的
+      // 相邻引脚拉到同一格心（异网焊盘物理重叠）。改为每元件每轴只算一次微移量
+      // （取组内第一个需要微移的薄焊盘的相位），整组同移——组内相对间距原样保留。
       const phase=v=>{ const m=((v/grid-0.5)%1+1)%1; return Math.min(m,1-m)*grid; };  // 到最近格心线的距离
       if(needsX && phase(p.x)>p.w/2-1e-9){
         const line=(Math.floor(p.x/grid-0.5)+1)*grid+half;   // 右侧最近格心线
-        p.x=+(p.x + (line-p.x) - grid*Math.round((line-p.x)/grid)).toFixed(4);
+        const delta=line-p.x-grid*Math.round((line-p.x)/grid);
+        // 整组同移：同元件全部焊盘 x += delta（含非薄焊盘——相对几何不变）
+        for(const r2 of c.rel){ const q=r2.p; q.x=+(q.x+delta).toFixed(4); }
+        p.x=+(p.x+delta).toFixed(4);
+        for(const r2 of c.rel){ const w2=W.get(r2.p); w2.x=+(w2.x+delta).toFixed(4); }
       }
       if(needsY && phase(p.y)>p.h/2-1e-9){
         const line=(Math.floor(p.y/grid-0.5)+1)*grid+half;
-        p.y=+(p.y + (line-p.y) - grid*Math.round((line-p.y)/grid)).toFixed(4);
+        const delta=line-p.y-grid*Math.round((line-p.y)/grid);
+        for(const r2 of c.rel){ const q=r2.p; q.y=+(q.y+delta).toFixed(4); }
+        p.y=+(p.y+delta).toFixed(4);
+        for(const r2 of c.rel){ const w2=W.get(r2.p); w2.y=+(w2.y+delta).toFixed(4); }
       }
     }
   }
@@ -6798,11 +6821,17 @@ function checkDRC(design, result, opts){
   const add=(sev,type,msg)=>{ if(issues.length<200) issues.push({sev,type,msg}); };
   // 未连通（铺铜语义升级 0.11.7）：网内全部焊盘落入同网铜皮 = 已被铜皮接通，
   // 不计未连通（真实 EDA 同口径——GND 类网的连接方式就是铜皮）。部分落入仍如实报错。
+  // 2026-11-20 假绿整改：pour 的 unconnectedPads 按热辐条几何判定接入（真实 EDA
+  // 认可的铺铜接入方式，盘心/格心采样会漏）。缺计数统一用 total−connected——
+  // recount 的 connected 已含走线分量 ∪ 铜皮背书全口径；pour 背书全接入时为 0。
   for(const n of result.nets){
     if(n.connected<n.total){
       const _ps=(design.pads||[]).filter(p=>p.netId===n.netId);
       const _mp=pourList.find(p=>p.netId===n.netId);
-      if(_ps.length&&_mp&&_ps.every(p=>pourContains(_mp,p.x,p.y))) continue;
+      if(_ps.length&&_mp){
+        if(Array.isArray(_mp.unconnectedPads)&&_mp.unconnectedPads.length===0) continue;
+        if(!Array.isArray(_mp.unconnectedPads)&&_ps.every(p=>pourContains(_mp,p.x,p.y))) continue;
+      }
       add('error','未连通','网络 '+n.name+'：还有 '+(n.total-n.connected)+' 个焊盘未连通');
     }
   }
@@ -7280,6 +7309,92 @@ function segDist(px,py, ax,ay, bx,by){
   let t=((px-ax)*dx+(py-ay)*dy)/L2;
   t=Math.max(0,Math.min(1,t));
   return Math.hypot(px-(ax+t*dx), py-(ay+t*dy));
+}
+
+/* ---------- 连通分量核心（2026-11-20 假绿整改的共享口径） ----------
+   4 邻域 BFS + 过孔跨层 + 同焊盘覆盖单元互连。与 computeRatsnest 分组语义
+   一致；buildResult（装配点诚实口径）与 recountConnected（结果对象重算）
+   共用，防实现漂移。返回 {largest, count, groups}。 */
+function _padComponentAnalysis(cells, viaCells, padStates, GW, GH, L, NC){
+  const cellPads=new Map();
+  padStates.forEach((sts,pi)=>{ for(const s of sts){
+    if(!cellPads.has(s)) cellPads.set(s,[]); cellPads.get(s).push(pi); } });
+  const relevant=new Set(cells);
+  for(const sts of padStates) for(const s of sts) relevant.add(s);
+  const comp=new Map(); let cid=0;
+  for(const s0 of relevant){
+    if(comp.has(s0)) continue;
+    cid++; const q=[s0]; comp.set(s0,cid);
+    for(let qi=0;qi<q.length;qi++){
+      const cur=q[qi], c=cur%NC, l=(cur/NC)|0, nbs=[];
+      if(c%GW>0) nbs.push(cur-1);
+      if(c%GW<GW-1) nbs.push(cur+1);
+      if(c>=GW) nbs.push(cur-GW);
+      if(c<GW*(GH-1)) nbs.push(cur+GW);
+      if(viaCells.has(c)) for(let ll=0;ll<L;ll++) if(ll!==l) nbs.push(ll*NC+c);
+      for(const pi of (cellPads.get(cur)||[])) for(const s of padStates[pi]) nbs.push(s);
+      for(const nb of nbs) if(relevant.has(nb)&&!comp.has(nb)){ comp.set(nb,cid); q.push(nb); }
+    }
+  }
+  const groups=new Map();
+  padStates.forEach((sts,pi)=>{ let g='iso'+pi;
+    for(const s of sts) if(comp.has(s)){ g=comp.get(s); break; }
+    if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(pi); });
+  let largest=0; for(const g of groups.values()) if(g.length>largest) largest=g.length;
+  return { largest, count:groups.size, groups:[...groups.values()].map(g=>g.length) };
+}
+
+/* ---------- 结果网连通诚实重算（2026-11-20 假绿整改） ----------
+   所有结果生产者（shape-patch、并行装配回填、外部导入）的统一兜底：
+   会话内计数可能引用已拆除/未序列化的铜——connected 必须由铜格分量决定。
+   connected = 最大分量焊盘数；另记 groups/split 供断链定位。仅改计量，
+   不改任何几何。 */
+export function recountConnected(design, result){
+  if(!result||!Array.isArray(result.nets)) return result;
+  const model=buildModel(design);
+  const {GW,GH,L,NC}=model; const grid=model.grid;
+  const cellOf=(x,y)=>{
+    const i=Math.max(0,Math.min(GW-1,Math.floor(x/grid-0.5)));
+    const j=Math.max(0,Math.min(GH-1,Math.floor(y/grid-0.5)));
+    return j*GW+i;
+  };
+  for(const rn of result.nets){
+    const pads=(design.pads||[]).filter(p=>p.netId===rn.netId);
+    rn.total=pads.length;
+    if(pads.length<2){ rn.connected=pads.length; delete rn.split; continue; }
+    const cells=new Set(), viaCells=new Set();
+    if(rn.cells&&rn.cells.length) for(const s of rn.cells) cells.add(s);
+    else {
+      // 无 cells（外部导入/shape-patch 部分网）：paths 端点 + 走廊标记（与
+      // computeRatsnest manual 标记同口径，45° 斜线沿格角穿越不断链）
+      const r2=netW(design,rn.netId)/2+grid*0.71+1e-6;
+      for(const poly of rn.paths||[]) for(const pt of poly) cells.add(pt.l*NC+cellOf(pt.x,pt.y));
+      for(const poly of rn.paths||[]) for(let k=1;k<poly.length;k++){
+        const a=poly[k-1], b=poly[k];
+        if(a.l!==b.l) continue;
+        const x0=Math.max(0,Math.floor((Math.min(a.x,b.x)-r2)/grid-0.5));
+        const x1=Math.min(GW-1,Math.floor((Math.max(a.x,b.x)+r2)/grid-0.5));
+        const y0=Math.max(0,Math.floor((Math.min(a.y,b.y)-r2)/grid-0.5));
+        const y1=Math.min(GH-1,Math.floor((Math.max(a.y,b.y)+r2)/grid-0.5));
+        for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){
+          const cx=(xx+0.5)*grid, cy=(yy+0.5)*grid;
+          if(segDist(cx,cy,a.x,a.y,b.x,b.y)<=r2) cells.add(a.l*NC+yy*GW+xx);
+        }
+      }
+    }
+    for(const v of rn.vias||[]) viaCells.add(cellOf(v.x,v.y));
+    if(!cells.size){ rn.connected=0; rn.groups=pads.length; delete rn.split; continue; }
+    const padStates=pads.map(p=>model.padCells.get(p.id)||[]);
+    const an=_padComponentAnalysis(cells, viaCells, padStates, GW, GH, L, NC);
+    rn.connected=an.largest;
+    rn.groups=an.count;
+    if(an.count>1) rn.split=an.groups;   // 各组焊盘数（断链定位）
+    else delete rn.split;
+  }
+  let tc=0, tt=0;
+  for(const n of result.nets){ tc+=n.connected||0; tt+=n.total||0; }
+  if(result.stats){ result.stats.connected=tc; result.stats.total=tt; }
+  return result;
 }
 
 /* ---------- 预拉线（未连通部分虚线显示） ---------- */
